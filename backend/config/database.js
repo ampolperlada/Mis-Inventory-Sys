@@ -9,9 +9,7 @@ const pool = mysql.createPool({
   database: process.env.DB_NAME || 'inventory_system',
   waitForConnections: true,
   connectionLimit: 10,
-  queueLimit: 0,
-  acquireTimeout: 60000,
-  timeout: 60000
+  queueLimit: 0
 });
 
 // Get promise-based pool
@@ -47,7 +45,7 @@ const initializeDatabase = async () => {
       )
     `);
 
-    // Create inventory_items table (matching the actual table name)
+    // Create inventory_items table
     await promisePool.execute(`
       CREATE TABLE IF NOT EXISTS inventory_items (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -69,7 +67,7 @@ const initializeDatabase = async () => {
       )
     `);
 
-    // Create item_assignments table (matching the actual table name)
+    // Create item_assignments table
     await promisePool.execute(`
       CREATE TABLE IF NOT EXISTS item_assignments (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -91,7 +89,7 @@ const initializeDatabase = async () => {
       )
     `);
 
-    // Create categories table for better organization
+    // Create categories table
     await promisePool.execute(`
       CREATE TABLE IF NOT EXISTS categories (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -136,7 +134,7 @@ const initializeDatabase = async () => {
       console.log('✅ Default admin user created (username: admin, password: admin123)');
     }
 
-    // Insert some sample data for testing (optional)
+    // Insert some sample data for testing
     const [itemCheck] = await promisePool.execute('SELECT COUNT(*) as count FROM inventory_items');
     if (itemCheck[0].count === 0) {
       await promisePool.execute(`
