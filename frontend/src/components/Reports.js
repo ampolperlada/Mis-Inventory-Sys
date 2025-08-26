@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box,
-  Paper,
   Typography,
   Button,
   Grid,
@@ -18,27 +17,111 @@ import {
   Select,
   MenuItem,
   TextField,
-  CircularProgress,
-  Alert
+  CircularProgress
 } from '@mui/material';
+import { styled } from '@mui/material/styles';
 import {
   Download,
   BarChart,
   TrendingUp,
   Inventory,
-  Assignment
+  Assignment,
+  Analytics,
+  PictureAsPdf,
+  TableChart
 } from '@mui/icons-material';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import Dashboard from './Dashboard';
+
+// Styled components
+const GlassCard = styled(Card)(({ theme }) => ({
+  background: 'rgba(255, 255, 255, 0.95)',
+  backdropFilter: 'blur(20px)',
+  borderRadius: '20px',
+  border: '1px solid rgba(255, 255, 255, 0.2)',
+  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+  transition: 'all 0.3s ease',
+  '&:hover': {
+    transform: 'translateY(-4px)',
+    boxShadow: '0 20px 40px rgba(102, 126, 234, 0.2)',
+  },
+}));
+
+const StatCard = styled(Card)(({ theme, gradient }) => ({
+  background: gradient,
+  color: 'white',
+  borderRadius: '20px',
+  border: 'none',
+  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.15)',
+  transition: 'all 0.3s ease',
+  position: 'relative',
+  overflow: 'hidden',
+  '&::before': {
+    content: '""',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, transparent 100%)',
+    pointerEvents: 'none',
+  },
+  '&:hover': {
+    transform: 'translateY(-8px) scale(1.02)',
+    boxShadow: '0 20px 40px rgba(0, 0, 0, 0.25)',
+  },
+}));
+
+const ModernButton = styled(Button)(({ theme, variant = 'primary' }) => ({
+  borderRadius: '12px',
+  padding: '12px 24px',
+  textTransform: 'none',
+  fontWeight: '600',
+  transition: 'all 0.3s ease',
+  ...(variant === 'primary' && {
+    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)',
+    '&:hover': {
+      background: 'linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%)',
+      transform: 'translateY(-2px)',
+      boxShadow: '0 8px 20px rgba(102, 126, 234, 0.4)',
+    },
+  }),
+  ...(variant === 'secondary' && {
+    background: 'rgba(255, 255, 255, 0.9)',
+    color: '#667eea',
+    border: '1px solid rgba(102, 126, 234, 0.3)',
+    '&:hover': {
+      background: 'rgba(102, 126, 234, 0.1)',
+      transform: 'translateY(-2px)',
+    },
+  }),
+}));
+
+const StyledTableContainer = styled(TableContainer)(({ theme }) => ({
+  borderRadius: '16px',
+  background: 'rgba(255, 255, 255, 0.95)',
+  backdropFilter: 'blur(20px)',
+  border: '1px solid rgba(255, 255, 255, 0.2)',
+  '& .MuiTableHead-root': {
+    background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%)',
+  },
+  '& .MuiTableCell-head': {
+    fontWeight: '600',
+    color: '#4a5568',
+    borderBottom: '2px solid rgba(102, 126, 234, 0.1)',
+  },
+  '& .MuiTableRow-root:hover': {
+    background: 'rgba(102, 126, 234, 0.05)',
+  },
+}));
 
 const Reports = () => {
   const [loading, setLoading] = useState(false);
   const [reportData, setReportData] = useState(null);
   const [reportType, setReportType] = useState('inventory');
   const [dateRange, setDateRange] = useState({
-    startDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
-    endDate: new Date()
+    startDate: '2024-01-01',
+    endDate: '2024-12-31'
   });
   const [stats, setStats] = useState({
     totalItems: 0,
@@ -47,21 +130,21 @@ const Reports = () => {
     maintenanceItems: 0
   });
 
-  // Sample data for demo
   const sampleReportData = {
     inventory: [
-      { id: 1, name: 'Dell Laptop', category: 'Electronics', status: 'assigned', assignedTo: 'John Doe' },
-      { id: 2, name: 'HP Printer', category: 'Electronics', status: 'available', assignedTo: null },
-      { id: 3, name: 'Office Chair', category: 'Furniture', status: 'assigned', assignedTo: 'Jane Smith' }
+      { id: 1, name: 'MacBook Pro 14"', category: 'Laptops', status: 'assigned', assignedTo: 'John Doe', value: '$2,499' },
+      { id: 2, name: 'Dell Monitor 27"', category: 'Monitors', status: 'available', assignedTo: null, value: '$599' },
+      { id: 3, name: 'iPhone 15 Pro', category: 'Phones', status: 'assigned', assignedTo: 'Jane Smith', value: '$999' },
+      { id: 4, name: 'Office Chair', category: 'Furniture', status: 'available', assignedTo: null, value: '$1,395' },
     ],
     assignments: [
-      { id: 1, item: 'Dell Laptop', assignedTo: 'John Doe', date: '2024-01-15', status: 'active' },
-      { id: 2, item: 'Office Chair', assignedTo: 'Jane Smith', date: '2024-01-20', status: 'active' }
+      { id: 1, item: 'MacBook Pro 14"', assignedTo: 'John Doe', date: '2024-01-15', status: 'active', department: 'IT' },
+      { id: 2, item: 'iPhone 15 Pro', assignedTo: 'Jane Smith', date: '2024-01-20', status: 'active', department: 'Sales' },
+      { id: 3, item: 'Wireless Keyboard', assignedTo: 'Mike Johnson', date: '2024-01-10', status: 'returned', department: 'Marketing' },
     ]
   };
 
   useEffect(() => {
-    // Simulate loading stats
     setStats({
       totalItems: 150,
       assignedItems: 89,
@@ -74,7 +157,6 @@ const Reports = () => {
   const handleGenerateReport = async () => {
     setLoading(true);
     try {
-      // Simulate API call
       setTimeout(() => {
         setReportData(sampleReportData);
         setLoading(false);
@@ -86,7 +168,6 @@ const Reports = () => {
   };
 
   const handleExportReport = (format) => {
-    // Simulate export functionality
     console.log(`Exporting report as ${format}`);
     alert(`Report exported as ${format.toUpperCase()}`);
   };
@@ -94,114 +175,158 @@ const Reports = () => {
   const renderStatsCards = () => (
     <Grid container spacing={3} sx={{ mb: 4 }}>
       <Grid item xs={12} sm={6} md={3}>
-        <Card>
-          <CardContent>
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <Inventory sx={{ fontSize: 40, color: 'primary.main', mr: 2 }} />
+        <StatCard gradient="linear-gradient(135deg, #667eea 0%, #764ba2 100%)">
+          <CardContent sx={{ position: 'relative', zIndex: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Box>
-                <Typography variant="h4">{stats.totalItems}</Typography>
-                <Typography color="text.secondary">Total Items</Typography>
+                <Typography variant="h3" sx={{ fontWeight: '700', mb: 1 }}>
+                  {stats.totalItems}
+                </Typography>
+                <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                  Total Items
+                </Typography>
               </Box>
+              <Inventory sx={{ fontSize: 48, opacity: 0.8 }} />
             </Box>
           </CardContent>
-        </Card>
+        </StatCard>
       </Grid>
+
       <Grid item xs={12} sm={6} md={3}>
-        <Card>
-          <CardContent>
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <Assignment sx={{ fontSize: 40, color: 'warning.main', mr: 2 }} />
+        <StatCard gradient="linear-gradient(135deg, #11998e 0%, #38ef7d 100%)">
+          <CardContent sx={{ position: 'relative', zIndex: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Box>
-                <Typography variant="h4">{stats.assignedItems}</Typography>
-                <Typography color="text.secondary">Assigned</Typography>
+                <Typography variant="h3" sx={{ fontWeight: '700', mb: 1 }}>
+                  {stats.assignedItems}
+                </Typography>
+                <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                  Assigned
+                </Typography>
               </Box>
+              <Assignment sx={{ fontSize: 48, opacity: 0.8 }} />
             </Box>
           </CardContent>
-        </Card>
+        </StatCard>
       </Grid>
+
       <Grid item xs={12} sm={6} md={3}>
-        <Card>
-          <CardContent>
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <TrendingUp sx={{ fontSize: 40, color: 'success.main', mr: 2 }} />
+        <StatCard gradient="linear-gradient(135deg, #ffa726 0%, #fb8c00 100%)">
+          <CardContent sx={{ position: 'relative', zIndex: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Box>
-                <Typography variant="h4">{stats.availableItems}</Typography>
-                <Typography color="text.secondary">Available</Typography>
+                <Typography variant="h3" sx={{ fontWeight: '700', mb: 1 }}>
+                  {stats.availableItems}
+                </Typography>
+                <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                  Available
+                </Typography>
               </Box>
+              <TrendingUp sx={{ fontSize: 48, opacity: 0.8 }} />
             </Box>
           </CardContent>
-        </Card>
+        </StatCard>
       </Grid>
+
       <Grid item xs={12} sm={6} md={3}>
-        <Card>
-          <CardContent>
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <BarChart sx={{ fontSize: 40, color: 'error.main', mr: 2 }} />
+        <StatCard gradient="linear-gradient(135deg, #f093fb 0%, #f5576c 100%)">
+          <CardContent sx={{ position: 'relative', zIndex: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Box>
-                <Typography variant="h4">{stats.maintenanceItems}</Typography>
-                <Typography color="text.secondary">Maintenance</Typography>
+                <Typography variant="h3" sx={{ fontWeight: '700', mb: 1 }}>
+                  {stats.maintenanceItems}
+                </Typography>
+                <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                  Maintenance
+                </Typography>
               </Box>
+              <BarChart sx={{ fontSize: 48, opacity: 0.8 }} />
             </Box>
           </CardContent>
-        </Card>
+        </StatCard>
       </Grid>
     </Grid>
   );
 
   const renderReportFilters = () => (
-    <Paper sx={{ p: 3, mb: 3 }}>
-      <Typography variant="h6" gutterBottom>
-        Report Filters
-      </Typography>
-      <Grid container spacing={3} alignItems="center">
-        <Grid item xs={12} sm={6} md={3}>
-          <FormControl fullWidth>
-            <InputLabel>Report Type</InputLabel>
-            <Select
-              value={reportType}
-              onChange={(e) => setReportType(e.target.value)}
-              label="Report Type"
-            >
-              <MenuItem value="inventory">Inventory Report</MenuItem>
-              <MenuItem value="assignments">Assignment Report</MenuItem>
-              <MenuItem value="maintenance">Maintenance Report</MenuItem>
-              <MenuItem value="usage">Usage Report</MenuItem>
-            </Select>
-          </FormControl>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <LocalizationProvider dateAdapter={AdapterDateFns}>
-            <DatePicker
+    <GlassCard sx={{ mb: 3 }}>
+      <CardContent sx={{ p: 3 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+          <Analytics sx={{ mr: 2, color: '#667eea' }} />
+          <Typography variant="h6" sx={{ fontWeight: '600', color: '#2d3748' }}>
+            Report Filters
+          </Typography>
+        </Box>
+        <Grid container spacing={3} alignItems="center">
+          <Grid item xs={12} sm={6} md={3}>
+            <FormControl fullWidth>
+              <InputLabel>Report Type</InputLabel>
+              <Select
+                value={reportType}
+                onChange={(e) => setReportType(e.target.value)}
+                label="Report Type"
+                sx={{
+                  borderRadius: '12px',
+                  background: 'rgba(255, 255, 255, 0.8)',
+                }}
+              >
+                <MenuItem value="inventory">Inventory Report</MenuItem>
+                <MenuItem value="assignments">Assignment Report</MenuItem>
+                <MenuItem value="maintenance">Maintenance Report</MenuItem>
+                <MenuItem value="usage">Usage Report</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <TextField
+              fullWidth
               label="Start Date"
+              type="date"
               value={dateRange.startDate}
-              onChange={(newValue) => setDateRange(prev => ({ ...prev, startDate: newValue }))}
-              renderInput={(params) => <TextField {...params} fullWidth />}
+              onChange={(e) => setDateRange(prev => ({ ...prev, startDate: e.target.value }))}
+              InputLabelProps={{
+                shrink: true,
+              }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: '12px',
+                  background: 'rgba(255, 255, 255, 0.8)',
+                }
+              }}
             />
-          </LocalizationProvider>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <LocalizationProvider dateAdapter={AdapterDateFns}>
-            <DatePicker
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <TextField
+              fullWidth
               label="End Date"
+              type="date"
               value={dateRange.endDate}
-              onChange={(newValue) => setDateRange(prev => ({ ...prev, endDate: newValue }))}
-              renderInput={(params) => <TextField {...params} fullWidth />}
+              onChange={(e) => setDateRange(prev => ({ ...prev, endDate: e.target.value }))}
+              InputLabelProps={{
+                shrink: true,
+              }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: '12px',
+                  background: 'rgba(255, 255, 255, 0.8)',
+                }
+              }}
             />
-          </LocalizationProvider>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <ModernButton
+              variant="primary"
+              onClick={handleGenerateReport}
+              disabled={loading}
+              fullWidth
+              sx={{ height: 56 }}
+            >
+              {loading ? <CircularProgress size={24} /> : 'Generate Report'}
+            </ModernButton>
+          </Grid>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Button
-            variant="contained"
-            onClick={handleGenerateReport}
-            disabled={loading}
-            fullWidth
-            sx={{ height: 56 }}
-          >
-            {loading ? <CircularProgress size={24} /> : 'Generate Report'}
-          </Button>
-        </Grid>
-      </Grid>
-    </Paper>
+      </CardContent>
+    </GlassCard>
   );
 
   const renderReportTable = () => {
@@ -210,121 +335,149 @@ const Reports = () => {
     const data = reportType === 'inventory' ? reportData.inventory : reportData.assignments;
     
     return (
-      <Paper sx={{ p: 3 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Typography variant="h6">
-            {reportType === 'inventory' ? 'Inventory Report' : 'Assignment Report'}
-          </Typography>
-          <Box>
-            <Button
-              startIcon={<Download />}
-              onClick={() => handleExportReport('pdf')}
-              sx={{ mr: 1 }}
-            >
-              Export PDF
-            </Button>
-            <Button
-              startIcon={<Download />}
-              onClick={() => handleExportReport('excel')}
-              variant="outlined"
-            >
-              Export Excel
-            </Button>
+      <GlassCard>
+        <CardContent sx={{ p: 3 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+            <Typography variant="h6" sx={{ fontWeight: '600', color: '#2d3748' }}>
+              {reportType === 'inventory' ? 'Inventory Report' : 'Assignment Report'}
+            </Typography>
+            <Box>
+              <ModernButton
+                variant="secondary"
+                startIcon={<PictureAsPdf />}
+                onClick={() => handleExportReport('pdf')}
+                sx={{ mr: 1 }}
+              >
+                Export PDF
+              </ModernButton>
+              <ModernButton
+                variant="secondary"
+                startIcon={<TableChart />}
+                onClick={() => handleExportReport('excel')}
+              >
+                Export Excel
+              </ModernButton>
+            </Box>
           </Box>
-        </Box>
-        
-        <TableContainer>
-          <Table>
-            <TableHead>
-              <TableRow>
-                {reportType === 'inventory' ? (
-                  <>
-                    <TableCell>ID</TableCell>
-                    <TableCell>Name</TableCell>
-                    <TableCell>Category</TableCell>
-                    <TableCell>Status</TableCell>
-                    <TableCell>Assigned To</TableCell>
-                  </>
-                ) : (
-                  <>
-                    <TableCell>ID</TableCell>
-                    <TableCell>Item</TableCell>
-                    <TableCell>Assigned To</TableCell>
-                    <TableCell>Date</TableCell>
-                    <TableCell>Status</TableCell>
-                  </>
-                )}
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {data.map((row) => (
-                <TableRow key={row.id}>
+          
+          <StyledTableContainer>
+            <Table>
+              <TableHead>
+                <TableRow>
                   {reportType === 'inventory' ? (
                     <>
-                      <TableCell>{row.id}</TableCell>
-                      <TableCell>{row.name}</TableCell>
-                      <TableCell>{row.category}</TableCell>
-                      <TableCell>
-                        <Box
-                          sx={{
-                            px: 1,
-                            py: 0.5,
-                            borderRadius: 1,
-                            fontSize: '0.875rem',
-                            fontWeight: 'medium',
-                            backgroundColor: row.status === 'available' ? 'success.light' : 
-                                           row.status === 'assigned' ? 'warning.light' : 'error.light',
-                            color: row.status === 'available' ? 'success.dark' : 
-                                   row.status === 'assigned' ? 'warning.dark' : 'error.dark'
-                          }}
-                        >
-                          {row.status.toUpperCase()}
-                        </Box>
-                      </TableCell>
-                      <TableCell>{row.assignedTo || 'N/A'}</TableCell>
+                      <TableCell>ID</TableCell>
+                      <TableCell>Item Name</TableCell>
+                      <TableCell>Category</TableCell>
+                      <TableCell>Status</TableCell>
+                      <TableCell>Assigned To</TableCell>
+                      <TableCell>Value</TableCell>
                     </>
                   ) : (
                     <>
-                      <TableCell>{row.id}</TableCell>
-                      <TableCell>{row.item}</TableCell>
-                      <TableCell>{row.assignedTo}</TableCell>
-                      <TableCell>{row.date}</TableCell>
-                      <TableCell>
-                        <Box
-                          sx={{
-                            px: 1,
-                            py: 0.5,
-                            borderRadius: 1,
-                            fontSize: '0.875rem',
-                            fontWeight: 'medium',
-                            backgroundColor: row.status === 'active' ? 'success.light' : 'error.light',
-                            color: row.status === 'active' ? 'success.dark' : 'error.dark'
-                          }}
-                        >
-                          {row.status.toUpperCase()}
-                        </Box>
-                      </TableCell>
+                      <TableCell>ID</TableCell>
+                      <TableCell>Item</TableCell>
+                      <TableCell>Assigned To</TableCell>
+                      <TableCell>Department</TableCell>
+                      <TableCell>Date</TableCell>
+                      <TableCell>Status</TableCell>
                     </>
                   )}
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </Paper>
+              </TableHead>
+              <TableBody>
+                {data.map((row) => (
+                  <TableRow key={row.id}>
+                    {reportType === 'inventory' ? (
+                      <>
+                        <TableCell sx={{ fontWeight: '600' }}>{row.id}</TableCell>
+                        <TableCell sx={{ fontWeight: '500' }}>{row.name}</TableCell>
+                        <TableCell>{row.category}</TableCell>
+                        <TableCell>
+                          <Box
+                            sx={{
+                              px: 2,
+                              py: 0.5,
+                              borderRadius: '8px',
+                              fontSize: '0.875rem',
+                              fontWeight: '600',
+                              textAlign: 'center',
+                              background: row.status === 'available' ? 'linear-gradient(135deg, #10b981 0%, #34d399 100%)' : 
+                                         row.status === 'assigned' ? 'linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)' : 
+                                         'linear-gradient(135deg, #ef4444 0%, #f87171 100%)',
+                              color: 'white'
+                            }}
+                          >
+                            {row.status.toUpperCase()}
+                          </Box>
+                        </TableCell>
+                        <TableCell>{row.assignedTo || 'N/A'}</TableCell>
+                        <TableCell sx={{ fontWeight: '600', color: '#059669' }}>{row.value}</TableCell>
+                      </>
+                    ) : (
+                      <>
+                        <TableCell sx={{ fontWeight: '600' }}>{row.id}</TableCell>
+                        <TableCell sx={{ fontWeight: '500' }}>{row.item}</TableCell>
+                        <TableCell>{row.assignedTo}</TableCell>
+                        <TableCell>
+                          <Box sx={{ 
+                            px: 2, 
+                            py: 0.5, 
+                            background: 'rgba(102, 126, 234, 0.1)', 
+                            borderRadius: '6px', 
+                            color: '#667eea',
+                            fontWeight: '500',
+                            display: 'inline-block'
+                          }}>
+                            {row.department}
+                          </Box>
+                        </TableCell>
+                        <TableCell>{row.date}</TableCell>
+                        <TableCell>
+                          <Box
+                            sx={{
+                              px: 2,
+                              py: 0.5,
+                              borderRadius: '8px',
+                              fontSize: '0.875rem',
+                              fontWeight: '600',
+                              textAlign: 'center',
+                              background: row.status === 'active' ? 'linear-gradient(135deg, #10b981 0%, #34d399 100%)' : 'linear-gradient(135deg, #6b7280 0%, #9ca3af 100%)',
+                              color: 'white'
+                            }}
+                          >
+                            {row.status.toUpperCase()}
+                          </Box>
+                        </TableCell>
+                      </>
+                    )}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </StyledTableContainer>
+        </CardContent>
+      </GlassCard>
     );
   };
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom>
-        Reports & Analytics
-      </Typography>
-      
-      {renderStatsCards()}
-      {renderReportFilters()}
-      {renderReportTable()}
-    </Box>
+    <Dashboard>
+      <Box sx={{ position: 'relative', zIndex: 1 }}>
+        <Box sx={{ mb: 4 }}>
+          <Typography variant="h4" sx={{ fontWeight: '700', color: 'white', mb: 1 }}>
+            Reports & Analytics
+          </Typography>
+          <Typography variant="body1" sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>
+            Generate comprehensive reports and analyze your inventory data
+          </Typography>
+        </Box>
+        
+        {renderStatsCards()}
+        {renderReportFilters()}
+        {renderReportTable()}
+      </Box>
+    </Dashboard>
   );
 };
 

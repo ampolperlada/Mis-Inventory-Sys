@@ -3,7 +3,6 @@ import {
   Box,
   Typography,
   TextField,
-  Paper,
   Table,
   TableBody,
   TableCell,
@@ -26,21 +25,104 @@ import {
   DialogContent,
   DialogActions,
   Tooltip,
+  Card,
+  CardContent,
+  Avatar
 } from '@mui/material';
+import { styled } from '@mui/material/styles';
 import {
   Search as SearchIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
   MoreVert as MoreVertIcon,
-  FilterList as FilterIcon,
   Add as AddIcon,
-  Visibility as ViewIcon,
   Assignment as AssignIcon,
+  Laptop,
+  Monitor,
+  Phone,
+  Chair,
+  Keyboard
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import Dashboard from './Dashboard';
 
-// Mock data for demonstration
+// Styled components
+const GlassCard = styled(Card)(({ theme }) => ({
+  background: 'rgba(255, 255, 255, 0.95)',
+  backdropFilter: 'blur(20px)',
+  borderRadius: '20px',
+  border: '1px solid rgba(255, 255, 255, 0.2)',
+  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+}));
+
+const StyledTableContainer = styled(TableContainer)(({ theme }) => ({
+  borderRadius: '16px',
+  background: 'rgba(255, 255, 255, 0.95)',
+  backdropFilter: 'blur(20px)',
+  border: '1px solid rgba(255, 255, 255, 0.2)',
+  '& .MuiTableHead-root': {
+    background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%)',
+  },
+  '& .MuiTableCell-head': {
+    fontWeight: '600',
+    color: '#4a5568',
+    borderBottom: '2px solid rgba(102, 126, 234, 0.1)',
+  },
+  '& .MuiTableRow-root:hover': {
+    background: 'rgba(102, 126, 234, 0.05)',
+  },
+}));
+
+const ModernButton = styled(Button)(({ theme }) => ({
+  borderRadius: '12px',
+  padding: '12px 24px',
+  textTransform: 'none',
+  fontWeight: '600',
+  boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)',
+  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+  '&:hover': {
+    background: 'linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%)',
+    transform: 'translateY(-2px)',
+    boxShadow: '0 8px 20px rgba(102, 126, 234, 0.4)',
+  },
+}));
+
+const StatusChip = styled(Chip)(({ status }) => {
+  const getStatusStyles = (status) => {
+    switch (status) {
+      case 'available':
+        return {
+          background: 'linear-gradient(135deg, #10b981 0%, #34d399 100%)',
+          color: 'white',
+        };
+      case 'assigned':
+        return {
+          background: 'linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)',
+          color: 'white',
+        };
+      case 'maintenance':
+        return {
+          background: 'linear-gradient(135deg, #ef4444 0%, #f87171 100%)',
+          color: 'white',
+        };
+      default:
+        return {
+          background: 'linear-gradient(135deg, #6b7280 0%, #9ca3af 100%)',
+          color: 'white',
+        };
+    }
+  };
+
+  return {
+    ...getStatusStyles(status),
+    borderRadius: '8px',
+    fontWeight: '600',
+    border: 'none',
+    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+  };
+});
+
+// Mock data
 const mockItems = [
   {
     id: 1,
@@ -109,11 +191,12 @@ const mockItems = [
   },
 ];
 
-const statusColors = {
-  available: 'success',
-  assigned: 'warning',
-  maintenance: 'error',
-  retired: 'default',
+const categoryIcons = {
+  'Laptops': Laptop,
+  'Monitors': Monitor,
+  'Phones': Phone,
+  'Furniture': Chair,
+  'Peripherals': Keyboard,
 };
 
 const ViewItems = () => {
@@ -134,7 +217,6 @@ const ViewItems = () => {
   useEffect(() => {
     let filtered = items;
 
-    // Apply search filter
     if (searchTerm) {
       filtered = filtered.filter(item =>
         item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -144,18 +226,16 @@ const ViewItems = () => {
       );
     }
 
-    // Apply status filter
     if (statusFilter !== 'all') {
       filtered = filtered.filter(item => item.status === statusFilter);
     }
 
-    // Apply category filter
     if (categoryFilter !== 'all') {
       filtered = filtered.filter(item => item.category === categoryFilter);
     }
 
     setFilteredItems(filtered);
-    setPage(0); // Reset to first page when filtering
+    setPage(0);
   }, [items, searchTerm, statusFilter, categoryFilter]);
 
   const handleChangePage = (event, newPage) => {
@@ -178,7 +258,6 @@ const ViewItems = () => {
   };
 
   const handleEdit = () => {
-    // Navigate to edit form (to be implemented)
     console.log('Edit item:', selectedItem);
     handleMenuClose();
   };
@@ -199,93 +278,133 @@ const ViewItems = () => {
     handleMenuClose();
   };
 
+  const getCategoryIcon = (category) => {
+    const IconComponent = categoryIcons[category] || Laptop;
+    return <IconComponent />;
+  };
+
   return (
     <Dashboard>
-      <Box sx={{ flexGrow: 1, p: 3 }}>
+      <Box sx={{ position: 'relative', zIndex: 1 }}>
+        <Box sx={{ mb: 4 }}>
+          <Typography variant="h4" sx={{ fontWeight: '700', color: 'white', mb: 1 }}>
+            Inventory Items
+          </Typography>
+          <Typography variant="body1" sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>
+            Manage and view all your inventory items
+          </Typography>
+        </Box>
+
+        {/* Header with Add Button */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-          <Typography variant="h5">Inventory Items</Typography>
-          <Button
-            variant="contained"
+          <Box />
+          <ModernButton
             startIcon={<AddIcon />}
             onClick={() => navigate('/add-item')}
           >
             Add New Item
-          </Button>
+          </ModernButton>
         </Box>
 
         {/* Filters and Search */}
-        <Paper sx={{ p: 2, mb: 3 }}>
-          <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} md={4}>
-              <TextField
-                fullWidth
-                placeholder="Search items..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon />
-                    </InputAdornment>
-                  ),
-                }}
-              />
+        <GlassCard sx={{ mb: 3 }}>
+          <CardContent sx={{ p: 3 }}>
+            <Grid container spacing={3} alignItems="center">
+              <Grid item xs={12} md={4}>
+                <TextField
+                  fullWidth
+                  placeholder="Search items..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: '12px',
+                      background: 'rgba(255, 255, 255, 0.8)',
+                    }
+                  }}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <SearchIcon sx={{ color: '#667eea' }} />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              </Grid>
+              <Grid item xs={12} md={3}>
+                <FormControl fullWidth>
+                  <InputLabel>Status</InputLabel>
+                  <Select
+                    value={statusFilter}
+                    label="Status"
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    sx={{
+                      borderRadius: '12px',
+                      background: 'rgba(255, 255, 255, 0.8)',
+                    }}
+                  >
+                    <MenuItem value="all">All Status</MenuItem>
+                    <MenuItem value="available">Available</MenuItem>
+                    <MenuItem value="assigned">Assigned</MenuItem>
+                    <MenuItem value="maintenance">Maintenance</MenuItem>
+                    <MenuItem value="retired">Retired</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={12} md={3}>
+                <FormControl fullWidth>
+                  <InputLabel>Category</InputLabel>
+                  <Select
+                    value={categoryFilter}
+                    label="Category"
+                    onChange={(e) => setCategoryFilter(e.target.value)}
+                    sx={{
+                      borderRadius: '12px',
+                      background: 'rgba(255, 255, 255, 0.8)',
+                    }}
+                  >
+                    {categories.map((category) => (
+                      <MenuItem key={category} value={category}>
+                        {category === 'all' ? 'All Categories' : category}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={12} md={2}>
+                <Box sx={{ 
+                  textAlign: 'center',
+                  p: 2,
+                  borderRadius: '12px',
+                  background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%)',
+                }}>
+                  <Typography variant="h6" sx={{ fontWeight: '700', color: '#4a5568' }}>
+                    {filteredItems.length}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Items Found
+                  </Typography>
+                </Box>
+              </Grid>
             </Grid>
-            <Grid item xs={12} md={3}>
-              <FormControl fullWidth>
-                <InputLabel>Status</InputLabel>
-                <Select
-                  value={statusFilter}
-                  label="Status"
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                >
-                  <MenuItem value="all">All Status</MenuItem>
-                  <MenuItem value="available">Available</MenuItem>
-                  <MenuItem value="assigned">Assigned</MenuItem>
-                  <MenuItem value="maintenance">Maintenance</MenuItem>
-                  <MenuItem value="retired">Retired</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} md={3}>
-              <FormControl fullWidth>
-                <InputLabel>Category</InputLabel>
-                <Select
-                  value={categoryFilter}
-                  label="Category"
-                  onChange={(e) => setCategoryFilter(e.target.value)}
-                >
-                  {categories.map((category) => (
-                    <MenuItem key={category} value={category}>
-                      {category === 'all' ? 'All Categories' : category}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} md={2}>
-              <Typography variant="body2" color="text.secondary">
-                {filteredItems.length} items found
-              </Typography>
-            </Grid>
-          </Grid>
-        </Paper>
+          </CardContent>
+        </GlassCard>
 
         {/* Items Table */}
-        <Paper>
-          <TableContainer>
+        <GlassCard>
+          <StyledTableContainer>
             <Table>
               <TableHead>
                 <TableRow>
-                  <TableCell>Name</TableCell>
+                  <TableCell>Item</TableCell>
                   <TableCell>Brand/Model</TableCell>
                   <TableCell>Serial Number</TableCell>
                   <TableCell>Category</TableCell>
                   <TableCell>Status</TableCell>
                   <TableCell>Condition</TableCell>
                   <TableCell>Location</TableCell>
-                  <TableCell>Purchase Price</TableCell>
-                  <TableCell>Actions</TableCell>
+                  <TableCell>Price</TableCell>
+                  <TableCell align="center">Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -294,39 +413,84 @@ const ViewItems = () => {
                   .map((item) => (
                     <TableRow key={item.id} hover>
                       <TableCell>
-                        <Typography variant="body1" fontWeight="medium">
-                          {item.name}
-                        </Typography>
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <Avatar sx={{ 
+                            mr: 2, 
+                            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                            width: 40,
+                            height: 40
+                          }}>
+                            {getCategoryIcon(item.category)}
+                          </Avatar>
+                          <Box>
+                            <Typography variant="body1" fontWeight="600" sx={{ color: '#2d3748' }}>
+                              {item.name}
+                            </Typography>
+                          </Box>
+                        </Box>
                       </TableCell>
                       <TableCell>
                         <Typography variant="body2" color="text.secondary">
-                          {item.brand} {item.model}
+                          {item.brand}
+                        </Typography>
+                        <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }}>
+                          {item.model}
                         </Typography>
                       </TableCell>
                       <TableCell>
-                        <Typography variant="body2" fontFamily="monospace">
+                        <Typography variant="body2" sx={{ 
+                          fontFamily: 'monospace',
+                          background: 'rgba(102, 126, 234, 0.1)',
+                          padding: '4px 8px',
+                          borderRadius: '6px',
+                          display: 'inline-block'
+                        }}>
                           {item.serialNumber}
                         </Typography>
                       </TableCell>
-                      <TableCell>{item.category}</TableCell>
                       <TableCell>
-                        <Chip
-                          label={item.status}
-                          color={statusColors[item.status]}
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <Box sx={{ mr: 1, color: '#667eea' }}>
+                            {getCategoryIcon(item.category)}
+                          </Box>
+                          {item.category}
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <StatusChip
+                          label={item.status.toUpperCase()}
+                          status={item.status}
                           size="small"
-                          sx={{ textTransform: 'capitalize' }}
                         />
                       </TableCell>
-                      <TableCell sx={{ textTransform: 'capitalize' }}>
-                        {item.condition}
+                      <TableCell>
+                        <Typography variant="body2" sx={{ 
+                          textTransform: 'capitalize',
+                          fontWeight: '500',
+                          color: item.condition === 'new' ? '#10b981' : 
+                                 item.condition === 'good' ? '#3b82f6' : 
+                                 item.condition === 'fair' ? '#f59e0b' : '#ef4444'
+                        }}>
+                          {item.condition}
+                        </Typography>
                       </TableCell>
                       <TableCell>{item.location}</TableCell>
-                      <TableCell>${item.purchasePrice.toFixed(2)}</TableCell>
                       <TableCell>
+                        <Typography variant="body2" fontWeight="600" sx={{ color: '#059669' }}>
+                          ${item.purchasePrice.toFixed(2)}
+                        </Typography>
+                      </TableCell>
+                      <TableCell align="center">
                         <Tooltip title="More actions">
                           <IconButton
                             onClick={(e) => handleMenuClick(e, item)}
                             size="small"
+                            sx={{
+                              background: 'rgba(102, 126, 234, 0.1)',
+                              '&:hover': {
+                                background: 'rgba(102, 126, 234, 0.2)',
+                              }
+                            }}
                           >
                             <MoreVertIcon />
                           </IconButton>
@@ -336,7 +500,7 @@ const ViewItems = () => {
                   ))}
               </TableBody>
             </Table>
-          </TableContainer>
+          </StyledTableContainer>
           <TablePagination
             rowsPerPageOptions={[5, 10, 25]}
             component="div"
@@ -345,26 +509,39 @@ const ViewItems = () => {
             page={page}
             onPageChange={handleChangePage}
             onRowsPerPageChange={handleChangeRowsPerPage}
+            sx={{
+              background: 'rgba(255, 255, 255, 0.8)',
+              borderBottomLeftRadius: '16px',
+              borderBottomRightRadius: '16px',
+            }}
           />
-        </Paper>
+        </GlassCard>
 
         {/* Action Menu */}
         <Menu
           anchorEl={anchorEl}
           open={Boolean(anchorEl)}
           onClose={handleMenuClose}
+          PaperProps={{
+            sx: {
+              borderRadius: '12px',
+              background: 'rgba(255, 255, 255, 0.95)',
+              backdropFilter: 'blur(20px)',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+            }
+          }}
         >
-          <MenuItem onClick={handleEdit}>
-            <EditIcon sx={{ mr: 1 }} fontSize="small" />
-            Edit
+          <MenuItem onClick={handleEdit} sx={{ borderRadius: '8px', mx: 1 }}>
+            <EditIcon sx={{ mr: 2, color: '#667eea' }} fontSize="small" />
+            Edit Item
           </MenuItem>
-          <MenuItem onClick={handleAssign}>
-            <AssignIcon sx={{ mr: 1 }} fontSize="small" />
-            Assign
+          <MenuItem onClick={handleAssign} sx={{ borderRadius: '8px', mx: 1 }}>
+            <AssignIcon sx={{ mr: 2, color: '#10b981' }} fontSize="small" />
+            Assign Item
           </MenuItem>
-          <MenuItem onClick={handleDelete} sx={{ color: 'error.main' }}>
-            <DeleteIcon sx={{ mr: 1 }} fontSize="small" />
-            Delete
+          <MenuItem onClick={handleDelete} sx={{ borderRadius: '8px', mx: 1, color: 'error.main' }}>
+            <DeleteIcon sx={{ mr: 2 }} fontSize="small" />
+            Delete Item
           </MenuItem>
         </Menu>
 
@@ -372,16 +549,38 @@ const ViewItems = () => {
         <Dialog
           open={deleteDialogOpen}
           onClose={() => setDeleteDialogOpen(false)}
+          PaperProps={{
+            sx: {
+              borderRadius: '20px',
+              background: 'rgba(255, 255, 255, 0.95)',
+              backdropFilter: 'blur(20px)',
+            }
+          }}
         >
-          <DialogTitle>Confirm Delete</DialogTitle>
+          <DialogTitle sx={{ fontWeight: '600' }}>Confirm Delete</DialogTitle>
           <DialogContent>
             <Typography>
               Are you sure you want to delete "{selectedItem?.name}"? This action cannot be undone.
             </Typography>
           </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
-            <Button onClick={confirmDelete} color="error" variant="contained">
+          <DialogActions sx={{ p: 3 }}>
+            <Button 
+              onClick={() => setDeleteDialogOpen(false)}
+              sx={{ borderRadius: '8px' }}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={confirmDelete} 
+              variant="contained" 
+              sx={{ 
+                borderRadius: '8px',
+                background: 'linear-gradient(135deg, #ef4444 0%, #f87171 100%)',
+                '&:hover': {
+                  background: 'linear-gradient(135deg, #dc2626 0%, #ef4444 100%)',
+                }
+              }}
+            >
               Delete
             </Button>
           </DialogActions>
