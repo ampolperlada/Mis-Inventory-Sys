@@ -40,7 +40,8 @@ import {
   Warning,
   CheckCircleOutline,
   Star,
-  AutoAwesome
+  AutoAwesome,
+  AssignmentTurnedIn as Assignment
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 
@@ -645,10 +646,20 @@ const Dashboard = ({ children }) => {
           sx={{
             flexGrow: 1,
             width: { md: `calc(100% - ${drawerWidth}px)` },
+            display: 'flex',
+            flexDirection: 'column',
           }}
         >
           <Toolbar />
-          <Box sx={{ p: 4 }}>
+          <Box sx={{ 
+            flex: 1,
+            p: 4,
+            maxWidth: '1400px',
+            mx: 'auto',
+            width: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+          }}>
             {location.pathname === '/' ? dashboardContent : children}
           </Box>
         </MainContainer>

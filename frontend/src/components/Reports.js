@@ -463,8 +463,14 @@ const Reports = () => {
 
   return (
     <Dashboard>
-      <Box sx={{ position: 'relative', zIndex: 1 }}>
-        <Box sx={{ mb: 4 }}>
+      <Box sx={{ 
+        position: 'relative', 
+        zIndex: 1,
+        maxWidth: '1400px',
+        mx: 'auto',
+        width: '100%'
+      }}>
+        <Box sx={{ mb: 4, textAlign: 'center' }}>
           <Typography variant="h4" sx={{ fontWeight: '700', color: 'white', mb: 1 }}>
             Reports & Analytics
           </Typography>

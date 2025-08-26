@@ -285,8 +285,14 @@ const ViewItems = () => {
 
   return (
     <Dashboard>
-      <Box sx={{ position: 'relative', zIndex: 1 }}>
-        <Box sx={{ mb: 4 }}>
+      <Box sx={{ 
+        position: 'relative', 
+        zIndex: 1,
+        maxWidth: '1400px',
+        mx: 'auto',
+        width: '100%'
+      }}>
+        <Box sx={{ mb: 4, textAlign: 'center' }}>
           <Typography variant="h4" sx={{ fontWeight: '700', color: 'white', mb: 1 }}>
             Inventory Items
           </Typography>
@@ -296,8 +302,7 @@ const ViewItems = () => {
         </Box>
 
         {/* Header with Add Button */}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-          <Box />
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', mb: 3 }}>
           <ModernButton
             startIcon={<AddIcon />}
             onClick={() => navigate('/add-item')}
@@ -307,7 +312,7 @@ const ViewItems = () => {
         </Box>
 
         {/* Filters and Search */}
-        <GlassCard sx={{ mb: 3 }}>
+        <GlassCard sx={{ mb: 3, width: '100%' }}>
           <CardContent sx={{ p: 3 }}>
             <Grid container spacing={3} alignItems="center">
               <Grid item xs={12} md={4}>
@@ -376,12 +381,13 @@ const ViewItems = () => {
                   textAlign: 'center',
                   p: 2,
                   borderRadius: '12px',
-                  background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%)',
+                  background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(6, 182, 212, 0.15) 100%)',
+                  border: '1px solid rgba(139, 92, 246, 0.3)',
                 }}>
-                  <Typography variant="h6" sx={{ fontWeight: '700', color: '#4a5568' }}>
+                  <Typography variant="h6" sx={{ fontWeight: '700', color: 'white' }}>
                     {filteredItems.length}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
                     Items Found
                   </Typography>
                 </Box>
@@ -391,7 +397,7 @@ const ViewItems = () => {
         </GlassCard>
 
         {/* Items Table */}
-        <GlassCard>
+        <GlassCard sx={{ width: '100%' }}>
           <StyledTableContainer>
             <Table>
               <TableHead>
@@ -416,7 +422,7 @@ const ViewItems = () => {
                         <Box sx={{ display: 'flex', alignItems: 'center' }}>
                           <Avatar sx={{ 
                             mr: 2, 
-                            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                            background: 'linear-gradient(135deg, #8b5cf6 0%, #06b6d4 100%)',
                             width: 40,
                             height: 40
                           }}>
@@ -440,7 +446,7 @@ const ViewItems = () => {
                       <TableCell>
                         <Typography variant="body2" sx={{ 
                           fontFamily: 'monospace',
-                          background: 'rgba(102, 126, 234, 0.1)',
+                          background: 'rgba(139, 92, 246, 0.1)',
                           padding: '4px 8px',
                           borderRadius: '6px',
                           display: 'inline-block'
@@ -450,7 +456,7 @@ const ViewItems = () => {
                       </TableCell>
                       <TableCell>
                         <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                          <Box sx={{ mr: 1, color: '#667eea' }}>
+                          <Box sx={{ mr: 1, color: '#8b5cf6' }}>
                             {getCategoryIcon(item.category)}
                           </Box>
                           {item.category}
@@ -486,9 +492,9 @@ const ViewItems = () => {
                             onClick={(e) => handleMenuClick(e, item)}
                             size="small"
                             sx={{
-                              background: 'rgba(102, 126, 234, 0.1)',
+                              background: 'rgba(139, 92, 246, 0.1)',
                               '&:hover': {
-                                background: 'rgba(102, 126, 234, 0.2)',
+                                background: 'rgba(139, 92, 246, 0.2)',
                               }
                             }}
                           >
