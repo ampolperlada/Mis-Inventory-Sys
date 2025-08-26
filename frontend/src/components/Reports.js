@@ -1,348 +1,331 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
-  Typography,
   Paper,
+  Typography,
+  Button,
   Grid,
   Card,
   CardContent,
-  Button,
-  TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Divider,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  Chip,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  TextField,
+  CircularProgress,
+  Alert
 } from '@mui/material';
 import {
-  Assessment as ReportsIcon,
-  GetApp as ExportIcon,
-  PictureAsPdf as PdfIcon,
-  TableChart as ExcelIcon,
-  BarChart as ChartIcon,
+  Download,
+  BarChart,
+  TrendingUp,
+  Inventory,
+  Assignment
 } from '@mui/icons-material';
-import Dashboard from './Dashboard';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 
 const Reports = () => {
+  const [loading, setLoading] = useState(false);
+  const [reportData, setReportData] = useState(null);
   const [reportType, setReportType] = useState('inventory');
   const [dateRange, setDateRange] = useState({
-    startDate: '',
-    endDate: '',
+    startDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+    endDate: new Date()
   });
-  const [category, setCategory] = useState('all');
+  const [stats, setStats] = useState({
+    totalItems: 0,
+    assignedItems: 0,
+    availableItems: 0,
+    maintenanceItems: 0
+  });
 
-  // Mock report data
-  const inventoryStats = {
-    totalItems: 1234,
-    available: 892,
-    assigned: 298,
-    maintenance: 44,
-    totalValue: 125450.00,
+  // Sample data for demo
+  const sampleReportData = {
+    inventory: [
+      { id: 1, name: 'Dell Laptop', category: 'Electronics', status: 'assigned', assignedTo: 'John Doe' },
+      { id: 2, name: 'HP Printer', category: 'Electronics', status: 'available', assignedTo: null },
+      { id: 3, name: 'Office Chair', category: 'Furniture', status: 'assigned', assignedTo: 'Jane Smith' }
+    ],
+    assignments: [
+      { id: 1, item: 'Dell Laptop', assignedTo: 'John Doe', date: '2024-01-15', status: 'active' },
+      { id: 2, item: 'Office Chair', assignedTo: 'Jane Smith', date: '2024-01-20', status: 'active' }
+    ]
   };
 
-  const categoryStats = [
-    { category: 'Laptops', count: 245, value: 485750 },
-    { category: 'Monitors', count: 189, value: 94500 },
-    { category: 'Phones', count: 156, value: 234000 },
-    { category: 'Furniture', count: 89, value: 178000 },
-    { category: 'Peripherals', count: 234, value: 46800 },
-  ];
+  useEffect(() => {
+    // Simulate loading stats
+    setStats({
+      totalItems: 150,
+      assignedItems: 89,
+      availableItems: 45,
+      maintenanceItems: 16
+    });
+    setReportData(sampleReportData);
+  }, []);
 
-  const recentAssignments = [
-    { id: 1, item: 'MacBook Pro 14"', assignedTo: 'John Doe', date: '2024-01-15', status: 'active' },
-    { id: 2, item: 'Dell Monitor', assignedTo: 'Jane Smith', date: '2024-01-14', status: 'active' },
-    { id: 3, item: 'iPhone 15', assignedTo: 'Bob Wilson', date: '2024-01-13', status: 'returned' },
-  ];
-
-  const handleExport = (format) => {
-    console.log(`Exporting report in ${format} format`);
-    // Mock export functionality
-    alert(`Exporting ${reportType} report as ${format.toUpperCase()}...`);
+  const handleGenerateReport = async () => {
+    setLoading(true);
+    try {
+      // Simulate API call
+      setTimeout(() => {
+        setReportData(sampleReportData);
+        setLoading(false);
+      }, 1000);
+    } catch (error) {
+      console.error('Error generating report:', error);
+      setLoading(false);
+    }
   };
 
-  const ReportsContent = () => (
-    <Box sx={{ flexGrow: 1, p: 3 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-        <ReportsIcon sx={{ mr: 1, color: 'primary.main' }} />
-        <Typography variant="h5">Reports & Analytics</Typography>
-      </Box>
+  const handleExportReport = (format) => {
+    // Simulate export functionality
+    console.log(`Exporting report as ${format}`);
+    alert(`Report exported as ${format.toUpperCase()}`);
+  };
 
-      {/* Report Filters */}
-      <Paper sx={{ p: 3, mb: 3 }}>
-        <Typography variant="h6" gutterBottom>
-          Report Parameters
-        </Typography>
-        <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} md={3}>
-            <FormControl fullWidth>
-              <InputLabel>Report Type</InputLabel>
-              <Select
-                value={reportType}
-                label="Report Type"
-                onChange={(e) => setReportType(e.target.value)}
-              >
-                <MenuItem value="inventory">Inventory Summary</MenuItem>
-                <MenuItem value="assignments">Assignment Report</MenuItem>
-                <MenuItem value="financial">Financial Report</MenuItem>
-                <MenuItem value="maintenance">Maintenance Log</MenuItem>
-              </Select>
-            </FormControl>
-          </Grid>
-          <Grid item xs={12} md={2}>
-            <TextField
-              fullWidth
-              label="Start Date"
-              type="date"
-              value={dateRange.startDate}
-              onChange={(e) => setDateRange({...dateRange, startDate: e.target.value})}
-              InputLabelProps={{ shrink: true }}
-            />
-          </Grid>
-          <Grid item xs={12} md={2}>
-            <TextField
-              fullWidth
-              label="End Date"
-              type="date"
-              value={dateRange.endDate}
-              onChange={(e) => setDateRange({...dateRange, endDate: e.target.value})}
-              InputLabelProps={{ shrink: true }}
-            />
-          </Grid>
-          <Grid item xs={12} md={2}>
-            <FormControl fullWidth>
-              <InputLabel>Category</InputLabel>
-              <Select
-                value={category}
-                label="Category"
-                onChange={(e) => setCategory(e.target.value)}
-              >
-                <MenuItem value="all">All Categories</MenuItem>
-                <MenuItem value="laptops">Laptops</MenuItem>
-                <MenuItem value="monitors">Monitors</MenuItem>
-                <MenuItem value="phones">Phones</MenuItem>
-                <MenuItem value="furniture">Furniture</MenuItem>
-              </Select>
-            </FormControl>
-          </Grid>
-          <Grid item xs={12} md={3}>
-            <Box sx={{ display: 'flex', gap: 1 }}>
-              <Button
-                variant="outlined"
-                size="small"
-                startIcon={<PdfIcon />}
-                onClick={() => handleExport('pdf')}
-              >
-                PDF
-              </Button>
-              <Button
-                variant="outlined"
-                size="small"
-                startIcon={<ExcelIcon />}
-                onClick={() => handleExport('excel')}
-              >
-                Excel
-              </Button>
+  const renderStatsCards = () => (
+    <Grid container spacing={3} sx={{ mb: 4 }}>
+      <Grid item xs={12} sm={6} md={3}>
+        <Card>
+          <CardContent>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <Inventory sx={{ fontSize: 40, color: 'primary.main', mr: 2 }} />
+              <Box>
+                <Typography variant="h4">{stats.totalItems}</Typography>
+                <Typography color="text.secondary">Total Items</Typography>
+              </Box>
             </Box>
-          </Grid>
-        </Grid>
-      </Paper>
-
-      {/* Summary Statistics */}
-      <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid item xs={12} md={8}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Inventory Overview
-              </Typography>
-              <Grid container spacing={2}>
-                <Grid item xs={6} md={3}>
-                  <Box sx={{ textAlign: 'center' }}>
-                    <Typography variant="h4" color="primary.main">
-                      {inventoryStats.totalItems}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Total Items
-                    </Typography>
-                  </Box>
-                </Grid>
-                <Grid item xs={6} md={3}>
-                  <Box sx={{ textAlign: 'center' }}>
-                    <Typography variant="h4" color="success.main">
-                      {inventoryStats.available}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Available
-                    </Typography>
-                  </Box>
-                </Grid>
-                <Grid item xs={6} md={3}>
-                  <Box sx={{ textAlign: 'center' }}>
-                    <Typography variant="h4" color="warning.main">
-                      {inventoryStats.assigned}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Assigned
-                    </Typography>
-                  </Box>
-                </Grid>
-                <Grid item xs={6} md={3}>
-                  <Box sx={{ textAlign: 'center' }}>
-                    <Typography variant="h4" color="error.main">
-                      {inventoryStats.maintenance}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Maintenance
-                    </Typography>
-                  </Box>
-                </Grid>
-              </Grid>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={4}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Total Value
-              </Typography>
-              <Typography variant="h3" color="primary.main">
-                ${inventoryStats.totalValue.toLocaleString()}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Current inventory valuation
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
+          </CardContent>
+        </Card>
       </Grid>
-
-      {/* Category Breakdown */}
-      <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Items by Category
-              </Typography>
-              <TableContainer>
-                <Table size="small">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Category</TableCell>
-                      <TableCell align="right">Count</TableCell>
-                      <TableCell align="right">Value</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {categoryStats.map((stat) => (
-                      <TableRow key={stat.category}>
-                        <TableCell>{stat.category}</TableCell>
-                        <TableCell align="right">{stat.count}</TableCell>
-                        <TableCell align="right">
-                          ${stat.value.toLocaleString()}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Recent Assignments
-              </Typography>
-              <TableContainer>
-                <Table size="small">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Item</TableCell>
-                      <TableCell>Assigned To</TableCell>
-                      <TableCell>Date</TableCell>
-                      <TableCell>Status</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {recentAssignments.map((assignment) => (
-                      <TableRow key={assignment.id}>
-                        <TableCell>{assignment.item}</TableCell>
-                        <TableCell>{assignment.assignedTo}</TableCell>
-                        <TableCell>{assignment.date}</TableCell>
-                        <TableCell>
-                          <Chip
-                            label={assignment.status}
-                            size="small"
-                            color={assignment.status === 'active' ? 'warning' : 'success'}
-                          />
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </CardContent>
-          </Card>
-        </Grid>
+      <Grid item xs={12} sm={6} md={3}>
+        <Card>
+          <CardContent>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <Assignment sx={{ fontSize: 40, color: 'warning.main', mr: 2 }} />
+              <Box>
+                <Typography variant="h4">{stats.assignedItems}</Typography>
+                <Typography color="text.secondary">Assigned</Typography>
+              </Box>
+            </Box>
+          </CardContent>
+        </Card>
       </Grid>
-
-      {/* Quick Actions */}
-      <Paper sx={{ p: 3 }}>
-        <Typography variant="h6" gutterBottom>
-          Quick Report Actions
-        </Typography>
-        <Grid container spacing={2}>
-          <Grid item xs={12} sm={6} md={3}>
-            <Button
-              fullWidth
-              variant="outlined"
-              startIcon={<ChartIcon />}
-              onClick={() => handleExport('chart')}
-            >
-              Generate Chart
-            </Button>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <Button
-              fullWidth
-              variant="outlined"
-              startIcon={<ExportIcon />}
-              onClick={() => handleExport('detailed')}
-            >
-              Detailed Report
-            </Button>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <Button
-              fullWidth
-              variant="outlined"
-              onClick={() => alert('Email report functionality coming soon')}
-            >
-              Email Report
-            </Button>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <Button
-              fullWidth
-              variant="outlined"
-              onClick={() => alert('Schedule report functionality coming soon')}
-            >
-              Schedule Report
-            </Button>
-          </Grid>
-        </Grid>
-      </Paper>
-    </Box>
+      <Grid item xs={12} sm={6} md={3}>
+        <Card>
+          <CardContent>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <TrendingUp sx={{ fontSize: 40, color: 'success.main', mr: 2 }} />
+              <Box>
+                <Typography variant="h4">{stats.availableItems}</Typography>
+                <Typography color="text.secondary">Available</Typography>
+              </Box>
+            </Box>
+          </CardContent>
+        </Card>
+      </Grid>
+      <Grid item xs={12} sm={6} md={3}>
+        <Card>
+          <CardContent>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <BarChart sx={{ fontSize: 40, color: 'error.main', mr: 2 }} />
+              <Box>
+                <Typography variant="h4">{stats.maintenanceItems}</Typography>
+                <Typography color="text.secondary">Maintenance</Typography>
+              </Box>
+            </Box>
+          </CardContent>
+        </Card>
+      </Grid>
+    </Grid>
   );
 
-  return <Dashboard>{<ReportsContent />}</Dashboard>;
+  const renderReportFilters = () => (
+    <Paper sx={{ p: 3, mb: 3 }}>
+      <Typography variant="h6" gutterBottom>
+        Report Filters
+      </Typography>
+      <Grid container spacing={3} alignItems="center">
+        <Grid item xs={12} sm={6} md={3}>
+          <FormControl fullWidth>
+            <InputLabel>Report Type</InputLabel>
+            <Select
+              value={reportType}
+              onChange={(e) => setReportType(e.target.value)}
+              label="Report Type"
+            >
+              <MenuItem value="inventory">Inventory Report</MenuItem>
+              <MenuItem value="assignments">Assignment Report</MenuItem>
+              <MenuItem value="maintenance">Maintenance Report</MenuItem>
+              <MenuItem value="usage">Usage Report</MenuItem>
+            </Select>
+          </FormControl>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <LocalizationProvider dateAdapter={AdapterDateFns}>
+            <DatePicker
+              label="Start Date"
+              value={dateRange.startDate}
+              onChange={(newValue) => setDateRange(prev => ({ ...prev, startDate: newValue }))}
+              renderInput={(params) => <TextField {...params} fullWidth />}
+            />
+          </LocalizationProvider>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <LocalizationProvider dateAdapter={AdapterDateFns}>
+            <DatePicker
+              label="End Date"
+              value={dateRange.endDate}
+              onChange={(newValue) => setDateRange(prev => ({ ...prev, endDate: newValue }))}
+              renderInput={(params) => <TextField {...params} fullWidth />}
+            />
+          </LocalizationProvider>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Button
+            variant="contained"
+            onClick={handleGenerateReport}
+            disabled={loading}
+            fullWidth
+            sx={{ height: 56 }}
+          >
+            {loading ? <CircularProgress size={24} /> : 'Generate Report'}
+          </Button>
+        </Grid>
+      </Grid>
+    </Paper>
+  );
+
+  const renderReportTable = () => {
+    if (!reportData) return null;
+
+    const data = reportType === 'inventory' ? reportData.inventory : reportData.assignments;
+    
+    return (
+      <Paper sx={{ p: 3 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Typography variant="h6">
+            {reportType === 'inventory' ? 'Inventory Report' : 'Assignment Report'}
+          </Typography>
+          <Box>
+            <Button
+              startIcon={<Download />}
+              onClick={() => handleExportReport('pdf')}
+              sx={{ mr: 1 }}
+            >
+              Export PDF
+            </Button>
+            <Button
+              startIcon={<Download />}
+              onClick={() => handleExportReport('excel')}
+              variant="outlined"
+            >
+              Export Excel
+            </Button>
+          </Box>
+        </Box>
+        
+        <TableContainer>
+          <Table>
+            <TableHead>
+              <TableRow>
+                {reportType === 'inventory' ? (
+                  <>
+                    <TableCell>ID</TableCell>
+                    <TableCell>Name</TableCell>
+                    <TableCell>Category</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell>Assigned To</TableCell>
+                  </>
+                ) : (
+                  <>
+                    <TableCell>ID</TableCell>
+                    <TableCell>Item</TableCell>
+                    <TableCell>Assigned To</TableCell>
+                    <TableCell>Date</TableCell>
+                    <TableCell>Status</TableCell>
+                  </>
+                )}
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {data.map((row) => (
+                <TableRow key={row.id}>
+                  {reportType === 'inventory' ? (
+                    <>
+                      <TableCell>{row.id}</TableCell>
+                      <TableCell>{row.name}</TableCell>
+                      <TableCell>{row.category}</TableCell>
+                      <TableCell>
+                        <Box
+                          sx={{
+                            px: 1,
+                            py: 0.5,
+                            borderRadius: 1,
+                            fontSize: '0.875rem',
+                            fontWeight: 'medium',
+                            backgroundColor: row.status === 'available' ? 'success.light' : 
+                                           row.status === 'assigned' ? 'warning.light' : 'error.light',
+                            color: row.status === 'available' ? 'success.dark' : 
+                                   row.status === 'assigned' ? 'warning.dark' : 'error.dark'
+                          }}
+                        >
+                          {row.status.toUpperCase()}
+                        </Box>
+                      </TableCell>
+                      <TableCell>{row.assignedTo || 'N/A'}</TableCell>
+                    </>
+                  ) : (
+                    <>
+                      <TableCell>{row.id}</TableCell>
+                      <TableCell>{row.item}</TableCell>
+                      <TableCell>{row.assignedTo}</TableCell>
+                      <TableCell>{row.date}</TableCell>
+                      <TableCell>
+                        <Box
+                          sx={{
+                            px: 1,
+                            py: 0.5,
+                            borderRadius: 1,
+                            fontSize: '0.875rem',
+                            fontWeight: 'medium',
+                            backgroundColor: row.status === 'active' ? 'success.light' : 'error.light',
+                            color: row.status === 'active' ? 'success.dark' : 'error.dark'
+                          }}
+                        >
+                          {row.status.toUpperCase()}
+                        </Box>
+                      </TableCell>
+                    </>
+                  )}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Paper>
+    );
+  };
+
+  return (
+    <Box sx={{ p: 3 }}>
+      <Typography variant="h4" gutterBottom>
+        Reports & Analytics
+      </Typography>
+      
+      {renderStatsCards()}
+      {renderReportFilters()}
+      {renderReportTable()}
+    </Box>
+  );
+};
+
+export default Reports;
