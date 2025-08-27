@@ -2,278 +2,303 @@ import React, { useState } from 'react';
 import {
   Box,
   Typography,
-  Paper,
   TextField,
   Button,
-  Grid,
   Card,
   CardContent,
-  Autocomplete,
-  Alert,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
+  Grid,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemIcon,
+  Avatar,
   Chip,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
+  Alert,
+  Autocomplete
 } from '@mui/material';
+import { styled } from '@mui/material/styles';
 import {
-  Input as CheckInIcon,
   Search as SearchIcon,
-  AssignmentReturn as ReturnIcon,
-  CheckCircle as CheckCircleIcon,
+  CheckCircle as CheckInIcon,
+  Assignment,
+  Laptop,
+  Monitor,
+  Phone,
+  Chair,
+  Keyboard
 } from '@mui/icons-material';
 import Dashboard from './Dashboard';
 
-// Mock assigned items
+const GlassCard = styled(Card)(({ theme }) => ({
+  background: 'rgba(255, 255, 255, 0.02)',
+  backdropFilter: 'blur(20px)',
+  border: '1px solid rgba(139, 92, 246, 0.2)',
+  borderRadius: '24px',
+  transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+}));
+
+const ModernButton = styled(Button)(({ theme }) => ({
+  borderRadius: '16px',
+  padding: '16px 32px',
+  background: 'linear-gradient(135deg, #8b5cf6 0%, #06b6d4 100%)',
+  color: 'white',
+  fontWeight: '700',
+  fontSize: '16px',
+  textTransform: 'none',
+  transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+  boxShadow: '0 8px 32px rgba(139, 92, 246, 0.4)',
+  '&:hover': {
+    transform: 'translateY(-4px) scale(1.05)',
+    boxShadow: '0 20px 40px rgba(139, 92, 246, 0.6)',
+  },
+}));
+
+const categoryIcons = {
+  'Laptops': Laptop,
+  'Monitors': Monitor,
+  'Phones': Phone,
+  'Furniture': Chair,
+  'Peripherals': Keyboard,
+};
+
 const assignedItems = [
+  {
+    id: 1,
+    name: 'MacBook Pro 14"',
+    assignedTo: 'John Doe',
+    category: 'Laptops',
+    serialNumber: 'MBA001',
+    assignedDate: '2024-01-15',
+  },
   {
     id: 2,
     name: 'Dell Monitor 27"',
+    assignedTo: 'Jane Smith',
+    category: 'Monitors',
     serialNumber: 'DEL001',
-    assignedTo: 'John Doe',
-    assignedDate: '2024-01-15',
-    department: 'IT Department',
-    status: 'assigned'
+    assignedDate: '2024-01-20',
   },
   {
     id: 3,
     name: 'iPhone 15 Pro',
+    assignedTo: 'Mike Johnson',
+    category: 'Phones',
     serialNumber: 'IPH001',
-    assignedTo: 'Jane Smith',
     assignedDate: '2024-02-01',
-    department: 'Marketing',
-    status: 'assigned'
   },
 ];
 
 const CheckInItem = () => {
+  const [searchTerm, setSearchTerm] = useState('');
   const [selectedItem, setSelectedItem] = useState(null);
-  const [returnData, setReturnData] = useState({
-    condition: 'good',
-    notes: '',
-    returnDate: new Date().toISOString().split('T')[0],
-  });
-  const [completed, setCompleted] = useState(false);
+  const [notes, setNotes] = useState('');
+  const [success, setSuccess] = useState(false);
 
-  const handleReturn = () => {
-    console.log('Returning item:', { selectedItem, returnData });
-    setCompleted(true);
+  const filteredItems = assignedItems.filter(item =>
+    item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.assignedTo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.serialNumber.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const handleCheckIn = () => {
+    if (selectedItem) {
+      setSuccess(true);
+      setTimeout(() => {
+        setSuccess(false);
+        setSelectedItem(null);
+        setNotes('');
+        setSearchTerm('');
+      }, 3000);
+    }
   };
 
-  const handleReset = () => {
-    setSelectedItem(null);
-    setReturnData({
-      condition: 'good',
-      notes: '',
-      returnDate: new Date().toISOString().split('T')[0],
-    });
-    setCompleted(false);
+  const getCategoryIcon = (category) => {
+    const IconComponent = categoryIcons[category] || Laptop;
+    return <IconComponent />;
   };
 
-  const CheckInContent = () => (
-    <Box sx={{ flexGrow: 1, p: 3 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-        <CheckInIcon sx={{ mr: 1, color: 'primary.main' }} />
-        <Typography variant="h5">Check In Item</Typography>
-      </Box>
+  return (
+    <Dashboard>
+      <Box sx={{ 
+        position: 'relative', 
+        zIndex: 1,
+        maxWidth: '1000px',
+        mx: 'auto',
+        width: '100%'
+      }}>
+        <Box sx={{ mb: 4, textAlign: 'center' }}>
+          <CheckInIcon sx={{ fontSize: 64, color: '#8b5cf6', mb: 2 }} />
+          <Typography variant="h4" sx={{ fontWeight: '700', color: 'white', mb: 1 }}>
+            Check In Item
+          </Typography>
+          <Typography variant="body1" sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>
+            Return assigned items to inventory
+          </Typography>
+        </Box>
 
-      {completed ? (
-        <Card>
-          <CardContent sx={{ textAlign: 'center', py: 4 }}>
-            <CheckCircleIcon sx={{ fontSize: 64, color: 'success.main', mb: 2 }} />
-            <Typography variant="h5" gutterBottom>
-              Return Completed!
-            </Typography>
-            <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-              {selectedItem?.name} has been successfully returned and is now available.
-            </Typography>
-            <Button variant="contained" onClick={handleReset}>
-              Return Another Item
-            </Button>
-          </CardContent>
-        </Card>
-      ) : (
-        <Grid container spacing={3}>
-          {/* Item Selection */}
+        {success && (
+          <Alert severity="success" sx={{ mb: 3, borderRadius: '12px' }}>
+            Item "{selectedItem?.name}" has been successfully checked in!
+          </Alert>
+        )}
+
+        <Grid container spacing={4}>
           <Grid item xs={12} md={6}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
+            <GlassCard>
+              <CardContent sx={{ p: 4 }}>
+                <Typography variant="h6" sx={{ color: 'white', mb: 3, fontWeight: '600' }}>
                   Select Item to Return
                 </Typography>
+                
                 <Autocomplete
-                  options={assignedItems}
-                  getOptionLabel={(option) => `${option.name} (${option.serialNumber}) - ${option.assignedTo}`}
+                  options={filteredItems}
+                  getOptionLabel={(option) => `${option.name} - ${option.assignedTo}`}
                   value={selectedItem}
                   onChange={(event, newValue) => setSelectedItem(newValue)}
                   renderInput={(params) => (
                     <TextField
                       {...params}
-                      label="Search assigned items"
-                      placeholder="Type item name, serial number, or employee name..."
+                      placeholder="Search assigned items..."
                       fullWidth
+                      sx={{
+                        mb: 3,
+                        '& .MuiOutlinedInput-root': {
+                          borderRadius: '12px',
+                          background: 'rgba(255, 255, 255, 0.1)',
+                          color: 'white',
+                        }
+                      }}
                     />
                   )}
                   renderOption={(props, option) => (
-                    <Box component="li" {...props}>
-                      <Box sx={{ width: '100%' }}>
-                        <Typography variant="body1">{option.name}</Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          S/N: {option.serialNumber} | Assigned to: {option.assignedTo}
+                    <Box component="li" {...props} sx={{ p: 2 }}>
+                      <Avatar sx={{ 
+                        mr: 2, 
+                        background: 'linear-gradient(135deg, #8b5cf6 0%, #06b6d4 100%)',
+                      }}>
+                        {getCategoryIcon(option.category)}
+                      </Avatar>
+                      <Box sx={{ flexGrow: 1 }}>
+                        <Typography variant="body1" fontWeight="600">
+                          {option.name}
                         </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          Since: {new Date(option.assignedDate).toLocaleDateString()}
+                        <Typography variant="body2" color="text.secondary">
+                          Assigned to: {option.assignedTo}
                         </Typography>
                       </Box>
                     </Box>
                   )}
                 />
 
-                {selectedItem && (
-                  <Box sx={{ mt: 2 }}>
-                    <Alert severity="info">
-                      Selected: <strong>{selectedItem.name}</strong> assigned to <strong>{selectedItem.assignedTo}</strong>
-                    </Alert>
-                  </Box>
-                )}
+                <TextField
+                  fullWidth
+                  multiline
+                  rows={4}
+                  placeholder="Add notes about the return..."
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  sx={{
+                    mb: 3,
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: '12px',
+                      background: 'rgba(255, 255, 255, 0.1)',
+                      color: 'white',
+                    }
+                  }}
+                />
+
+                <ModernButton
+                  fullWidth
+                  startIcon={<CheckInIcon />}
+                  onClick={handleCheckIn}
+                  disabled={!selectedItem}
+                >
+                  Check In Item
+                </ModernButton>
               </CardContent>
-            </Card>
+            </GlassCard>
           </Grid>
 
-          {/* Assignment Details */}
-          {selectedItem && (
-            <Grid item xs={12} md={6}>
-              <Card>
-                <CardContent>
-                  <Typography variant="h6" gutterBottom>
-                    Assignment Details
+          <Grid item xs={12} md={6}>
+            {selectedItem ? (
+              <GlassCard>
+                <CardContent sx={{ p: 4 }}>
+                  <Typography variant="h6" sx={{ color: 'white', mb: 3, fontWeight: '600' }}>
+                    Item Details
                   </Typography>
-                  <TableContainer>
-                    <Table size="small">
-                      <TableBody>
-                        <TableRow>
-                          <TableCell><strong>Item Name</strong></TableCell>
-                          <TableCell>{selectedItem.name}</TableCell>
-                        </TableRow>
-                        <TableRow>
-                          <TableCell><strong>Serial Number</strong></TableCell>
-                          <TableCell>{selectedItem.serialNumber}</TableCell>
-                        </TableRow>
-                        <TableRow>
-                          <TableCell><strong>Assigned To</strong></TableCell>
-                          <TableCell>{selectedItem.assignedTo}</TableCell>
-                        </TableRow>
-                        <TableRow>
-                          <TableCell><strong>Department</strong></TableCell>
-                          <TableCell>{selectedItem.department}</TableCell>
-                        </TableRow>
-                        <TableRow>
-                          <TableCell><strong>Assigned Date</strong></TableCell>
-                          <TableCell>{new Date(selectedItem.assignedDate).toLocaleDateString()}</TableCell>
-                        </TableRow>
-                        <TableRow>
-                          <TableCell><strong>Days Assigned</strong></TableCell>
-                          <TableCell>
-                            {Math.floor((new Date() - new Date(selectedItem.assignedDate)) / (1000 * 60 * 60 * 24))} days
-                          </TableCell>
-                        </TableRow>
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
-                </CardContent>
-              </Card>
-            </Grid>
-          )}
+                  
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                    <Avatar sx={{ 
+                      mr: 2, 
+                      background: 'linear-gradient(135deg, #8b5cf6 0%, #06b6d4 100%)',
+                      width: 56,
+                      height: 56
+                    }}>
+                      {getCategoryIcon(selectedItem.category)}
+                    </Avatar>
+                    <Box>
+                      <Typography variant="h6" sx={{ color: 'white', fontWeight: '600' }}>
+                        {selectedItem.name}
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+                        {selectedItem.category}
+                      </Typography>
+                    </Box>
+                  </Box>
 
-          {/* Return Information */}
-          {selectedItem && (
-            <Grid item xs={12}>
-              <Card>
-                <CardContent>
-                  <Typography variant="h6" gutterBottom>
-                    Return Information
-                  </Typography>
-                  <Grid container spacing={2}>
-                    <Grid item xs={12} md={4}>
-                      <TextField
-                        fullWidth
-                        label="Return Date"
-                        type="date"
-                        value={returnData.returnDate}
-                        onChange={(e) => setReturnData({...returnData, returnDate: e.target.value})}
-                        InputLabelProps={{ shrink: true }}
-                      />
-                    </Grid>
-                    <Grid item xs={12} md={4}>
-                      <FormControl fullWidth>
-                        <InputLabel>Item Condition</InputLabel>
-                        <Select
-                          value={returnData.condition}
-                          label="Item Condition"
-                          onChange={(e) => setReturnData({...returnData, condition: e.target.value})}
-                        >
-                          <MenuItem value="new">New</MenuItem>
-                          <MenuItem value="good">Good</MenuItem>
-                          <MenuItem value="fair">Fair</MenuItem>
-                          <MenuItem value="poor">Poor</MenuItem>
-                        </Select>
-                      </FormControl>
-                    </Grid>
-                    <Grid item xs={12} md={4}>
-                      <Chip
-                        label={`Condition: ${returnData.condition}`}
-                        color={
-                          returnData.condition === 'new' ? 'success' :
-                          returnData.condition === 'good' ? 'primary' :
-                          returnData.condition === 'fair' ? 'warning' : 'error'
-                        }
-                        sx={{ mt: 1 }}
-                      />
-                    </Grid>
-                    <Grid item xs={12}>
-                      <TextField
-                        fullWidth
-                        label="Return Notes"
-                        multiline
-                        rows={3}
-                        value={returnData.notes}
-                        onChange={(e) => setReturnData({...returnData, notes: e.target.value})}
-                        placeholder="Any issues, damages, or notes about the returned item..."
-                      />
-                    </Grid>
-                  </Grid>
+                  <Box sx={{ space: 2 }}>
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.6)', mb: 1 }}>
+                        Assigned To
+                      </Typography>
+                      <Typography variant="body1" sx={{ color: 'white', fontWeight: '600' }}>
+                        {selectedItem.assignedTo}
+                      </Typography>
+                    </Box>
 
-                  <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3, gap: 2 }}>
-                    <Button
-                      variant="outlined"
-                      onClick={() => setSelectedItem(null)}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      variant="contained"
-                      onClick={handleReturn}
-                      startIcon={<ReturnIcon />}
-                    >
-                      Complete Return
-                    </Button>
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.6)', mb: 1 }}>
+                        Serial Number
+                      </Typography>
+                      <Chip 
+                        label={selectedItem.serialNumber}
+                        sx={{ 
+                          background: 'rgba(139, 92, 246, 0.2)',
+                          color: '#8b5cf6',
+                          fontFamily: 'monospace'
+                        }}
+                      />
+                    </Box>
+
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.6)', mb: 1 }}>
+                        Assigned Date
+                      </Typography>
+                      <Typography variant="body1" sx={{ color: 'white' }}>
+                        {selectedItem.assignedDate}
+                      </Typography>
+                    </Box>
                   </Box>
                 </CardContent>
-              </Card>
-            </Grid>
-          )}
+              </GlassCard>
+            ) : (
+              <GlassCard>
+                <CardContent sx={{ p: 4, textAlign: 'center' }}>
+                  <Assignment sx={{ fontSize: 64, color: 'rgba(139, 92, 246, 0.5)', mb: 2 }} />
+                  <Typography variant="h6" sx={{ color: 'rgba(255, 255, 255, 0.7)', mb: 1 }}>
+                    No Item Selected
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.5)' }}>
+                    Search and select an assigned item to view details
+                  </Typography>
+                </CardContent>
+              </GlassCard>
+            )}
+          </Grid>
         </Grid>
-      )}
-    </Box>
+      </Box>
+    </Dashboard>
   );
-
-  return <Dashboard>{<CheckInContent />}</Dashboard>;
 };
 
 export default CheckInItem;

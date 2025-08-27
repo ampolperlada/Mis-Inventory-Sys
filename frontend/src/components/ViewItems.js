@@ -57,19 +57,23 @@ const GlassCard = styled(Card)(({ theme }) => ({
 
 const StyledTableContainer = styled(TableContainer)(({ theme }) => ({
   borderRadius: '16px',
-  background: 'rgba(255, 255, 255, 0.95)',
+  background: 'rgba(26, 26, 46, 0.9)', // Darker background instead of white
   backdropFilter: 'blur(20px)',
-  border: '1px solid rgba(255, 255, 255, 0.2)',
+  border: '1px solid rgba(139, 92, 246, 0.2)',
   '& .MuiTableHead-root': {
-    background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%)',
+    background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(6, 182, 212, 0.1) 100%)',
   },
   '& .MuiTableCell-head': {
     fontWeight: '600',
-    color: '#4a5568',
-    borderBottom: '2px solid rgba(102, 126, 234, 0.1)',
+    color: 'white', // White text for headers
+    borderBottom: '2px solid rgba(139, 92, 246, 0.3)',
+  },
+  '& .MuiTableCell-body': {
+    color: 'white', // White text for body cells
+    borderBottom: '1px solid rgba(139, 92, 246, 0.1)',
   },
   '& .MuiTableRow-root:hover': {
-    background: 'rgba(102, 126, 234, 0.05)',
+    background: 'rgba(139, 92, 246, 0.1)',
   },
 }));
 
@@ -122,81 +126,160 @@ const StatusChip = styled(Chip)(({ status }) => {
   };
 });
 
-// Mock data
+// Mock data with realistic IT asset fields
 const mockItems = [
   {
     id: 1,
-    name: 'MacBook Pro 14"',
-    brand: 'Apple',
-    model: 'MBP14-2023',
-    serialNumber: 'MBA001',
-    category: 'Laptops',
+    name: 'Dell OptiPlex 7090',
+    prevOwner: 'John Smith',
+    hostname: 'DESK-JS-001',
+    anydeskStatus: 'Active',
+    assetTag: 'IT-2023-001',
     status: 'available',
-    condition: 'new',
-    location: 'IT Storage',
-    purchaseDate: '2023-01-15',
-    purchasePrice: 2499.00,
+    type: 'Desktop',
+    brand: 'Dell',
+    model: 'OptiPlex 7090',
+    serialNumber: 'DL789456123',
+    department: 'IT',
+    lastHostname: 'DESK-JS-001',
+    macLan: '00:1B:44:11:3A:B7',
+    macWifi: '00:1B:44:11:3A:B8',
+    os: 'Windows 11 Pro',
+    processor: 'Intel i7-11700',
+    ram: '16GB DDR4',
+    primaryStorage: 'SSD',
+    secondaryStorage: 'HDD',
+    primaryCapacity: '512GB',
+    secondaryCapacity: '1TB',
+    datePurchased: '2023-01-15',
+    warranty: '2026-01-15',
+    dateDeployed: '2023-01-20',
+    purchasePrice: 1299.00,
   },
   {
     id: 2,
-    name: 'Dell Monitor 27"',
-    brand: 'Dell',
-    model: 'U2720Q',
-    serialNumber: 'DEL001',
-    category: 'Monitors',
+    name: 'MacBook Pro 14"',
+    prevOwner: 'Sarah Johnson',
+    hostname: 'MBPRO-SJ-002',
+    anydeskStatus: 'Inactive',
+    assetTag: 'IT-2023-002',
     status: 'assigned',
-    condition: 'good',
-    location: 'Employee Desk',
-    purchaseDate: '2022-11-20',
-    purchasePrice: 599.00,
+    type: 'Laptop',
+    brand: 'Apple',
+    model: 'MacBook Pro 14"',
+    serialNumber: 'AP456789012',
+    department: 'Design',
+    lastHostname: 'MBPRO-SJ-002',
+    macLan: 'N/A',
+    macWifi: '00:3E:E1:C8:24:A2',
+    os: 'macOS Sonoma',
+    processor: 'Apple M3 Pro',
+    ram: '18GB Unified',
+    primaryStorage: 'SSD',
+    secondaryStorage: 'N/A',
+    primaryCapacity: '512GB',
+    secondaryCapacity: 'N/A',
+    datePurchased: '2023-11-20',
+    warranty: '2026-11-20',
+    dateDeployed: '2023-11-25',
+    purchasePrice: 2499.00,
   },
   {
     id: 3,
-    name: 'iPhone 15 Pro',
-    brand: 'Apple',
-    model: 'iPhone15Pro',
-    serialNumber: 'IPH001',
-    category: 'Phones',
-    status: 'assigned',
-    condition: 'new',
-    location: 'Employee Desk',
-    purchaseDate: '2023-09-20',
-    purchasePrice: 999.00,
+    name: 'HP EliteBook 840',
+    prevOwner: 'Mike Chen',
+    hostname: 'HPEB-MC-003',
+    anydeskStatus: 'Active',
+    assetTag: 'IT-2023-003',
+    status: 'maintenance',
+    type: 'Laptop',
+    brand: 'HP',
+    model: 'EliteBook 840 G9',
+    serialNumber: 'HP123456789',
+    department: 'Sales',
+    lastHostname: 'HPEB-MC-003',
+    macLan: '00:15:5D:FF:15:A8',
+    macWifi: '00:15:5D:FF:15:A9',
+    os: 'Windows 11 Pro',
+    processor: 'Intel i5-1235U',
+    ram: '16GB DDR4',
+    primaryStorage: 'SSD',
+    secondaryStorage: 'N/A',
+    primaryCapacity: '256GB',
+    secondaryCapacity: 'N/A',
+    datePurchased: '2023-03-10',
+    warranty: '2026-03-10',
+    dateDeployed: '2023-03-15',
+    purchasePrice: 1199.00,
   },
   {
     id: 4,
-    name: 'Office Chair',
-    brand: 'Herman Miller',
-    model: 'Aeron',
-    serialNumber: 'HM001',
-    category: 'Furniture',
-    status: 'available',
-    condition: 'good',
-    location: 'Office Floor 2',
-    purchaseDate: '2021-03-10',
-    purchasePrice: 1395.00,
+    name: 'Dell UltraSharp 27"',
+    prevOwner: 'Lisa Wong',
+    hostname: 'N/A',
+    anydeskStatus: 'N/A',
+    assetTag: 'IT-2023-004',
+    status: 'assigned',
+    type: 'Monitor',
+    brand: 'Dell',
+    model: 'U2720Q',
+    serialNumber: 'DLM789123456',
+    department: 'Marketing',
+    lastHostname: 'N/A',
+    macLan: 'N/A',
+    macWifi: 'N/A',
+    os: 'N/A',
+    processor: 'N/A',
+    ram: 'N/A',
+    primaryStorage: 'N/A',
+    secondaryStorage: 'N/A',
+    primaryCapacity: 'N/A',
+    secondaryCapacity: 'N/A',
+    datePurchased: '2022-08-15',
+    warranty: '2025-08-15',
+    dateDeployed: '2022-08-20',
+    purchasePrice: 599.00,
   },
   {
     id: 5,
-    name: 'Wireless Keyboard',
-    brand: 'Logitech',
-    model: 'MX Keys',
-    serialNumber: 'LOG001',
-    category: 'Peripherals',
-    status: 'maintenance',
-    condition: 'fair',
-    location: 'IT Storage',
-    purchaseDate: '2022-08-15',
-    purchasePrice: 99.00,
+    name: 'Network Switch 24-Port',
+    prevOwner: 'N/A',
+    hostname: 'SW-MAIN-001',
+    anydeskStatus: 'N/A',
+    assetTag: 'IT-2023-005',
+    status: 'available',
+    type: 'Network Equipment',
+    brand: 'Cisco',
+    model: 'SG350-28P',
+    serialNumber: 'CS987654321',
+    department: 'IT',
+    lastHostname: 'SW-MAIN-001',
+    macLan: '00:1F:CA:B2:4E:F1',
+    macWifi: 'N/A',
+    os: 'Cisco IOS',
+    processor: 'N/A',
+    ram: 'N/A',
+    primaryStorage: 'N/A',
+    secondaryStorage: 'N/A',
+    primaryCapacity: 'N/A',
+    secondaryCapacity: 'N/A',
+    datePurchased: '2023-05-10',
+    warranty: '2028-05-10',
+    dateDeployed: '2023-05-15',
+    purchasePrice: 299.00,
   },
 ];
 
+const categories = ['all', 'Desktop', 'Laptop', 'Monitor', 'Network Equipment', 'Mobile Device', 'Accessories'];
+const departments = ['all', 'IT', 'Design', 'Sales', 'Marketing', 'Finance', 'HR'];
+
 const categoryIcons = {
-  'Laptops': Laptop,
-  'Monitors': Monitor,
-  'Phones': Phone,
-  'Furniture': Chair,
-  'Peripherals': Keyboard,
+  'Desktop': Laptop,
+  'Laptop': Laptop,
+  'Monitor': Monitor,
+  'Network Equipment': Keyboard,
+  'Mobile Device': Phone,
+  'Accessories': Keyboard,
 };
 
 const ViewItems = () => {
@@ -211,8 +294,7 @@ const ViewItems = () => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedItem, setSelectedItem] = useState(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-
-  const categories = ['all', 'Laptops', 'Monitors', 'Phones', 'Furniture', 'Peripherals', 'Networking', 'Other'];
+  const [departmentFilter, setDepartmentFilter] = useState('all');
 
   useEffect(() => {
     let filtered = items;
@@ -222,7 +304,9 @@ const ViewItems = () => {
         item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.serialNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.model.toLowerCase().includes(searchTerm.toLowerCase())
+        item.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (item.hostname && item.hostname.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        item.assetTag.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
@@ -231,12 +315,16 @@ const ViewItems = () => {
     }
 
     if (categoryFilter !== 'all') {
-      filtered = filtered.filter(item => item.category === categoryFilter);
+      filtered = filtered.filter(item => item.type === categoryFilter);
+    }
+
+    if (departmentFilter !== 'all') {
+      filtered = filtered.filter(item => item.department === departmentFilter);
     }
 
     setFilteredItems(filtered);
     setPage(0);
-  }, [items, searchTerm, statusFilter, categoryFilter]);
+  }, [items, searchTerm, statusFilter, categoryFilter, departmentFilter]);
 
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
@@ -312,40 +400,45 @@ const ViewItems = () => {
         </Box>
 
         {/* Filters and Search */}
-        <GlassCard sx={{ mb: 3, width: '100%' }}>
+        <GlassCard sx={{ mb: 3, width: '100%', background: 'rgba(26, 26, 46, 0.9)' }}>
           <CardContent sx={{ p: 3 }}>
             <Grid container spacing={3} alignItems="center">
-              <Grid item xs={12} md={4}>
+              <Grid item xs={12} md={3}>
                 <TextField
                   fullWidth
-                  placeholder="Search items..."
+                  placeholder="Search assets..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   sx={{
                     '& .MuiOutlinedInput-root': {
                       borderRadius: '12px',
-                      background: 'rgba(255, 255, 255, 0.8)',
-                    }
+                      background: 'rgba(139, 92, 246, 0.1)',
+                      color: 'white',
+                      '& fieldset': { borderColor: 'rgba(139, 92, 246, 0.3)' },
+                    },
+                    '& .MuiInputLabel-root': { color: 'rgba(255, 255, 255, 0.7)' },
                   }}
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
-                        <SearchIcon sx={{ color: '#667eea' }} />
+                        <SearchIcon sx={{ color: '#8b5cf6' }} />
                       </InputAdornment>
                     ),
                   }}
                 />
               </Grid>
-              <Grid item xs={12} md={3}>
+              <Grid item xs={12} md={2}>
                 <FormControl fullWidth>
-                  <InputLabel>Status</InputLabel>
+                  <InputLabel sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>Status</InputLabel>
                   <Select
                     value={statusFilter}
                     label="Status"
                     onChange={(e) => setStatusFilter(e.target.value)}
                     sx={{
                       borderRadius: '12px',
-                      background: 'rgba(255, 255, 255, 0.8)',
+                      background: 'rgba(139, 92, 246, 0.1)',
+                      color: 'white',
+                      '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(139, 92, 246, 0.3)' },
                     }}
                   >
                     <MenuItem value="all">All Status</MenuItem>
@@ -356,27 +449,51 @@ const ViewItems = () => {
                   </Select>
                 </FormControl>
               </Grid>
-              <Grid item xs={12} md={3}>
+              <Grid item xs={12} md={2}>
                 <FormControl fullWidth>
-                  <InputLabel>Category</InputLabel>
+                  <InputLabel sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>Type</InputLabel>
                   <Select
                     value={categoryFilter}
-                    label="Category"
+                    label="Type"
                     onChange={(e) => setCategoryFilter(e.target.value)}
                     sx={{
                       borderRadius: '12px',
-                      background: 'rgba(255, 255, 255, 0.8)',
+                      background: 'rgba(139, 92, 246, 0.1)',
+                      color: 'white',
+                      '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(139, 92, 246, 0.3)' },
                     }}
                   >
                     {categories.map((category) => (
                       <MenuItem key={category} value={category}>
-                        {category === 'all' ? 'All Categories' : category}
+                        {category === 'all' ? 'All Types' : category}
                       </MenuItem>
                     ))}
                   </Select>
                 </FormControl>
               </Grid>
               <Grid item xs={12} md={2}>
+                <FormControl fullWidth>
+                  <InputLabel sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>Department</InputLabel>
+                  <Select
+                    value={departmentFilter}
+                    label="Department"
+                    onChange={(e) => setDepartmentFilter(e.target.value)}
+                    sx={{
+                      borderRadius: '12px',
+                      background: 'rgba(139, 92, 246, 0.1)',
+                      color: 'white',
+                      '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(139, 92, 246, 0.3)' },
+                    }}
+                  >
+                    {departments.map((dept) => (
+                      <MenuItem key={dept} value={dept}>
+                        {dept === 'all' ? 'All Departments' : dept}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={12} md={3}>
                 <Box sx={{ 
                   textAlign: 'center',
                   p: 2,
@@ -388,7 +505,7 @@ const ViewItems = () => {
                     {filteredItems.length}
                   </Typography>
                   <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-                    Items Found
+                    Assets Found
                   </Typography>
                 </Box>
               </Grid>
@@ -402,15 +519,16 @@ const ViewItems = () => {
             <Table>
               <TableHead>
                 <TableRow>
-                  <TableCell>Item</TableCell>
-                  <TableCell>Brand/Model</TableCell>
-                  <TableCell>Serial Number</TableCell>
-                  <TableCell>Category</TableCell>
+                  <TableCell>Asset Name</TableCell>
+                  <TableCell>Hostname</TableCell>
+                  <TableCell>Asset Tag</TableCell>
+                  <TableCell>Type</TableCell>
                   <TableCell>Status</TableCell>
-                  <TableCell>Condition</TableCell>
-                  <TableCell>Location</TableCell>
-                  <TableCell>Price</TableCell>
-                  <TableCell align="center">Actions</TableCell>
+                  <TableCell>Department</TableCell>
+                  <TableCell>Serial Number</TableCell>
+                  <TableCell>Brand/Model</TableCell>
+                  <TableCell>AnyDesk Status</TableCell>
+                  <TableCell>Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -426,40 +544,48 @@ const ViewItems = () => {
                             width: 40,
                             height: 40
                           }}>
-                            {getCategoryIcon(item.category)}
+                            {getCategoryIcon(item.type)}
                           </Avatar>
                           <Box>
-                            <Typography variant="body1" fontWeight="600" sx={{ color: '#2d3748' }}>
+                            <Typography variant="body1" fontWeight="600" sx={{ color: 'white' }}>
                               {item.name}
+                            </Typography>
+                            <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.6)' }}>
+                              {item.prevOwner ? `Prev: ${item.prevOwner}` : 'New Asset'}
                             </Typography>
                           </Box>
                         </Box>
                       </TableCell>
                       <TableCell>
-                        <Typography variant="body2" color="text.secondary">
-                          {item.brand}
-                        </Typography>
-                        <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }}>
-                          {item.model}
+                        <Typography variant="body2" sx={{ 
+                          fontFamily: 'monospace',
+                          color: 'rgba(255, 255, 255, 0.9)',
+                          background: 'rgba(6, 182, 212, 0.2)',
+                          padding: '4px 8px',
+                          borderRadius: '6px',
+                          display: 'inline-block'
+                        }}>
+                          {item.hostname || 'N/A'}
                         </Typography>
                       </TableCell>
                       <TableCell>
                         <Typography variant="body2" sx={{ 
                           fontFamily: 'monospace',
-                          background: 'rgba(139, 92, 246, 0.1)',
+                          background: 'rgba(139, 92, 246, 0.2)',
+                          color: '#8b5cf6',
                           padding: '4px 8px',
                           borderRadius: '6px',
                           display: 'inline-block'
                         }}>
-                          {item.serialNumber}
+                          {item.assetTag}
                         </Typography>
                       </TableCell>
                       <TableCell>
                         <Box sx={{ display: 'flex', alignItems: 'center' }}>
                           <Box sx={{ mr: 1, color: '#8b5cf6' }}>
-                            {getCategoryIcon(item.category)}
+                            {getCategoryIcon(item.type)}
                           </Box>
-                          {item.category}
+                          <Typography sx={{ color: 'white' }}>{item.type}</Typography>
                         </Box>
                       </TableCell>
                       <TableCell>
@@ -470,20 +596,32 @@ const ViewItems = () => {
                         />
                       </TableCell>
                       <TableCell>
+                        <Typography sx={{ color: 'white' }}>{item.department}</Typography>
+                      </TableCell>
+                      <TableCell>
                         <Typography variant="body2" sx={{ 
-                          textTransform: 'capitalize',
-                          fontWeight: '500',
-                          color: item.condition === 'new' ? '#10b981' : 
-                                 item.condition === 'good' ? '#3b82f6' : 
-                                 item.condition === 'fair' ? '#f59e0b' : '#ef4444'
+                          fontFamily: 'monospace',
+                          color: 'rgba(255, 255, 255, 0.8)',
+                          fontSize: '0.75rem'
                         }}>
-                          {item.condition}
+                          {item.serialNumber}
                         </Typography>
                       </TableCell>
-                      <TableCell>{item.location}</TableCell>
                       <TableCell>
-                        <Typography variant="body2" fontWeight="600" sx={{ color: '#059669' }}>
-                          ${item.purchasePrice.toFixed(2)}
+                        <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>
+                          {item.brand}
+                        </Typography>
+                        <Typography variant="body2" sx={{ fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.6)' }}>
+                          {item.model}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" sx={{ 
+                          color: item.anydeskStatus === 'Active' ? '#10b981' : 
+                                 item.anydeskStatus === 'Inactive' ? '#f59e0b' : 'rgba(255, 255, 255, 0.6)',
+                          fontWeight: '500'
+                        }}>
+                          {item.anydeskStatus}
                         </Typography>
                       </TableCell>
                       <TableCell align="center">
@@ -498,7 +636,7 @@ const ViewItems = () => {
                               }
                             }}
                           >
-                            <MoreVertIcon />
+                            <MoreVertIcon sx={{ color: 'white' }} />
                           </IconButton>
                         </Tooltip>
                       </TableCell>

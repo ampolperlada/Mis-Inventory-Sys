@@ -164,6 +164,9 @@ const GlowingStatCard = styled(Card)(({ gradient, glowColor }) => ({
   position: 'relative',
   overflow: 'hidden',
   transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+  height: '140px', // Fixed height for consistency
+  width: '100%',
+  minWidth: '200px', // Minimum width
   '&::before': {
     content: '""',
     position: 'absolute',
@@ -239,6 +242,7 @@ const MainContainer = styled(Box)(({ theme }) => ({
   minHeight: '100vh',
   position: 'relative',
   overflow: 'hidden',
+  backgroundAttachment: 'fixed',
   '&::before': {
     content: '""',
     position: 'fixed',
@@ -382,7 +386,7 @@ const Dashboard = ({ children }) => {
   );
 
   const dashboardContent = (
-    <Box sx={{ position: 'relative', zIndex: 1 }}>
+    <Box sx={{ position: 'relative', zIndex: 1, width: '100%' }}>
       <Box sx={{ mb: 6, textAlign: 'center' }}>
         <Typography variant="h2" sx={{ 
           fontWeight: '900', 
@@ -405,82 +409,104 @@ const Dashboard = ({ children }) => {
         </Typography>
       </Box>
 
-      <Grid container spacing={4} sx={{ mb: 6 }}>
-        <Grid item xs={12} sm={6} md={3}>
-          <GlowingStatCard gradient="linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)" glowColor="#8b5cf6">
-            <CardContent sx={{ position: 'relative', zIndex: 1, p: 4 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Box>
-                  <Typography variant="h3" sx={{ fontWeight: '900', mb: 1, color: 'white' }}>
-                    1,234
-                  </Typography>
-                  <Typography variant="body1" sx={{ opacity: 0.9, fontWeight: '600', color: 'white' }}>
-                    Total Items
-                  </Typography>
-                </Box>
-                <Inventory2 sx={{ fontSize: 56, opacity: 0.8, color: 'white' }} />
-              </Box>
-            </CardContent>
-          </GlowingStatCard>
-        </Grid>
+      <Box sx={{ display: 'flex', justifyContent: 'center', mb: 6, width: '100%' }}>
+        <Grid container spacing={3} sx={{ maxWidth: '1000px', justifyContent: 'center' }}>
+          <Grid item xs={12} sm={6} lg={3} sx={{ display: 'flex' }}>
+            <GlowingStatCard gradient="linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)" glowColor="#8b5cf6" sx={{ width: '100%' }}>
+              <CardContent sx={{ 
+                position: 'relative', 
+                zIndex: 1, 
+                p: 3, 
+                textAlign: 'center',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                height: '100%'
+              }}>
+                <Inventory2 sx={{ fontSize: 40, color: 'white', mb: 1, opacity: 0.9 }} />
+                <Typography variant="h4" sx={{ fontWeight: '900', mb: 1, color: 'white', lineHeight: 1 }}>
+                  1,234
+                </Typography>
+                <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: '600', color: 'white' }}>
+                  Total Items
+                </Typography>
+              </CardContent>
+            </GlowingStatCard>
+          </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
-          <GlowingStatCard gradient="linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)" glowColor="#06b6d4">
-            <CardContent sx={{ position: 'relative', zIndex: 1, p: 4 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Box>
-                  <Typography variant="h3" sx={{ fontWeight: '900', mb: 1, color: 'white' }}>
-                    892
-                  </Typography>
-                  <Typography variant="body1" sx={{ opacity: 0.9, fontWeight: '600', color: 'white' }}>
-                    Available
-                  </Typography>
-                </Box>
-                <CheckCircleOutline sx={{ fontSize: 56, opacity: 0.8, color: 'white' }} />
-              </Box>
-            </CardContent>
-          </GlowingStatCard>
-        </Grid>
+          <Grid item xs={12} sm={6} lg={3} sx={{ display: 'flex' }}>
+            <GlowingStatCard gradient="linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)" glowColor="#06b6d4" sx={{ width: '100%' }}>
+              <CardContent sx={{ 
+                position: 'relative', 
+                zIndex: 1, 
+                p: 3, 
+                textAlign: 'center',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                height: '100%'
+              }}>
+                <CheckCircleOutline sx={{ fontSize: 40, color: 'white', mb: 1, opacity: 0.9 }} />
+                <Typography variant="h4" sx={{ fontWeight: '900', mb: 1, color: 'white', lineHeight: 1 }}>
+                  892
+                </Typography>
+                <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: '600', color: 'white' }}>
+                  Available
+                </Typography>
+              </CardContent>
+            </GlowingStatCard>
+          </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
-          <GlowingStatCard gradient="linear-gradient(135deg, #f59e0b 0%, #d97706 100%)" glowColor="#f59e0b">
-            <CardContent sx={{ position: 'relative', zIndex: 1, p: 4 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Box>
-                  <Typography variant="h3" sx={{ fontWeight: '900', mb: 1, color: 'white' }}>
-                    298
-                  </Typography>
-                  <Typography variant="body1" sx={{ opacity: 0.9, fontWeight: '600', color: 'white' }}>
-                    Assigned
-                  </Typography>
-                </Box>
-                <Assignment sx={{ fontSize: 56, opacity: 0.8, color: 'white' }} />
-              </Box>
-            </CardContent>
-          </GlowingStatCard>
-        </Grid>
+          <Grid item xs={12} sm={6} lg={3} sx={{ display: 'flex' }}>
+            <GlowingStatCard gradient="linear-gradient(135deg, #f59e0b 0%, #d97706 100%)" glowColor="#f59e0b" sx={{ width: '100%' }}>
+              <CardContent sx={{ 
+                position: 'relative', 
+                zIndex: 1, 
+                p: 3, 
+                textAlign: 'center',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                height: '100%'
+              }}>
+                <Assignment sx={{ fontSize: 40, color: 'white', mb: 1, opacity: 0.9 }} />
+                <Typography variant="h4" sx={{ fontWeight: '900', mb: 1, color: 'white', lineHeight: 1 }}>
+                  298
+                </Typography>
+                <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: '600', color: 'white' }}>
+                  Assigned
+                </Typography>
+              </CardContent>
+            </GlowingStatCard>
+          </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
-          <GlowingStatCard gradient="linear-gradient(135deg, #ef4444 0%, #dc2626 100%)" glowColor="#ef4444">
-            <CardContent sx={{ position: 'relative', zIndex: 1, p: 4 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Box>
-                  <Typography variant="h3" sx={{ fontWeight: '900', mb: 1, color: 'white' }}>
-                    44
-                  </Typography>
-                  <Typography variant="body1" sx={{ opacity: 0.9, fontWeight: '600', color: 'white' }}>
-                    Maintenance
-                  </Typography>
-                </Box>
-                <Warning sx={{ fontSize: 56, opacity: 0.8, color: 'white' }} />
-              </Box>
-            </CardContent>
-          </GlowingStatCard>
+          <Grid item xs={12} sm={6} lg={3} sx={{ display: 'flex' }}>
+            <GlowingStatCard gradient="linear-gradient(135deg, #ef4444 0%, #dc2626 100%)" glowColor="#ef4444" sx={{ width: '100%' }}>
+              <CardContent sx={{ 
+                position: 'relative', 
+                zIndex: 1, 
+                p: 3, 
+                textAlign: 'center',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                height: '100%'
+              }}>
+                <Warning sx={{ fontSize: 40, color: 'white', mb: 1, opacity: 0.9 }} />
+                <Typography variant="h4" sx={{ fontWeight: '900', mb: 1, color: 'white', lineHeight: 1 }}>
+                  44
+                </Typography>
+                <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: '600', color: 'white' }}>
+                  Maintenance
+                </Typography>
+              </CardContent>
+            </GlowingStatCard>
+          </Grid>
         </Grid>
-      </Grid>
+      </Box>
 
-      <UltraModernCard sx={{ mb: 6 }}>
-        <CardContent sx={{ p: 6, position: 'relative', zIndex: 1 }}>
+      <UltraModernCard sx={{ mb: 6, width: '100%' }}>
+        <CardContent sx={{ p: 4, position: 'relative', zIndex: 1 }}>
           <Typography variant="h4" sx={{ 
             fontWeight: '800', 
             mb: 4, 
@@ -489,48 +515,50 @@ const Dashboard = ({ children }) => {
           }}>
             Quick Actions
           </Typography>
-          <Grid container spacing={4}>
-            <Grid item xs={12} sm={6} md={3}>
-              <FloatingActionButton
-                fullWidth
-                startIcon={<AddIcon />}
-                onClick={() => navigate('/add-item')}
-              >
-                Add Item
-              </FloatingActionButton>
+          <Box sx={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
+            <Grid container spacing={3} sx={{ maxWidth: '800px', justifyContent: 'center' }}>
+              <Grid item xs={12} sm={6} md={3}>
+                <FloatingActionButton
+                  fullWidth
+                  startIcon={<AddIcon />}
+                  onClick={() => navigate('/add-item')}
+                >
+                  Add Item
+                </FloatingActionButton>
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <FloatingActionButton
+                  fullWidth
+                  startIcon={<CheckOutIcon />}
+                  onClick={() => navigate('/check-out')}
+                >
+                  Check Out
+                </FloatingActionButton>
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <FloatingActionButton
+                  fullWidth
+                  startIcon={<CheckInIcon />}
+                  onClick={() => navigate('/check-in')}
+                >
+                  Check In
+                </FloatingActionButton>
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <FloatingActionButton
+                  fullWidth
+                  startIcon={<ReportsIcon />}
+                  onClick={() => navigate('/reports')}
+                >
+                  Reports
+                </FloatingActionButton>
+              </Grid>
             </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <FloatingActionButton
-                fullWidth
-                startIcon={<CheckOutIcon />}
-                onClick={() => navigate('/check-out')}
-              >
-                Check Out
-              </FloatingActionButton>
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <FloatingActionButton
-                fullWidth
-                startIcon={<CheckInIcon />}
-                onClick={() => navigate('/check-in')}
-              >
-                Check In
-              </FloatingActionButton>
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <FloatingActionButton
-                fullWidth
-                startIcon={<ReportsIcon />}
-                onClick={() => navigate('/reports')}
-              >
-                Reports
-              </FloatingActionButton>
-            </Grid>
-          </Grid>
+          </Box>
         </CardContent>
       </UltraModernCard>
 
-      <UltraModernCard>
+      <UltraModernCard sx={{ width: '100%' }}>
         <CardContent sx={{ p: 6, textAlign: 'center', position: 'relative', zIndex: 1 }}>
           <TrendingUp sx={{ fontSize: 80, color: '#8b5cf6', mb: 3, opacity: 0.7 }} />
           <Typography variant="h5" sx={{ color: 'white', mb: 2, fontWeight: '700' }}>
@@ -546,7 +574,16 @@ const Dashboard = ({ children }) => {
 
   return (
     <ThemeProvider theme={darkTheme}>
-      <Box sx={{ display: 'flex' }}>
+      <Box sx={{ 
+        display: 'flex',
+        minHeight: '100vh',
+        background: `
+          radial-gradient(circle at 20% 80%, #1a1a2e 0%, transparent 50%),
+          radial-gradient(circle at 80% 20%, #16213e 0%, transparent 50%),
+          radial-gradient(circle at 40% 40%, #0f0f23 0%, transparent 50%),
+          linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%)
+        `,
+      }}>
         <ModernAppBar
           position="fixed"
           sx={{
@@ -648,6 +685,8 @@ const Dashboard = ({ children }) => {
             width: { md: `calc(100% - ${drawerWidth}px)` },
             display: 'flex',
             flexDirection: 'column',
+            minHeight: '100vh',
+            background: 'transparent', // Remove background from MainContainer
           }}
         >
           <Toolbar />
@@ -659,6 +698,7 @@ const Dashboard = ({ children }) => {
             width: '100%',
             display: 'flex',
             flexDirection: 'column',
+            minHeight: 'calc(100vh - 64px)',
           }}>
             {location.pathname === '/' ? dashboardContent : children}
           </Box>
