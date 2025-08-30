@@ -391,116 +391,131 @@ const ViewItems = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {filteredItems
-                  .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                  .map((item) => (
-                    <TableRow key={item.id} hover>
-                      <TableCell>
-                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                          <Avatar sx={{ 
-                            mr: 2, 
-                            background: 'linear-gradient(135deg, #8b5cf6 0%, #06b6d4 100%)',
-                            width: 40,
-                            height: 40
+                {filteredItems.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={10} sx={{ textAlign: 'center', py: 6 }}>
+                      <Box>
+                        <Typography variant="h6" sx={{ color: 'rgba(255, 255, 255, 0.6)', mb: 1 }}>
+                          No assets found
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.4)' }}>
+                          Add new assets or connect to your backend to populate inventory data
+                        </Typography>
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredItems
+                    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                    .map((item) => (
+                      <TableRow key={item.id} hover>
+                        <TableCell>
+                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <Avatar sx={{ 
+                              mr: 2, 
+                              background: 'linear-gradient(135deg, #8b5cf6 0%, #06b6d4 100%)',
+                              width: 40,
+                              height: 40
+                            }}>
+                              {getCategoryIcon(item.type)}
+                            </Avatar>
+                            <Box>
+                              <Typography variant="body1" fontWeight="600" sx={{ color: 'white' }}>
+                                {item.name}
+                              </Typography>
+                              <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.6)' }}>
+                                {item.prevOwner ? `Prev: ${item.prevOwner}` : 'New Asset'}
+                              </Typography>
+                            </Box>
+                          </Box>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" sx={{ 
+                            fontFamily: 'monospace',
+                            color: 'rgba(255, 255, 255, 0.9)',
+                            background: 'rgba(6, 182, 212, 0.2)',
+                            padding: '4px 8px',
+                            borderRadius: '6px',
+                            display: 'inline-block'
                           }}>
-                            {getCategoryIcon(item.type)}
-                          </Avatar>
-                          <Box>
-                            <Typography variant="body1" fontWeight="600" sx={{ color: 'white' }}>
-                              {item.name}
-                            </Typography>
-                            <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.6)' }}>
-                              {item.prevOwner ? `Prev: ${item.prevOwner}` : 'New Asset'}
-                            </Typography>
+                            {item.hostname || 'N/A'}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" sx={{ 
+                            fontFamily: 'monospace',
+                            background: 'rgba(139, 92, 246, 0.2)',
+                            color: '#8b5cf6',
+                            padding: '4px 8px',
+                            borderRadius: '6px',
+                            display: 'inline-block'
+                          }}>
+                            {item.assetTag}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <Box sx={{ mr: 1, color: '#8b5cf6' }}>
+                              {getCategoryIcon(item.type)}
+                            </Box>
+                            <Typography sx={{ color: 'white' }}>{item.type}</Typography>
                           </Box>
-                        </Box>
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2" sx={{ 
-                          fontFamily: 'monospace',
-                          color: 'rgba(255, 255, 255, 0.9)',
-                          background: 'rgba(6, 182, 212, 0.2)',
-                          padding: '4px 8px',
-                          borderRadius: '6px',
-                          display: 'inline-block'
-                        }}>
-                          {item.hostname || 'N/A'}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2" sx={{ 
-                          fontFamily: 'monospace',
-                          background: 'rgba(139, 92, 246, 0.2)',
-                          color: '#8b5cf6',
-                          padding: '4px 8px',
-                          borderRadius: '6px',
-                          display: 'inline-block'
-                        }}>
-                          {item.assetTag}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                          <Box sx={{ mr: 1, color: '#8b5cf6' }}>
-                            {getCategoryIcon(item.type)}
-                          </Box>
-                          <Typography sx={{ color: 'white' }}>{item.type}</Typography>
-                        </Box>
-                      </TableCell>
-                      <TableCell>
-                        <StatusChip
-                          label={item.status.toUpperCase()}
-                          status={item.status}
-                          size="small"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Typography sx={{ color: 'white' }}>{item.department}</Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2" sx={{ 
-                          fontFamily: 'monospace',
-                          color: 'rgba(255, 255, 255, 0.8)',
-                          fontSize: '0.75rem'
-                        }}>
-                          {item.serialNumber}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>
-                          {item.brand}
-                        </Typography>
-                        <Typography variant="body2" sx={{ fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.6)' }}>
-                          {item.model}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2" sx={{ 
-                          color: item.anydeskStatus === 'Active' ? '#10b981' : 
-                                 item.anydeskStatus === 'Inactive' ? '#f59e0b' : 'rgba(255, 255, 255, 0.6)',
-                          fontWeight: '500'
-                        }}>
-                          {item.anydeskStatus}
-                        </Typography>
-                      </TableCell>
-                      <TableCell align="center">
-                        <Tooltip title="More actions">
-                          <IconButton
-                            onClick={(e) => handleMenuClick(e, item)}
+                        </TableCell>
+                        <TableCell>
+                          <StatusChip
+                            label={item.status.toUpperCase()}
+                            status={item.status}
                             size="small"
-                            sx={{
-                              background: 'rgba(139, 92, 246, 0.1)',
-                              '&:hover': {
-                                background: 'rgba(139, 92, 246, 0.2)',
-                              }
-                            }}
-                          >
-                            <MoreVertIcon sx={{ color: 'white' }} />
-                          </IconButton>
-                        </Tooltip>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Typography sx={{ color: 'white' }}>{item.department}</Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" sx={{ 
+                            fontFamily: 'monospace',
+                            color: 'rgba(255, 255, 255, 0.8)',
+                            fontSize: '0.75rem'
+                          }}>
+                            {item.serialNumber}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>
+                            {item.brand}
+                          </Typography>
+                          <Typography variant="body2" sx={{ fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.6)' }}>
+                            {item.model}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" sx={{ 
+                            color: item.anydeskStatus === 'Active' ? '#10b981' : 
+                                   item.anydeskStatus === 'Inactive' ? '#f59e0b' : 'rgba(255, 255, 255, 0.6)',
+                            fontWeight: '500'
+                          }}>
+                            {item.anydeskStatus}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="center">
+                          <Tooltip title="More actions">
+                            <IconButton
+                              onClick={(e) => handleMenuClick(e, item)}
+                              size="small"
+                              sx={{
+                                background: 'rgba(139, 92, 246, 0.1)',
+                                '&:hover': {
+                                  background: 'rgba(139, 92, 246, 0.2)',
+                                }
+                              }}
+                            >
+                              <MoreVertIcon sx={{ color: 'white' }} />
+                            </IconButton>
+                          </Tooltip>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                )}
               </TableBody>
             </Table>
           </StyledTableContainer>
