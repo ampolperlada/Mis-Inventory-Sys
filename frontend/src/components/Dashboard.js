@@ -25,17 +25,7 @@ import {
   TextField,
   Select,
   FormControl,
-  InputLabel,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Stepper,
-  Step,
-  StepLabel,
-  TextareaAutosize
+  InputLabel
 } from '@mui/material';
 import { styled, createTheme, ThemeProvider } from '@mui/material/styles';
 import {
@@ -58,11 +48,10 @@ import {
   AssignmentTurnedIn as Assignment,
   Search
 } from '@mui/icons-material';
-import { useNavigate, useLocation } from 'react-router-dom';
 
 const drawerWidth = 300;
 
-// Create custom dark purple theme with no white elements
+// Create custom dark purple theme
 const darkPurpleTheme = createTheme({
   palette: {
     mode: 'dark',
@@ -89,7 +78,7 @@ const darkPurpleTheme = createTheme({
   }
 });
 
-// Ultra-modern styled components with dark purple theme
+// Styled components
 const ModernDrawer = styled(Drawer)(({ theme }) => ({
   '& .MuiDrawer-paper': {
     width: drawerWidth,
@@ -133,23 +122,10 @@ const NavItem = styled(ListItemButton)(({ theme, active }) => ({
   transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
   position: 'relative',
   overflow: 'hidden',
-  '&::before': {
-    content: '""',
-    position: 'absolute',
-    top: 0,
-    left: '-100%',
-    width: '100%',
-    height: '100%',
-    background: 'linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.15), transparent)',
-    transition: 'left 0.6s',
-  },
   '&:hover': {
     background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(168, 85, 247, 0.15) 100%)',
     transform: 'translateX(8px) scale(1.02)',
     color: '#ffffff',
-    '&::before': {
-      left: '100%',
-    },
   },
 }));
 
@@ -213,8 +189,6 @@ const FloatingActionButton = styled(Button)(({ theme }) => ({
   fontWeight: '700',
   fontSize: '16px',
   textTransform: 'none',
-  position: 'relative',
-  overflow: 'hidden',
   transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
   boxShadow: '0 8px 32px rgba(139, 92, 246, 0.5)',
   '&:hover': {
@@ -246,24 +220,9 @@ const StyledTextField = styled(TextField)(({ theme }) => ({
   },
 }));
 
-const MainContainer = styled(Box)(({ theme }) => ({
-  background: `
-    radial-gradient(circle at 20% 80%, #312e81 0%, transparent 50%),
-    radial-gradient(circle at 80% 20%, #1e1b4b 0%, transparent 50%),
-    radial-gradient(circle at 40% 40%, #1a1856 0%, transparent 50%),
-    linear-gradient(135deg, #1a1856 0%, #312e81 50%, #1e1b4b 100%)
-  `,
-  minHeight: '100vh',
-  position: 'relative',
-  overflow: 'hidden',
-  backgroundAttachment: 'fixed',
-}));
-
 const Dashboard = ({ children }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const navigate = useNavigate();
-  const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
   const [currentView, setCurrentView] = useState('dashboard');
@@ -277,22 +236,19 @@ const Dashboard = ({ children }) => {
   };
 
   const menuItems = [
-    { text: 'Dashboard', icon: <DashboardIcon />, path: '/', view: 'dashboard' },
-    { text: 'Add Item', icon: <AddIcon />, path: '/add-item', view: 'add' },
-    { text: 'View Items', icon: <ViewListIcon />, path: '/view-items', view: 'view' },
-    { text: 'Check Out', icon: <CheckOutIcon />, path: '/check-out', view: 'checkout' },
-    { text: 'Check In', icon: <CheckInIcon />, path: '/check-in', view: 'checkin' },
-    { text: 'Reports', icon: <ReportsIcon />, path: '/reports', view: 'reports' },
+    { text: 'Dashboard', icon: <DashboardIcon />, view: 'dashboard' },
+    { text: 'Add Item', icon: <AddIcon />, view: 'add' },
+    { text: 'View Items', icon: <ViewListIcon />, view: 'view' },
+    { text: 'Check Out', icon: <CheckOutIcon />, view: 'checkout' },
+    { text: 'Check In', icon: <CheckInIcon />, view: 'checkin' },
+    { text: 'Reports', icon: <ReportsIcon />, view: 'reports' },
   ];
 
   const handleDrawerToggle = () => setMobileOpen(!mobileOpen);
   const handleProfileMenuOpen = (event) => setAnchorEl(event.currentTarget);
   const handleMenuClose = () => setAnchorEl(null);
-  const handleLogout = () => {
-    handleMenuClose();
-    navigate('/login');
-  };
 
+  // Component views
   const AddItemForm = () => (
     <UltraModernCard sx={{ mb: 4 }}>
       <CardContent sx={{ p: 4 }}>
@@ -303,172 +259,16 @@ const Dashboard = ({ children }) => {
           </Typography>
         </Box>
         
-        <Box sx={{ space: 6 }}>
-          {/* Basic Information */}
-          <UltraModernCard sx={{ mb: 4, background: 'rgba(139, 92, 246, 0.1)' }}>
-            <CardContent sx={{ p: 3 }}>
-              <Typography variant="h6" sx={{ color: 'white', fontWeight: '700', mb: 3 }}>
-                Basic Information
-              </Typography>
-              <Grid container spacing={3}>
-                <Grid item xs={12} md={4}>
-                  <StyledTextField
-                    fullWidth
-                    label="Item Name *"
-                    placeholder="Enter item name"
-                    required
-                  />
-                </Grid>
-                <Grid item xs={12} md={4}>
-                  <StyledTextField
-                    fullWidth
-                    label="Brand"
-                    placeholder="Enter brand"
-                  />
-                </Grid>
-                <Grid item xs={12} md={4}>
-                  <StyledTextField
-                    fullWidth
-                    label="Model"
-                    placeholder="Enter model"
-                  />
-                </Grid>
-              </Grid>
-            </CardContent>
-          </UltraModernCard>
-
-          {/* Technical Details */}
-          <UltraModernCard sx={{ mb: 4, background: 'rgba(139, 92, 246, 0.1)' }}>
-            <CardContent sx={{ p: 3 }}>
-              <Typography variant="h6" sx={{ color: 'white', fontWeight: '700', mb: 3 }}>
-                Technical Details
-              </Typography>
-              <Grid container spacing={3}>
-                <Grid item xs={12} md={3}>
-                  <StyledTextField
-                    fullWidth
-                    label="Serial Number"
-                    placeholder="Enter serial number"
-                  />
-                </Grid>
-                <Grid item xs={12} md={3}>
-                  <StyledTextField
-                    fullWidth
-                    label="Location"
-                    placeholder="Enter location"
-                  />
-                </Grid>
-                <Grid item xs={12} md={3}>
-                  <FormControl fullWidth>
-                    <InputLabel sx={{ color: '#c4b5fd' }}>Status</InputLabel>
-                    <Select
-                      sx={{
-                        background: 'rgba(31, 31, 62, 0.6)',
-                        borderRadius: '12px',
-                        color: 'white',
-                        '& .MuiOutlinedInput-notchedOutline': {
-                          borderColor: 'rgba(139, 92, 246, 0.3)',
-                        },
-                      }}
-                    >
-                      <MenuItem value="available">Available</MenuItem>
-                      <MenuItem value="assigned">Assigned</MenuItem>
-                      <MenuItem value="maintenance">Maintenance</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Grid>
-                <Grid item xs={12} md={3}>
-                  <FormControl fullWidth>
-                    <InputLabel sx={{ color: '#c4b5fd' }}>Condition</InputLabel>
-                    <Select
-                      sx={{
-                        background: 'rgba(31, 31, 62, 0.6)',
-                        borderRadius: '12px',
-                        color: 'white',
-                        '& .MuiOutlinedInput-notchedOutline': {
-                          borderColor: 'rgba(139, 92, 246, 0.3)',
-                        },
-                      }}
-                    >
-                      <MenuItem value="new">New</MenuItem>
-                      <MenuItem value="good">Good</MenuItem>
-                      <MenuItem value="fair">Fair</MenuItem>
-                      <MenuItem value="poor">Poor</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Grid>
-              </Grid>
-            </CardContent>
-          </UltraModernCard>
-
-          {/* Purchase Information */}
-          <UltraModernCard sx={{ mb: 4, background: 'rgba(139, 92, 246, 0.1)' }}>
-            <CardContent sx={{ p: 3 }}>
-              <Typography variant="h6" sx={{ color: 'white', fontWeight: '700', mb: 3 }}>
-                Purchase Information
-              </Typography>
-              <Grid container spacing={3}>
-                <Grid item xs={12} md={6}>
-                  <StyledTextField
-                    fullWidth
-                    label="Purchase Date"
-                    type="date"
-                    InputLabelProps={{ shrink: true }}
-                  />
-                </Grid>
-                <Grid item xs={12} md={6}>
-                  <StyledTextField
-                    fullWidth
-                    label="Purchase Price"
-                    type="number"
-                    placeholder="0.00"
-                    InputProps={{ startAdornment: '$' }}
-                  />
-                </Grid>
-              </Grid>
-            </CardContent>
-          </UltraModernCard>
-
-          {/* Additional Information */}
-          <UltraModernCard sx={{ mb: 4, background: 'rgba(139, 92, 246, 0.1)' }}>
-            <CardContent sx={{ p: 3 }}>
-              <Typography variant="h6" sx={{ color: 'white', fontWeight: '700', mb: 3 }}>
-                Additional Information
-              </Typography>
-              <Grid container spacing={3}>
-                <Grid item xs={12} md={6}>
-                  <StyledTextField
-                    fullWidth
-                    label="Description"
-                    multiline
-                    rows={4}
-                    placeholder="Enter item description"
-                  />
-                </Grid>
-                <Grid item xs={12} md={6}>
-                  <StyledTextField
-                    fullWidth
-                    label="Notes"
-                    multiline
-                    rows={4}
-                    placeholder="Additional notes"
-                  />
-                </Grid>
-              </Grid>
-            </CardContent>
-          </UltraModernCard>
-
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
-            <Button 
-              sx={{ color: '#c4b5fd', fontWeight: '600' }}
-              onClick={() => setCurrentView('dashboard')}
-            >
-              Cancel
-            </Button>
-            <FloatingActionButton>
-              Add Item
-            </FloatingActionButton>
-          </Box>
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 4 }}>
+          <Button 
+            sx={{ color: '#c4b5fd', fontWeight: '600' }}
+            onClick={() => setCurrentView('dashboard')}
+          >
+            Cancel
+          </Button>
+          <FloatingActionButton>
+            Add Item
+          </FloatingActionButton>
         </Box>
       </CardContent>
     </UltraModernCard>
@@ -495,72 +295,6 @@ const Dashboard = ({ children }) => {
 
       <UltraModernCard>
         <CardContent sx={{ p: 4 }}>
-          <Grid container spacing={3} sx={{ mb: 4 }}>
-            <Grid item xs={12} md={6}>
-              <StyledTextField
-                fullWidth
-                placeholder="Search assets..."
-                InputProps={{
-                  startAdornment: <Search sx={{ color: '#c4b5fd', mr: 1 }} />
-                }}
-              />
-            </Grid>
-            <Grid item xs={12} md={2}>
-              <FormControl fullWidth>
-                <InputLabel sx={{ color: '#c4b5fd' }}>All Status</InputLabel>
-                <Select
-                  sx={{
-                    background: 'rgba(31, 31, 62, 0.6)',
-                    borderRadius: '12px',
-                    color: 'white',
-                    '& .MuiOutlinedInput-notchedOutline': {
-                      borderColor: 'rgba(139, 92, 246, 0.3)',
-                    },
-                  }}
-                >
-                  <MenuItem value="all">All Status</MenuItem>
-                  <MenuItem value="available">Available</MenuItem>
-                  <MenuItem value="assigned">Assigned</MenuItem>
-                  <MenuItem value="maintenance">Maintenance</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} md={2}>
-              <FormControl fullWidth>
-                <InputLabel sx={{ color: '#c4b5fd' }}>All Types</InputLabel>
-                <Select
-                  sx={{
-                    background: 'rgba(31, 31, 62, 0.6)',
-                    borderRadius: '12px',
-                    color: 'white',
-                    '& .MuiOutlinedInput-notchedOutline': {
-                      borderColor: 'rgba(139, 92, 246, 0.3)',
-                    },
-                  }}
-                >
-                  <MenuItem value="all">All Types</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} md={2}>
-              <FormControl fullWidth>
-                <InputLabel sx={{ color: '#c4b5fd' }}>All Departments</InputLabel>
-                <Select
-                  sx={{
-                    background: 'rgba(31, 31, 62, 0.6)',
-                    borderRadius: '12px',
-                    color: 'white',
-                    '& .MuiOutlinedInput-notchedOutline': {
-                      borderColor: 'rgba(139, 92, 246, 0.3)',
-                    },
-                  }}
-                >
-                  <MenuItem value="all">All Departments</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-          </Grid>
-
           <Box sx={{ textAlign: 'center', py: 8, color: '#c4b5fd' }}>
             <Inventory2 sx={{ fontSize: 80, mb: 3, opacity: 0.5 }} />
             <Typography variant="h5" sx={{ fontWeight: '700', mb: 2 }}>
@@ -599,9 +333,6 @@ const Dashboard = ({ children }) => {
         <Typography sx={{ color: '#c4b5fd', mb: 4 }}>
           Return assigned items to inventory
         </Typography>
-        <Typography sx={{ color: '#c4b5fd' }}>
-          No items currently assigned for check-in.
-        </Typography>
       </CardContent>
     </UltraModernCard>
   );
@@ -621,7 +352,7 @@ const Dashboard = ({ children }) => {
         <Grid item xs={12} sm={6} lg={3}>
           <GlowingStatCard gradient="linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)" glowColor="#8b5cf6">
             <CardContent sx={{ position: 'relative', zIndex: 1, p: 3, textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%' }}>
-              <PackageIcon sx={{ fontSize: 40, color: 'white', mb: 1, opacity: 0.9 }} />
+              <Inventory2 sx={{ fontSize: 40, color: 'white', mb: 1, opacity: 0.9 }} />
               <Typography variant="h4" sx={{ fontWeight: '900', mb: 1, color: 'white', lineHeight: 1 }}>
                 {stats.totalItems}
               </Typography>
@@ -713,104 +444,67 @@ const Dashboard = ({ children }) => {
               maxWidth: '600px',
               mx: 'auto'
             }}>
+              Welcome to the future of inventory management
             </Typography>
           </Box>
 
-          <Box sx={{ display: 'flex', justifyContent: 'center', mb: 6, width: '100%' }}>
-            <Grid container spacing={3} sx={{ maxWidth: '1000px', justifyContent: 'center' }}>
-              <Grid item xs={12} sm={6} lg={3} sx={{ display: 'flex' }}>
-                <GlowingStatCard gradient="linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)" glowColor="#8b5cf6" sx={{ width: '100%' }}>
-                  <CardContent sx={{ 
-                    position: 'relative', 
-                    zIndex: 1, 
-                    p: 3, 
-                    textAlign: 'center',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'center',
-                    height: '100%'
-                  }}>
-                    <Inventory2 sx={{ fontSize: 40, color: 'white', mb: 1, opacity: 0.9 }} />
-                    <Typography variant="h4" sx={{ fontWeight: '900', mb: 1, color: 'white', lineHeight: 1 }}>
-                      {stats.totalItems.toLocaleString()}
-                    </Typography>
-                    <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: '600', color: 'white' }}>
-                      Total Items
-                    </Typography>
-                  </CardContent>
-                </GlowingStatCard>
-              </Grid>
-
-              <Grid item xs={12} sm={6} lg={3} sx={{ display: 'flex' }}>
-                <GlowingStatCard gradient="linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)" glowColor="#06b6d4" sx={{ width: '100%' }}>
-                  <CardContent sx={{ 
-                    position: 'relative', 
-                    zIndex: 1, 
-                    p: 3, 
-                    textAlign: 'center',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'center',
-                    height: '100%'
-                  }}>
-                    <CheckCircleOutline sx={{ fontSize: 40, color: 'white', mb: 1, opacity: 0.9 }} />
-                    <Typography variant="h4" sx={{ fontWeight: '900', mb: 1, color: 'white', lineHeight: 1 }}>
-                      {stats.available.toLocaleString()}
-                    </Typography>
-                    <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: '600', color: 'white' }}>
-                      Available
-                    </Typography>
-                  </CardContent>
-                </GlowingStatCard>
-              </Grid>
-
-              <Grid item xs={12} sm={6} lg={3} sx={{ display: 'flex' }}>
-                <GlowingStatCard gradient="linear-gradient(135deg, #f59e0b 0%, #d97706 100%)" glowColor="#f59e0b" sx={{ width: '100%' }}>
-                  <CardContent sx={{ 
-                    position: 'relative', 
-                    zIndex: 1, 
-                    p: 3, 
-                    textAlign: 'center',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'center',
-                    height: '100%'
-                  }}>
-                    <Assignment sx={{ fontSize: 40, color: 'white', mb: 1, opacity: 0.9 }} />
-                    <Typography variant="h4" sx={{ fontWeight: '900', mb: 1, color: 'white', lineHeight: 1 }}>
-                      {stats.assigned.toLocaleString()}
-                    </Typography>
-                    <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: '600', color: 'white' }}>
-                      Assigned
-                    </Typography>
-                  </CardContent>
-                </GlowingStatCard>
-              </Grid>
-
-              <Grid item xs={12} sm={6} lg={3} sx={{ display: 'flex' }}>
-                <GlowingStatCard gradient="linear-gradient(135deg, #ef4444 0%, #dc2626 100%)" glowColor="#ef4444" sx={{ width: '100%' }}>
-                  <CardContent sx={{ 
-                    position: 'relative', 
-                    zIndex: 1, 
-                    p: 3, 
-                    textAlign: 'center',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'center',
-                    height: '100%'
-                  }}>
-                    <Warning sx={{ fontSize: 40, color: 'white', mb: 1, opacity: 0.9 }} />
-                    <Typography variant="h4" sx={{ fontWeight: '900', mb: 1, color: 'white', lineHeight: 1 }}>
-                      {stats.maintenance.toLocaleString()}
-                    </Typography>
-                    <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: '600', color: 'white' }}>
-                      Maintenance
-                    </Typography>
-                  </CardContent>
-                </GlowingStatCard>
-              </Grid>
+          <Grid container spacing={3} sx={{ mb: 6 }}>
+            <Grid item xs={12} sm={6} lg={3}>
+              <GlowingStatCard gradient="linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)" glowColor="#8b5cf6">
+                <CardContent sx={{ position: 'relative', zIndex: 1, p: 3, textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%' }}>
+                  <Inventory2 sx={{ fontSize: 40, color: 'white', mb: 1, opacity: 0.9 }} />
+                  <Typography variant="h4" sx={{ fontWeight: '900', mb: 1, color: 'white', lineHeight: 1 }}>
+                    {stats.totalItems.toLocaleString()}
+                  </Typography>
+                  <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: '600', color: 'white' }}>
+                    Total Items
+                  </Typography>
+                </CardContent>
+              </GlowingStatCard>
             </Grid>
-          </Box>
+
+            <Grid item xs={12} sm={6} lg={3}>
+              <GlowingStatCard gradient="linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)" glowColor="#06b6d4">
+                <CardContent sx={{ position: 'relative', zIndex: 1, p: 3, textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%' }}>
+                  <CheckCircleOutline sx={{ fontSize: 40, color: 'white', mb: 1, opacity: 0.9 }} />
+                  <Typography variant="h4" sx={{ fontWeight: '900', mb: 1, color: 'white', lineHeight: 1 }}>
+                    {stats.available.toLocaleString()}
+                  </Typography>
+                  <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: '600', color: 'white' }}>
+                    Available
+                  </Typography>
+                </CardContent>
+              </GlowingStatCard>
+            </Grid>
+
+            <Grid item xs={12} sm={6} lg={3}>
+              <GlowingStatCard gradient="linear-gradient(135deg, #f59e0b 0%, #d97706 100%)" glowColor="#f59e0b">
+                <CardContent sx={{ position: 'relative', zIndex: 1, p: 3, textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%' }}>
+                  <Assignment sx={{ fontSize: 40, color: 'white', mb: 1, opacity: 0.9 }} />
+                  <Typography variant="h4" sx={{ fontWeight: '900', mb: 1, color: 'white', lineHeight: 1 }}>
+                    {stats.assigned.toLocaleString()}
+                  </Typography>
+                  <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: '600', color: 'white' }}>
+                    Assigned
+                  </Typography>
+                </CardContent>
+              </GlowingStatCard>
+            </Grid>
+
+            <Grid item xs={12} sm={6} lg={3}>
+              <GlowingStatCard gradient="linear-gradient(135deg, #ef4444 0%, #dc2626 100%)" glowColor="#ef4444">
+                <CardContent sx={{ position: 'relative', zIndex: 1, p: 3, textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%' }}>
+                  <Warning sx={{ fontSize: 40, color: 'white', mb: 1, opacity: 0.9 }} />
+                  <Typography variant="h4" sx={{ fontWeight: '900', mb: 1, color: 'white', lineHeight: 1 }}>
+                    {stats.maintenance.toLocaleString()}
+                  </Typography>
+                  <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: '600', color: 'white' }}>
+                    Maintenance
+                  </Typography>
+                </CardContent>
+              </GlowingStatCard>
+            </Grid>
+          </Grid>
 
           <UltraModernCard sx={{ mb: 6, width: '100%' }}>
             <CardContent sx={{ p: 4, position: 'relative', zIndex: 1 }}>
@@ -822,52 +516,50 @@ const Dashboard = ({ children }) => {
               }}>
                 Quick Actions
               </Typography>
-              <Box sx={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
-                <Grid container spacing={3} sx={{ maxWidth: '800px', justifyContent: 'center' }}>
-                  <Grid item xs={12} sm={6} md={3}>
-                    <FloatingActionButton
-                      fullWidth
-                      startIcon={<AddIcon />}
-                      onClick={() => setCurrentView('add')}
-                    >
-                      Add Item
-                    </FloatingActionButton>
-                  </Grid>
-                  <Grid item xs={12} sm={6} md={3}>
-                    <FloatingActionButton
-                      fullWidth
-                      startIcon={<CheckOutIcon />}
-                      onClick={() => setCurrentView('checkout')}
-                    >
-                      Check Out
-                    </FloatingActionButton>
-                  </Grid>
-                  <Grid item xs={12} sm={6} md={3}>
-                    <FloatingActionButton
-                      fullWidth
-                      startIcon={<CheckInIcon />}
-                      onClick={() => setCurrentView('checkin')}
-                    >
-                      Check In
-                    </FloatingActionButton>
-                  </Grid>
-                  <Grid item xs={12} sm={6} md={3}>
-                    <FloatingActionButton
-                      fullWidth
-                      startIcon={<ReportsIcon />}
-                      onClick={() => setCurrentView('reports')}
-                    >
-                      Reports
-                    </FloatingActionButton>
-                  </Grid>
+              <Grid container spacing={3} sx={{ justifyContent: 'center' }}>
+                <Grid item xs={12} sm={6} md={3}>
+                  <FloatingActionButton
+                    fullWidth
+                    startIcon={<AddIcon />}
+                    onClick={() => setCurrentView('add')}
+                  >
+                    Add Item
+                  </FloatingActionButton>
                 </Grid>
-              </Box>
+                <Grid item xs={12} sm={6} md={3}>
+                  <FloatingActionButton
+                    fullWidth
+                    startIcon={<CheckOutIcon />}
+                    onClick={() => setCurrentView('checkout')}
+                  >
+                    Check Out
+                  </FloatingActionButton>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <FloatingActionButton
+                    fullWidth
+                    startIcon={<CheckInIcon />}
+                    onClick={() => setCurrentView('checkin')}
+                  >
+                    Check In
+                  </FloatingActionButton>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <FloatingActionButton
+                    fullWidth
+                    startIcon={<ReportsIcon />}
+                    onClick={() => setCurrentView('reports')}
+                  >
+                    Reports
+                  </FloatingActionButton>
+                </Grid>
+              </Grid>
             </CardContent>
           </UltraModernCard>
 
           <UltraModernCard sx={{ width: '100%' }}>
             <CardContent sx={{ p: 6, textAlign: 'center', position: 'relative', zIndex: 1 }}>
-            <Inventory2 sx={{ fontSize: 80, color: '#c4b5fd', mb: 3, opacity: 0.7 }} />
+              <TrendingUp sx={{ fontSize: 80, color: '#8b5cf6', mb: 3, opacity: 0.7 }} />
               <Typography variant="h5" sx={{ color: 'white', mb: 2, fontWeight: '700' }}>
                 Recent Activity
               </Typography>
@@ -893,31 +585,18 @@ const Dashboard = ({ children }) => {
           borderRadius: '20px',
           background: 'linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%)',
           mb: 2,
-          position: 'relative',
-          '&::before': {
-            content: '""',
-            position: 'absolute',
-            inset: -2,
-            borderRadius: '22px',
-            background: 'linear-gradient(135deg, #8b5cf6, #a855f7)',
-            mask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
-            maskComposite: 'exclude',
-          }
         }}>
           <AutoAwesome sx={{ fontSize: 28, color: 'white' }} />
         </Box>
         <Typography variant="h5" sx={{ 
           fontWeight: '800', 
           color: 'white',
-          background: 'linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%)',
-          backgroundClip: 'text',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
           mb: 1
         }}>
-         MIS Inventory System
+          Inventory Pro
         </Typography>
         <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.6)', fontWeight: '500' }}>
+          Next-Gen Management
         </Typography>
       </Box>
       
@@ -933,7 +612,6 @@ const Dashboard = ({ children }) => {
                 minWidth: 48,
                 '& svg': {
                   fontSize: 24,
-                  filter: currentView === item.view ? 'drop-shadow(0 0 8px currentColor)' : 'none'
                 }
               }}>
                 {item.icon}
@@ -1052,7 +730,7 @@ const Dashboard = ({ children }) => {
                 <Settings sx={{ mr: 2 }} />
                 Settings
               </MenuItem>
-              <MenuItem onClick={handleLogout} sx={{ color: 'white' }}>
+              <MenuItem onClick={() => setCurrentView('dashboard')} sx={{ color: 'white' }}>
                 <Logout sx={{ mr: 2 }} />
                 Logout
               </MenuItem>
@@ -1079,7 +757,7 @@ const Dashboard = ({ children }) => {
           </ModernDrawer>
         </Box>
 
-        <MainContainer
+        <Box
           component="main"
           sx={{
             flexGrow: 1,
@@ -1103,7 +781,7 @@ const Dashboard = ({ children }) => {
           }}>
             {renderCurrentView()}
           </Box>
-        </MainContainer>
+        </Box>
       </Box>
     </ThemeProvider>
   );
