@@ -1,160 +1,230 @@
-const mysql = require('mysql2');
+const mysql = require('mysql2/promise');
 require('dotenv').config();
 
-// Create connection pool for better performance
-const pool = mysql.createPool({
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'inventory_system',
+const dbConfig = {
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  port: process.env.DB_PORT,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
-});
-
-// Get promise-based pool
-const promisePool = pool.promise();
-
-// Test connection
-const testConnection = async () => {
-  try {
-    const connection = await promisePool.getConnection();
-    console.log('✅ Database connected successfully');
-    connection.release();
-  } catch (error) {
-    console.error('❌ Database connection failed:', error.message);
-  }
 };
 
-// Initialize database tables
-const initializeDatabase = async () => {
+let pool;
+
+async function initializeDatabase() {
   try {
-    // Create users table
-    await promisePool.execute(`
+    // First connect without database to create it if it doesn't exist
+    const connection = await mysql.createConnection({
+      host: process.env.DB_HOST,
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      port: process.env.DB_PORT
+    });
+
+    // Create database if it doesn't exist
+    await connection.execute(`CREATE DATABASE IF NOT EXISTS ${process.env.DB_NAME}`);
+    await connection.end();
+
+    // Now create the pool with the database
+    pool = mysql.createPool(dbConfig);
+
+    // Test the connection
+    const testConnection = await pool.getConnection();
+    await testConnection.ping();
+    testConnection.release();
+
+    console.log('✅ Database connected successfully');
+    
+    // Initialize tables
+    await createTables();
+    console.log('✅ Database tables initialized successfully');
+
+    return pool;
+  } catch (error) {
+    console.error('❌ Database connection failed:', error.message);
+    process.exit(1);
+  }
+}
+
+async function createTables() {
+  try {
+    // Categories table
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS categories (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(100) NOT NULL UNIQUE,
+        description TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Users table
+    await pool.execute(`
       CREATE TABLE IF NOT EXISTS users (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        username VARCHAR(50) UNIQUE NOT NULL,
-        email VARCHAR(100) UNIQUE NOT NULL,
-        password VARCHAR(255) NOT NULL,
-        role ENUM('admin', 'manager', 'employee') DEFAULT 'employee',
-        first_name VARCHAR(50),
-        last_name VARCHAR(50),
+        username VARCHAR(50) NOT NULL UNIQUE,
+        email VARCHAR(100) NOT NULL UNIQUE,
+        password_hash VARCHAR(255) NOT NULL,
+        full_name VARCHAR(100) NOT NULL,
+        role ENUM('admin', 'user') DEFAULT 'user',
         department VARCHAR(100),
+        phone VARCHAR(20),
+        is_active BOOLEAN DEFAULT TRUE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       )
     `);
 
-    // Create inventory_items table
-    await promisePool.execute(`
+    // Main inventory items table
+    await pool.execute(`
       CREATE TABLE IF NOT EXISTS inventory_items (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        name VARCHAR(100) NOT NULL,
-        brand VARCHAR(50),
-        model VARCHAR(50),
+        
+        -- Basic Information
+        item_name VARCHAR(200) NOT NULL,
+        brand VARCHAR(100),
+        model VARCHAR(100),
+        category_id INT,
+        asset_tag_number VARCHAR(50) UNIQUE NOT NULL,
+        
+        -- Technical Details
         serial_number VARCHAR(100) UNIQUE,
-        category VARCHAR(50),
+        location VARCHAR(200),
         status ENUM('available', 'assigned', 'maintenance', 'retired') DEFAULT 'available',
-        condition_status ENUM('new', 'good', 'fair', 'poor') DEFAULT 'new',
+        condition_status ENUM('new', 'excellent', 'good', 'fair', 'poor') DEFAULT 'new',
+        
+        -- Hardware Specifications
+        processor VARCHAR(200),
+        ram VARCHAR(100),
+        storage VARCHAR(100),
+        operating_system VARCHAR(100),
+        
+        -- Network Details
+        hostname VARCHAR(100),
+        mac_address VARCHAR(17),
+        ip_address VARCHAR(15),
+        
+        -- Purchase Information
         purchase_date DATE,
         purchase_price DECIMAL(10,2),
-        location VARCHAR(100),
+        supplier VARCHAR(200),
+        warranty_period VARCHAR(100),
+        
+        -- Additional Information
         description TEXT,
         notes TEXT,
-        image_url VARCHAR(255),
+        
+        -- Metadata
+        created_by INT,
+        updated_by INT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        
+        -- Foreign Key Constraints
+        FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL,
+        FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
+        FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE SET NULL,
+        
+        -- Indexes for better performance
+        INDEX idx_status (status),
+        INDEX idx_category (category_id),
+        INDEX idx_asset_tag (asset_tag_number),
+        INDEX idx_serial (serial_number)
       )
     `);
 
-    // Create item_assignments table
-    await promisePool.execute(`
+    // Item assignments table
+    await pool.execute(`
       CREATE TABLE IF NOT EXISTS item_assignments (
         id INT AUTO_INCREMENT PRIMARY KEY,
         item_id INT NOT NULL,
         assigned_to_user_id INT,
         assigned_to_name VARCHAR(100),
-        assigned_by_user_id INT NOT NULL,
-        assigned_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        due_date DATE,
-        returned_date TIMESTAMP NULL,
-        status ENUM('active', 'returned', 'overdue') DEFAULT 'active',
+        employee_id VARCHAR(50),
+        department VARCHAR(100),
+        email VARCHAR(100),
+        phone VARCHAR(20),
+        assignment_date DATE NOT NULL,
+        expected_return_date DATE,
+        actual_return_date DATE,
         assignment_notes TEXT,
         return_notes TEXT,
+        return_condition ENUM('excellent', 'good', 'fair', 'poor'),
+        assigned_by INT,
+        returned_by INT,
+        is_active BOOLEAN DEFAULT TRUE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        
         FOREIGN KEY (item_id) REFERENCES inventory_items(id) ON DELETE CASCADE,
         FOREIGN KEY (assigned_to_user_id) REFERENCES users(id) ON DELETE SET NULL,
-        FOREIGN KEY (assigned_by_user_id) REFERENCES users(id) ON DELETE RESTRICT
+        FOREIGN KEY (assigned_by) REFERENCES users(id) ON DELETE SET NULL,
+        FOREIGN KEY (returned_by) REFERENCES users(id) ON DELETE SET NULL,
+        
+        INDEX idx_item (item_id),
+        INDEX idx_active (is_active),
+        INDEX idx_assignment_date (assignment_date)
       )
     `);
 
-    // Create categories table
-    await promisePool.execute(`
-      CREATE TABLE IF NOT EXISTS categories (
+    // Activity logs table for audit trail
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS activity_logs (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        name VARCHAR(50) UNIQUE NOT NULL,
-        description TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        item_id INT,
+        user_id INT,
+        action ENUM('created', 'updated', 'assigned', 'returned', 'deleted') NOT NULL,
+        details TEXT,
+        ip_address VARCHAR(45),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        
+        FOREIGN KEY (item_id) REFERENCES inventory_items(id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+        
+        INDEX idx_item_logs (item_id),
+        INDEX idx_action (action),
+        INDEX idx_created (created_at)
       )
     `);
-
-    console.log('✅ Database tables initialized successfully');
 
     // Insert default categories
-    const [categoryCheck] = await promisePool.execute('SELECT COUNT(*) as count FROM categories');
-    if (categoryCheck[0].count === 0) {
-      await promisePool.execute(`
-        INSERT INTO categories (name, description) VALUES 
-        ('Laptops', 'Laptop computers and accessories'),
-        ('Monitors', 'Computer monitors and displays'),
-        ('Phones', 'Mobile phones and tablets'),
-        ('Furniture', 'Office furniture and equipment'),
-        ('Peripherals', 'Keyboards, mice, and other peripherals'),
-        ('Networking', 'Routers, switches, and network equipment')
-      `);
-      console.log('✅ Default categories created');
-    }
+    await pool.execute(`
+      INSERT IGNORE INTO categories (name, description) VALUES
+      ('Laptop', 'Portable computers'),
+      ('Desktop', 'Desktop computers'),
+      ('Monitor', 'Display monitors'),
+      ('Printer', 'Printing devices'),
+      ('Phone', 'Mobile phones and desk phones'),
+      ('Tablet', 'Tablet devices'),
+      ('Accessories', 'Computer accessories'),
+      ('Other', 'Other equipment')
+    `);
 
-    // Check if admin user exists, if not create one
-    const [adminCheck] = await promisePool.execute(
-      'SELECT id FROM users WHERE username = ?', 
-      ['admin']
-    );
+    // Create default admin user (password: admin123 - should be changed in production)
+    const bcrypt = require('bcryptjs');
+    const hashedPassword = await bcrypt.hash('admin123', 10);
+    
+    await pool.execute(`
+      INSERT IGNORE INTO users (username, email, password_hash, full_name, role, department) VALUES
+      ('admin', 'admin@inventory.local', ?, 'System Administrator', 'admin', 'IT')
+    `, [hashedPassword]);
 
-    if (adminCheck.length === 0) {
-      const bcrypt = require('bcryptjs');
-      const hashedPassword = await bcrypt.hash('admin123', 10);
-      
-      await promisePool.execute(
-        'INSERT INTO users (username, email, password, role, first_name, last_name) VALUES (?, ?, ?, ?, ?, ?)',
-        ['admin', 'admin@inventory.com', hashedPassword, 'admin', 'System', 'Administrator']
-      );
-      
-      console.log('✅ Default admin user created (username: admin, password: admin123)');
-    }
-
-    // Insert some sample data for testing
-    const [itemCheck] = await promisePool.execute('SELECT COUNT(*) as count FROM inventory_items');
-    if (itemCheck[0].count === 0) {
-      await promisePool.execute(`
-        INSERT INTO inventory_items (name, brand, model, serial_number, category, status, condition_status, purchase_date, purchase_price, location, description) VALUES 
-        ('MacBook Pro 14"', 'Apple', 'MBP14-2023', 'MBA001', 'Laptops', 'available', 'new', '2023-01-15', 2499.00, 'IT Storage', 'MacBook Pro 14-inch with M2 chip'),
-        ('Dell Monitor 27"', 'Dell', 'U2720Q', 'DEL001', 'Monitors', 'available', 'good', '2022-11-20', 599.00, 'IT Storage', '4K UltraSharp monitor'),
-        ('iPhone 15 Pro', 'Apple', 'iPhone15Pro', 'IPH001', 'Phones', 'assigned', 'new', '2023-09-20', 999.00, 'Employee Desk', 'Latest iPhone model'),
-        ('Office Chair', 'Herman Miller', 'Aeron', 'HM001', 'Furniture', 'available', 'good', '2021-03-10', 1395.00, 'Office Floor 2', 'Ergonomic office chair'),
-        ('Wireless Keyboard', 'Logitech', 'MX Keys', 'LOG001', 'Peripherals', 'available', 'good', '2022-08-15', 99.00, 'IT Storage', 'Professional wireless keyboard')
-      `);
-      console.log('✅ Sample inventory data created');
-    }
-
+    console.log('✅ Default categories and admin user created');
   } catch (error) {
     console.error('❌ Database initialization failed:', error.message);
+    throw error;
   }
+}
+
+function getPool() {
+  return pool;
+}
+
+module.exports = {
+  initializeDatabase,
+  getPool
 };
-
-// Initialize on startup
-testConnection();
-initializeDatabase();
-
-module.exports = promisePool;
