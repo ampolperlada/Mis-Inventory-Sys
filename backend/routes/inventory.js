@@ -27,6 +27,91 @@ router.get('/items', async (req, res) => {
       LEFT JOIN categories c ON i.category_id = c.id
       LEFT JOIN users u_created ON i.created_by = u_created.id
       LEFT JOIN users u_updated ON i.updated_by = u_updated.id
+      WHERE 1=1
+    `;
+    
+    const params = [];
+    
+    // Add filtering conditions
+    if (status) {
+      query += ' AND i.status = ?';
+      params.push(status);
+    }
+    
+    if (category) {
+      query += ' AND i.category_id = ?';
+      params.push(category);
+    }
+    
+    if (search) {
+      query += ' AND (i.item_name LIKE ? OR i.brand LIKE ? OR i.model LIKE ? OR i.serial_number LIKE ?)';
+      const searchTerm = `%${search}%`;
+      params.push(searchTerm, searchTerm, searchTerm, searchTerm);
+    }
+    
+    query += ' ORDER BY i.created_at DESC LIMIT ? OFFSET ?';
+    params.push(parseInt(limit), (parseInt(page) - 1) * parseInt(limit));
+    
+    const [items] = await pool.execute(query, params);
+    
+    // Get total count for pagination
+    let countQuery = `
+      SELECT COUNT(*) as total
+      FROM inventory_items i
+      WHERE 1=1
+    `;
+    const countParams = [];
+    
+    if (status) {
+      countQuery += ' AND i.status = ?';
+      countParams.push(status);
+    }
+    
+    if (category) {
+      countQuery += ' AND i.category_id = ?';
+      countParams.push(category);
+    }
+    
+    if (search) {
+      countQuery += ' AND (i.item_name LIKE ? OR i.brand LIKE ? OR i.model LIKE ? OR i.serial_number LIKE ?)';
+      const searchTerm = `%${search}%`;
+      countParams.push(searchTerm, searchTerm, searchTerm, searchTerm);
+    }
+    
+    const [countResult] = await pool.execute(countQuery, countParams);
+    const total = countResult[0].total;
+    
+    res.json({
+      items,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / parseInt(limit))
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching items:', error);
+    res.status(500).json({ error: 'Failed to fetch items' });
+  }
+});
+
+// GET /api/inventory/items/:id - Get single item
+router.get('/items/:id', async (req, res) => {
+  try {
+    const pool = getPool();
+    const { id } = req.params;
+    
+    const [items] = await pool.execute(`
+      SELECT 
+        i.*,
+        c.name as category_name,
+        u_created.full_name as created_by_name,
+        u_updated.full_name as updated_by_name
+      FROM inventory_items i
+      LEFT JOIN categories c ON i.category_id = c.id
+      LEFT JOIN users u_created ON i.created_by = u_created.id
+      LEFT JOIN users u_updated ON i.updated_by = u_updated.id
       WHERE i.id = ?
     `, [id]);
     
@@ -77,12 +162,6 @@ router.post('/items', async (req, res) => {
       purchase_date, purchase_price, supplier, warranty_period,
       description, notes, 1 // Default to admin user, replace with actual user ID
     ]);
-    
-    // Log activity
-    await pool.execute(`
-      INSERT INTO activity_logs (item_id, user_id, action, details)
-      VALUES (?, ?, 'created', ?)
-    `, [result.insertId, 1, `Item "${item_name}" created`]);
     
     // Fetch the created item with relationships
     const [newItem] = await pool.execute(`
@@ -135,12 +214,6 @@ router.put('/items/:id', async (req, res) => {
       return res.status(404).json({ error: 'Item not found' });
     }
     
-    // Log activity
-    await pool.execute(`
-      INSERT INTO activity_logs (item_id, user_id, action, details)
-      VALUES (?, ?, 'updated', ?)
-    `, [id, 1, `Item updated`]);
-    
     // Fetch updated item
     const [updatedItem] = await pool.execute(`
       SELECT i.*, c.name as category_name
@@ -171,14 +244,8 @@ router.delete('/items/:id', async (req, res) => {
     
     const itemName = items[0].item_name;
     
-    // Delete the item (cascading will handle related records)
+    // Delete the item
     await pool.execute('DELETE FROM inventory_items WHERE id = ?', [id]);
-    
-    // Log activity
-    await pool.execute(`
-      INSERT INTO activity_logs (item_id, user_id, action, details)
-      VALUES (?, ?, 'deleted', ?)
-    `, [id, 1, `Item "${itemName}" deleted`]);
     
     res.json({ message: 'Item deleted successfully' });
   } catch (error) {
@@ -201,59 +268,28 @@ router.post('/items/:id/checkout', async (req, res) => {
       return res.status(400).json({ error: 'Assigned to name is required' });
     }
     
-    const connection = await pool.getConnection();
-    await connection.beginTransaction();
+    // Update item status
+    const [updateResult] = await pool.execute(
+      'UPDATE inventory_items SET status = ? WHERE id = ? AND status = ?',
+      ['assigned', id, 'available']
+    );
     
-    try {
-      // Update item status
-      const [updateResult] = await connection.execute(
-        'UPDATE inventory_items SET status = ? WHERE id = ? AND status = ?',
-        ['assigned', id, 'available']
-      );
-      
-      if (updateResult.affectedRows === 0) {
-        throw new Error('Item not found or not available for checkout');
-      }
-      
-      // Create assignment record
-      await connection.execute(`
-        INSERT INTO item_assignments (
-          item_id, assigned_to_name, employee_id, department, email, phone,
-          assignment_date, expected_return_date, assignment_notes, assigned_by
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `, [
-        id, assigned_to_name, employee_id, department, email, phone,
-        assignment_date || new Date().toISOString().split('T')[0],
-        expected_return_date, assignment_notes, 1
-      ]);
-      
-      // Log activity
-      await connection.execute(`
-        INSERT INTO activity_logs (item_id, user_id, action, details)
-        VALUES (?, ?, 'assigned', ?)
-      `, [id, 1, `Item checked out to ${assigned_to_name}`]);
-      
-      await connection.commit();
-      
-      // Fetch updated item
-      const [item] = await pool.execute(`
-        SELECT i.*, c.name as category_name, ia.assigned_to_name, ia.department, ia.assignment_date
-        FROM inventory_items i
-        LEFT JOIN categories c ON i.category_id = c.id
-        LEFT JOIN item_assignments ia ON i.id = ia.item_id AND ia.is_active = TRUE
-        WHERE i.id = ?
-      `, [id]);
-      
-      res.json(item[0]);
-    } catch (error) {
-      await connection.rollback();
-      throw error;
-    } finally {
-      connection.release();
+    if (updateResult.affectedRows === 0) {
+      return res.status(404).json({ error: 'Item not found or not available for checkout' });
     }
+    
+    // Fetch updated item
+    const [item] = await pool.execute(`
+      SELECT i.*, c.name as category_name
+      FROM inventory_items i
+      LEFT JOIN categories c ON i.category_id = c.id
+      WHERE i.id = ?
+    `, [id]);
+    
+    res.json(item[0]);
   } catch (error) {
     console.error('Error checking out item:', error);
-    res.status(500).json({ error: error.message || 'Failed to check out item' });
+    res.status(500).json({ error: 'Failed to check out item' });
   }
 });
 
@@ -264,54 +300,28 @@ router.post('/items/:id/checkin', async (req, res) => {
     const { id } = req.params;
     const { return_notes, return_condition = 'good' } = req.body;
     
-    const connection = await pool.getConnection();
-    await connection.beginTransaction();
+    // Update item status
+    const [updateResult] = await pool.execute(
+      'UPDATE inventory_items SET status = ? WHERE id = ? AND status = ?',
+      ['available', id, 'assigned']
+    );
     
-    try {
-      // Update item status
-      const [updateResult] = await connection.execute(
-        'UPDATE inventory_items SET status = ? WHERE id = ? AND status = ?',
-        ['available', id, 'assigned']
-      );
-      
-      if (updateResult.affectedRows === 0) {
-        throw new Error('Item not found or not currently assigned');
-      }
-      
-      // Update assignment record
-      await connection.execute(`
-        UPDATE item_assignments 
-        SET actual_return_date = CURRENT_DATE, return_notes = ?, 
-            return_condition = ?, returned_by = ?, is_active = FALSE
-        WHERE item_id = ? AND is_active = TRUE
-      `, [return_notes, return_condition, 1, id]);
-      
-      // Log activity
-      await connection.execute(`
-        INSERT INTO activity_logs (item_id, user_id, action, details)
-        VALUES (?, ?, 'returned', ?)
-      `, [id, 1, 'Item checked back in']);
-      
-      await connection.commit();
-      
-      // Fetch updated item
-      const [item] = await pool.execute(`
-        SELECT i.*, c.name as category_name
-        FROM inventory_items i
-        LEFT JOIN categories c ON i.category_id = c.id
-        WHERE i.id = ?
-      `, [id]);
-      
-      res.json(item[0]);
-    } catch (error) {
-      await connection.rollback();
-      throw error;
-    } finally {
-      connection.release();
+    if (updateResult.affectedRows === 0) {
+      return res.status(404).json({ error: 'Item not found or not currently assigned' });
     }
+    
+    // Fetch updated item
+    const [item] = await pool.execute(`
+      SELECT i.*, c.name as category_name
+      FROM inventory_items i
+      LEFT JOIN categories c ON i.category_id = c.id
+      WHERE i.id = ?
+    `, [id]);
+    
+    res.json(item[0]);
   } catch (error) {
     console.error('Error checking in item:', error);
-    res.status(500).json({ error: error.message || 'Failed to check in item' });
+    res.status(500).json({ error: 'Failed to check in item' });
   }
 });
 
