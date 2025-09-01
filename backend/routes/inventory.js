@@ -21,8 +21,8 @@ router.get('/items', async (req, res) => {
       SELECT 
         i.*,
         c.name as category_name,
-        u_created.full_name as created_by_name,
-        u_updated.full_name as updated_by_name
+        CONCAT(u_created.firstName, ' ', u_created.lastName) as created_by_name,
+        CONCAT(u_updated.firstName, ' ', u_updated.lastName) as updated_by_name
       FROM inventory_items i
       LEFT JOIN categories c ON i.category_id = c.id
       LEFT JOIN users u_created ON i.created_by = u_created.id
@@ -106,8 +106,8 @@ router.get('/items/:id', async (req, res) => {
       SELECT 
         i.*,
         c.name as category_name,
-        u_created.full_name as created_by_name,
-        u_updated.full_name as updated_by_name
+        CONCAT(u_created.firstName, ' ', u_created.lastName) as created_by_name,
+        CONCAT(u_updated.firstName, ' ', u_updated.lastName) as updated_by_name
       FROM inventory_items i
       LEFT JOIN categories c ON i.category_id = c.id
       LEFT JOIN users u_created ON i.created_by = u_created.id
