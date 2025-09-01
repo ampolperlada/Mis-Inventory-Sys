@@ -1,6 +1,4 @@
 import React, { useState } from 'react';
-
-// All MUI components from @mui/material
 import {
   Box,
   Drawer,
@@ -30,13 +28,21 @@ import {
   InputLabel,
   CircularProgress,
   Alert,
-  styled
+  Snackbar,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Input,
 } from '@mui/material';
-
-// Only import createTheme and ThemeProvider from @mui/material/styles
-import { createTheme, ThemeProvider } from '@mui/material/styles';
-
-// Icons
+import { styled, createTheme, ThemeProvider } from '@mui/material/styles';
+import MuiAlert from '@mui/material/Alert';
 import {
   Dashboard as DashboardIcon,
   Add as AddIcon,
@@ -56,14 +62,12 @@ import {
   AutoAwesome,
   AssignmentTurnedIn as Assignment,
   Search,
-  PersonAdd,
-  Business,
+  Delete,
+  Edit,
+  Person,
   CalendarToday,
-  ArrowBack,
-  ArrowForward
 } from '@mui/icons-material';
 
-// Import our API service (hooks)
 import { useInventoryItems, useDashboardStats } from '../hooks/useInventory';
 
 // Create clean white theme
@@ -79,7 +83,7 @@ const whiteTheme = createTheme({
       main: '#7c3aed',
     },
     background: {
-      default: '#ffffff',
+      default: '#f8f9fa',
       paper: '#ffffff',
     },
     text: {
@@ -142,7 +146,7 @@ const GlowingStatCard = styled(Card)(({ gradient, glowColor }) => ({
   borderRadius: '12px',
   border: 'none',
   transition: 'all 0.2s ease-in-out',
-  height: '140px',
+  height: '100px',
   boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
   '&:hover': {
     transform: 'translateY(-2px)',
@@ -190,19 +194,37 @@ const StyledTextField = styled(TextField)(({ theme }) => ({
 }));
 
 // Dashboard Component
-const Dashboard = ({ children }) => {
+const Dashboard = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
   const [currentView, setCurrentView] = useState('dashboard');
 
-  // No sample data - all counters start at 0
-  const stats = {
-    totalItems: 0,
-    available: 0,
-    assigned: 0,
-    maintenance: 0
+  // Hooks
+  const { items, loading, error, addItem, deleteItem, checkOutItem, checkInItem } = useInventoryItems();
+  const { stats, loading: statsLoading } = useDashboardStats();
+
+  // Dialog states
+  const [openAddDialog, setOpenAddDialog] = useState(false);
+  const [openCheckOutDialog, setOpenCheckOutDialog] = useState(null);
+  const [openCheckInDialog, setOpenCheckInDialog] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
+
+  // Form states
+  const [newItem, setNewItem] = useState({ name: '', brand: '', model: '', serialNumber: '' });
+  const [assignmentData, setAssignmentData] = useState({ assignedTo: '', department: '' });
+  const [returnData, setReturnData] = useState({ condition: 'good', notes: '' });
+
+  // Snackbar
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+
+  const handleDrawerToggle = () => setMobileOpen(!mobileOpen);
+  const handleProfileMenuOpen = (event) => setAnchorEl(event.currentTarget);
+  const handleMenuClose = () => setAnchorEl(null);
+
+  const showSnackbar = (message, severity = 'success') => {
+    setSnackbar({ open: true, message, severity });
   };
 
   const menuItems = [
@@ -214,363 +236,310 @@ const Dashboard = ({ children }) => {
     { text: 'Reports', icon: <ReportsIcon />, view: 'reports' },
   ];
 
-  const handleDrawerToggle = () => setMobileOpen(!mobileOpen);
-  const handleProfileMenuOpen = (event) => setAnchorEl(event.currentTarget);
-  const handleMenuClose = () => setAnchorEl(null);
+  // Handlers
+  const handleAddItem = async () => {
+  if (!newItem.name?.trim()) {
+    showSnackbar('Item name is required', 'error');
+    return;
+  }
+  if (!newItem.serialNumber?.trim()) {
+    showSnackbar('Serial number is required', 'error');
+    return;
+  }
 
-  // Simple Add Item Form
-  const AddItemForm = () => (
-    <UltraModernCard sx={{ mb: 4 }}>
-      <CardContent sx={{ p: 4 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4 }}>
-          <AddIcon sx={{ color: '#2563eb', fontSize: 32 }} />
-          <Typography variant="h3" sx={{ color: '#1f2937', fontWeight: '900' }}>
-            Add New Item
-          </Typography>
-        </Box>
-        
-        <Grid container spacing={3}>
-          <Grid item xs={12} md={6}>
-            <StyledTextField
-              fullWidth
-              label="Item Name"
-              placeholder="Enter item name"
-            />
-          </Grid>
-          <Grid item xs={12} md={6}>
-            <StyledTextField
-              fullWidth
-              label="Brand"
-              placeholder="Enter brand"
-            />
-          </Grid>
-          <Grid item xs={12} md={6}>
-            <StyledTextField
-              fullWidth
-              label="Model"
-              placeholder="Enter model"
-            />
-          </Grid>
-          <Grid item xs={12} md={6}>
-            <StyledTextField
-              fullWidth
-              label="Serial Number"
-              placeholder="Enter serial number"
-            />
-          </Grid>
-        </Grid>
-        
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 4 }}>
-          <Button 
-            sx={{ color: '#c4b5fd', fontWeight: '600' }}
-            onClick={() => setCurrentView('dashboard')}
-          >
-            Cancel
-          </Button>
-          <FloatingActionButton>
-            Add Item
-          </FloatingActionButton>
-        </Box>
-      </CardContent>
-    </UltraModernCard>
-  );
+  const itemData = {
+    item_name: newItem.name.trim(),
+    brand: newItem.brand?.trim() || null,
+    model: newItem.model?.trim() || null,
+    serial_number: newItem.serialNumber.trim(),
+    status: 'available',
+    category_id: 1, // Default category
+    location: 'Office',
+    condition_status: 'new',
+    description: '',
+    notes: '',
+    created_by: 1,
+  };
 
-  // Simple View Items
-  const ViewItems = () => (
-    <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-        <Box>
-          <Typography variant="h3" sx={{ color: 'white', fontWeight: '900', mb: 1 }}>
-            Inventory Items
-          </Typography>
-          <Typography sx={{ color: '#c4b5fd' }}>
-            Manage and view all your inventory items
-          </Typography>
-        </Box>
-        <FloatingActionButton
-          startIcon={<AddIcon />}
-          onClick={() => setCurrentView('add')}
-        >
-          Add Item
-        </FloatingActionButton>
-      </Box>
+  try {
+    await addItem(itemData);
+    setNewItem({ name: '', brand: '', model: '', serialNumber: '' });
+    setOpenAddDialog(false);
+    showSnackbar('Item added successfully!', 'success');
+  } catch (err) {
+    console.error('Add item error:', err);
+    showSnackbar('Failed to add item: ' + (err.response?.data?.error || err.message), 'error');
+  }
+};
 
-      <UltraModernCard>
-        <CardContent sx={{ p: 4 }}>
-          <Box sx={{ textAlign: 'center', py: 8, color: '#c4b5fd' }}>
-            <Inventory2 sx={{ fontSize: 80, mb: 3, opacity: 0.5 }} />
-            <Typography variant="h5" sx={{ fontWeight: '700', mb: 2 }}>
-              No assets found
-            </Typography>
-            <Typography>
-              Add new assets to see them listed here
-            </Typography>
-          </Box>
-        </CardContent>
-      </UltraModernCard>
-    </Box>
-  );
+  const handleDeleteItem = async (id) => {
+    try {
+      await deleteItem(id);
+      setDeleteConfirm(null);
+      showSnackbar('Item deleted successfully!');
+    } catch (err) {
+      showSnackbar('Failed to delete item: ' + err.message, 'error');
+    }
+  };
 
-  // Simple Check Out
-  const CheckOut = () => (
-    <UltraModernCard>
-      <CardContent sx={{ p: 6, textAlign: 'center' }}>
-        <CheckOutIcon sx={{ fontSize: 80, color: '#c4b5fd', mb: 3, opacity: 0.5 }} />
-        <Typography variant="h4" sx={{ color: 'white', fontWeight: '800', mb: 2 }}>
-          Check Out Item
-        </Typography>
-        <Typography sx={{ color: '#c4b5fd', mb: 4 }}>
-          No items available for checkout. Add inventory items first.
-        </Typography>
-      </CardContent>
-    </UltraModernCard>
-  );
+  const handleCheckOut = async (id) => {
+    try {
+      await checkOutItem(id, assignmentData);
+      setOpenCheckOutDialog(null);
+      setAssignmentData({ assignedTo: '', department: '' });
+      showSnackbar('Item checked out successfully!');
+    } catch (err) {
+      showSnackbar('Failed to check out: ' + err.message, 'error');
+    }
+  };
 
-  // Simple Check In
-  const CheckIn = () => (
-    <UltraModernCard>
-      <CardContent sx={{ p: 6, textAlign: 'center' }}>
-        <CheckInIcon sx={{ fontSize: 80, color: '#c4b5fd', mb: 3, opacity: 0.5 }} />
-        <Typography variant="h4" sx={{ color: 'white', fontWeight: '800', mb: 2 }}>
-          Check In Item
-        </Typography>
-        <Typography sx={{ color: '#c4b5fd', mb: 4 }}>
-          Return assigned items to inventory
-        </Typography>
-      </CardContent>
-    </UltraModernCard>
-  );
-
-  // Simple Reports
-  const Reports = () => (
-    <Box>
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h3" sx={{ color: 'white', fontWeight: '900', mb: 1 }}>
-          Reports & Analytics
-        </Typography>
-        <Typography sx={{ color: '#c4b5fd' }}>
-          Generate comprehensive reports and analyze your inventory data
-        </Typography>
-      </Box>
-
-      <Grid container spacing={3} sx={{ mb: 6 }}>
-        <Grid item xs={12} sm={6} lg={3}>
-          <GlowingStatCard gradient="linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)" glowColor="#8b5cf6">
-            <CardContent sx={{ p: 3, textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%' }}>
-              <Inventory2 sx={{ fontSize: 40, color: 'white', mb: 1, opacity: 0.9 }} />
-              <Typography variant="h4" sx={{ fontWeight: '900', mb: 1, color: 'white' }}>
-                {stats.totalItems}
-              </Typography>
-              <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: '600', color: 'white' }}>
-                Total Items
-              </Typography>
-            </CardContent>
-          </GlowingStatCard>
-        </Grid>
-        <Grid item xs={12} sm={6} lg={3}>
-          <GlowingStatCard gradient="linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)" glowColor="#06b6d4">
-            <CardContent sx={{ p: 3, textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%' }}>
-              <CheckCircleOutline sx={{ fontSize: 40, color: 'white', mb: 1, opacity: 0.9 }} />
-              <Typography variant="h4" sx={{ fontWeight: '900', mb: 1, color: 'white' }}>
-                {stats.available}
-              </Typography>
-              <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: '600', color: 'white' }}>
-                Available
-              </Typography>
-            </CardContent>
-          </GlowingStatCard>
-        </Grid>
-        <Grid item xs={12} sm={6} lg={3}>
-          <GlowingStatCard gradient="linear-gradient(135deg, #f59e0b 0%, #d97706 100%)" glowColor="#f59e0b">
-            <CardContent sx={{ p: 3, textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%' }}>
-              <Assignment sx={{ fontSize: 40, color: 'white', mb: 1, opacity: 0.9 }} />
-              <Typography variant="h4" sx={{ fontWeight: '900', mb: 1, color: 'white' }}>
-                {stats.assigned}
-              </Typography>
-              <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: '600', color: 'white' }}>
-                Assigned
-              </Typography>
-            </CardContent>
-          </GlowingStatCard>
-        </Grid>
-        <Grid item xs={12} sm={6} lg={3}>
-          <GlowingStatCard gradient="linear-gradient(135deg, #ef4444 0%, #dc2626 100%)" glowColor="#ef4444">
-            <CardContent sx={{ p: 3, textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%' }}>
-              <Warning sx={{ fontSize: 40, color: 'white', mb: 1, opacity: 0.9 }} />
-              <Typography variant="h4" sx={{ fontWeight: '900', mb: 1, color: 'white' }}>
-                {stats.maintenance}
-              </Typography>
-              <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: '600', color: 'white' }}>
-                Maintenance
-              </Typography>
-            </CardContent>
-          </GlowingStatCard>
-        </Grid>
-      </Grid>
-
-      <UltraModernCard>
-        <CardContent sx={{ p: 6, textAlign: 'center' }}>
-          <ReportsIcon sx={{ fontSize: 80, color: '#c4b5fd', mb: 3, opacity: 0.5 }} />
-          <Typography variant="h5" sx={{ color: 'white', fontWeight: '700', mb: 2 }}>
-            No data to display
-          </Typography>
-          <Typography sx={{ color: '#c4b5fd' }}>
-            Add inventory items to generate comprehensive reports
-          </Typography>
-        </CardContent>
-      </UltraModernCard>
-    </Box>
-  );
+  const handleCheckIn = async (id) => {
+    try {
+      await checkInItem(id, returnData);
+      setOpenCheckInDialog(null);
+      setReturnData({ condition: 'good', notes: '' });
+      showSnackbar('Item checked in successfully!');
+    } catch (err) {
+      showSnackbar('Failed to check in: ' + err.message, 'error');
+    }
+  };
 
   const renderCurrentView = () => {
-    switch(currentView) {
-      case 'add': return <AddItemForm />;
-      case 'view': return <ViewItems />;
-      case 'checkout': return <CheckOut />;
-      case 'checkin': return <CheckIn />;
-      case 'reports': return <Reports />;
-      default: return (
-        <Box sx={{ width: '100%' }}>
-          <Box sx={{ mb: 6, textAlign: 'center' }}>
-            <Typography variant="h2" sx={{ 
-              fontWeight: '900', 
-              color: '#1f2937', 
-              mb: 2
-            }}>
-              Dashboard
-            </Typography>
-            <Typography variant="h6" sx={{ 
-              color: '#6b7280', 
-              fontWeight: '400',
-              maxWidth: '600px',
-              mx: 'auto'
-            }}>
-              Inventory Management System
-            </Typography>
-          </Box>
-
-          <Grid container spacing={3} sx={{ mb: 6 }}>
-            <Grid item xs={12} sm={6} lg={3}>
-              <GlowingStatCard gradient="linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)" glowColor="#8b5cf6">
-                <CardContent sx={{ p: 3, textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%' }}>
-                  <Inventory2 sx={{ fontSize: 40, color: 'white', mb: 1, opacity: 0.9 }} />
-                  <Typography variant="h4" sx={{ fontWeight: '900', mb: 1, color: 'white' }}>
-                    {stats.totalItems.toLocaleString()}
-                  </Typography>
-                  <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: '600', color: 'white' }}>
-                    Total Items
-                  </Typography>
-                </CardContent>
-              </GlowingStatCard>
-            </Grid>
-
-            <Grid item xs={12} sm={6} lg={3}>
-              <GlowingStatCard gradient="linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)" glowColor="#06b6d4">
-                <CardContent sx={{ p: 3, textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%' }}>
-                  <CheckCircleOutline sx={{ fontSize: 40, color: 'white', mb: 1, opacity: 0.9 }} />
-                  <Typography variant="h4" sx={{ fontWeight: '900', mb: 1, color: 'white' }}>
-                    {stats.available.toLocaleString()}
-                  </Typography>
-                  <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: '600', color: 'white' }}>
-                    Available
-                  </Typography>
-                </CardContent>
-              </GlowingStatCard>
-            </Grid>
-
-            <Grid item xs={12} sm={6} lg={3}>
-              <GlowingStatCard gradient="linear-gradient(135deg, #f59e0b 0%, #d97706 100%)" glowColor="#f59e0b">
-                <CardContent sx={{ p: 3, textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%' }}>
-                  <Assignment sx={{ fontSize: 40, color: 'white', mb: 1, opacity: 0.9 }} />
-                  <Typography variant="h4" sx={{ fontWeight: '900', mb: 1, color: 'white' }}>
-                    {stats.assigned.toLocaleString()}
-                  </Typography>
-                  <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: '600', color: 'white' }}>
-                    Assigned
-                  </Typography>
-                </CardContent>
-              </GlowingStatCard>
-            </Grid>
-
-            <Grid item xs={12} sm={6} lg={3}>
-              <GlowingStatCard gradient="linear-gradient(135deg, #ef4444 0%, #dc2626 100%)" glowColor="#ef4444">
-                <CardContent sx={{ p: 3, textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%' }}>
-                  <Warning sx={{ fontSize: 40, color: 'white', mb: 1, opacity: 0.9 }} />
-                  <Typography variant="h4" sx={{ fontWeight: '900', mb: 1, color: 'white' }}>
-                    {stats.maintenance.toLocaleString()}
-                  </Typography>
-                  <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: '600', color: 'white' }}>
-                    Maintenance
-                  </Typography>
-                </CardContent>
-              </GlowingStatCard>
-            </Grid>
-          </Grid>
-
-          <UltraModernCard sx={{ mb: 6 }}>
-            <CardContent sx={{ p: 4 }}>
-              <Typography variant="h4" sx={{ 
-                fontWeight: '800', 
-                mb: 4, 
-                color: 'white',
-                textAlign: 'center'
-              }}>
-                Quick Actions
-              </Typography>
-              <Grid container spacing={3} sx={{ justifyContent: 'center' }}>
-                <Grid item xs={12} sm={6} md={3}>
-                  <FloatingActionButton
-                    fullWidth
-                    startIcon={<AddIcon />}
-                    onClick={() => setCurrentView('add')}
-                  >
+    switch (currentView) {
+      case 'add':
+        return (
+          <Box sx={{ mb: 4 }}>
+            <Typography variant="h4" sx={{ color: '#1f2937', mb: 2 }}>Add New Item</Typography>
+            <UltraModernCard>
+              <CardContent sx={{ p: 4 }}>
+                <Grid container spacing={3}>
+                  <Grid item xs={12}>
+                    <StyledTextField
+                      fullWidth
+                      label="Item Name"
+                      value={newItem.name}
+                      onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <StyledTextField
+                      fullWidth
+                      label="Brand"
+                      value={newItem.brand}
+                      onChange={(e) => setNewItem({ ...newItem, brand: e.target.value })}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <StyledTextField
+                      fullWidth
+                      label="Model"
+                      value={newItem.model}
+                      onChange={(e) => setNewItem({ ...newItem, model: e.target.value })}
+                    />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <StyledTextField
+                      fullWidth
+                      label="Serial Number"
+                      value={newItem.serialNumber}
+                      onChange={(e) => setNewItem({ ...newItem, serialNumber: e.target.value })}
+                    />
+                  </Grid>
+                </Grid>
+                <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 4 }}>
+                  <Button onClick={() => setCurrentView('dashboard')}>Cancel</Button>
+                  <FloatingActionButton onClick={handleAddItem}>
                     Add Item
                   </FloatingActionButton>
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  <FloatingActionButton
-                    fullWidth
-                    startIcon={<CheckOutIcon />}
-                    onClick={() => setCurrentView('checkout')}
-                  >
+                </Box>
+              </CardContent>
+            </UltraModernCard>
+          </Box>
+        );
+
+      case 'view':
+        return (
+          <Box>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
+              <Typography variant="h4" sx={{ color: '#1f2937' }}>Inventory Items</Typography>
+              <FloatingActionButton
+                startIcon={<AddIcon />}
+                onClick={() => setOpenAddDialog(true)}
+              >
+                Add Item
+              </FloatingActionButton>
+            </Box>
+
+            {loading ? (
+              <Box sx={{ textAlign: 'center', py: 4 }}>
+                <CircularProgress />
+              </Box>
+            ) : error ? (
+              <Alert severity="error">{error}</Alert>
+            ) : (
+              <TableContainer component={Paper} sx={{ border: '1px solid #e5e7eb' }}>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell><strong>Name</strong></TableCell>
+                      <TableCell><strong>Brand</strong></TableCell>
+                      <TableCell><strong>Model</strong></TableCell>
+                      <TableCell><strong>Serial</strong></TableCell>
+                      <TableCell><strong>Status</strong></TableCell>
+                      <TableCell><strong>Actions</strong></TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {items.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={6} align="center" sx={{ color: '#6b7280' }}>
+                          No items found. Add one to get started.
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      items.map((item) => (
+                        <TableRow key={item.id}>
+                          <TableCell>{item.item_name}</TableCell>
+                          <TableCell>{item.brand}</TableCell>
+                          <TableCell>{item.model}</TableCell>
+                          <TableCell>{item.serial_number}</TableCell>
+                          <TableCell>
+                            <Chip
+                              label={item.status}
+                              size="small"
+                              sx={{
+                                background:
+                                  item.status === 'available' ? '#dcfce7' :
+                                  item.status === 'assigned' ? '#fef3c7' :
+                                  '#fee2e2',
+                                color:
+                                  item.status === 'available' ? '#166534' :
+                                  item.status === 'assigned' ? '#92400e' :
+                                  '#991b1b',
+                                fontWeight: '600'
+                              }}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <IconButton size="small" onClick={() => setOpenCheckOutDialog(item.id)}>
+                              <CheckOutIcon fontSize="small" />
+                            </IconButton>
+                            <IconButton size="small" onClick={() => setOpenCheckInDialog(item.id)}>
+                              <CheckInIcon fontSize="small" />
+                            </IconButton>
+                            <IconButton size="small" vaults="small" onClick={() => setDeleteConfirm(item.id)}>
+                              <Delete fontSize="small" color="error" />
+                            </IconButton>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            )}
+          </Box>
+        );
+
+      default:
+        return (
+          <Box sx={{ width: '100%' }}>
+            <Box sx={{ mb: 6, textAlign: 'center' }}>
+              <Typography variant="h2" sx={{ fontWeight: '900', color: '#1f2937', mb: 1 }}>
+                Dashboard
+              </Typography>
+              <Typography variant="h6" sx={{ color: '#6b7280', maxWidth: '600px', mx: 'auto' }}>
+                Inventory Management System
+              </Typography>
+            </Box>
+
+            <Grid container spacing={2} sx={{ mb: 6 }}>
+              <Grid item xs={12} sm={3}>
+                <GlowingStatCard gradient="linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)" glowColor="#8b5cf6">
+                  <CardContent sx={{ p: 2, textAlign: 'center' }}>
+                    <Inventory2 sx={{ fontSize: 32, color: 'white', mb: 1 }} />
+                    <Typography variant="h4" sx={{ fontWeight: '900', color: 'white' }}>
+                      {stats.totalItems}
+                    </Typography>
+                    <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: '600', color: 'white' }}>
+                      Total Items
+                    </Typography>
+                  </CardContent>
+                </GlowingStatCard>
+              </Grid>
+              <Grid item xs={12} sm={3}>
+                <GlowingStatCard gradient="linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)" glowColor="#06b6d4">
+                  <CardContent sx={{ p: 2, textAlign: 'center' }}>
+                    <CheckCircleOutline sx={{ fontSize: 32, color: 'white', mb: 1 }} />
+                    <Typography variant="h4" sx={{ fontWeight: '900', color: 'white' }}>
+                      {stats.available}
+                    </Typography>
+                    <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: '600', color: 'white' }}>
+                      Available
+                    </Typography>
+                  </CardContent>
+                </GlowingStatCard>
+              </Grid>
+              <Grid item xs={12} sm={3}>
+                <GlowingStatCard gradient="linear-gradient(135deg, #f59e0b 0%, #d97706 100%)" glowColor="#f59e0b">
+                  <CardContent sx={{ p: 2, textAlign: 'center' }}>
+                    <Assignment sx={{ fontSize: 32, color: 'white', mb: 1 }} />
+                    <Typography variant="h4" sx={{ fontWeight: '900', color: 'white' }}>
+                      {stats.assigned}
+                    </Typography>
+                    <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: '600', color: 'white' }}>
+                      Assigned
+                    </Typography>
+                  </CardContent>
+                </GlowingStatCard>
+              </Grid>
+              <Grid item xs={12} sm={3}>
+                <GlowingStatCard gradient="linear-gradient(135deg, #ef4444 0%, #dc2626 100%)" glowColor="#ef4444">
+                  <CardContent sx={{ p: 2, textAlign: 'center' }}>
+                    <Warning sx={{ fontSize: 32, color: 'white', mb: 1 }} />
+                    <Typography variant="h4" sx={{ fontირ: 'h4', fontWeight: '900', color: 'white' }}>
+                      {stats.maintenance}
+                    </Typography>
+                    <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: '600', color: 'white' }}>
+                      Maintenance
+                    </Typography>
+                  </CardContent>
+                </GlowingStatCard>
+              </Grid>
+            </Grid>
+
+            <UltraModernCard sx={{ mb: 6 }}>
+              <CardContent sx={{ p: 4, textAlign: 'center' }}>
+                <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, flexWrap: 'wrap' }}>
+                  <FloatingActionButton startIcon={<AddIcon />} onClick={() => setCurrentView('add')}>
+                    Add Item
+                  </FloatingActionButton>
+                  <FloatingActionButton startIcon={<CheckOutIcon />} onClick={() => setCurrentView('view')}>
                     Check Out
                   </FloatingActionButton>
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  <FloatingActionButton
-                    fullWidth
-                    startIcon={<CheckInIcon />}
-                    onClick={() => setCurrentView('checkin')}
-                  >
+                  <FloatingActionButton startIcon={<CheckInIcon />} onClick={() => setCurrentView('view')}>
                     Check In
                   </FloatingActionButton>
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  <FloatingActionButton
-                    fullWidth
-                    startIcon={<ReportsIcon />}
-                    onClick={() => setCurrentView('reports')}
-                  >
+                  <FloatingActionButton startIcon={<ReportsIcon />} onClick={() => setCurrentView('reports')}>
                     Reports
                   </FloatingActionButton>
-                </Grid>
-              </Grid>
-            </CardContent>
-          </UltraModernCard>
+                </Box>
+              </CardContent>
+            </UltraModernCard>
 
-          <UltraModernCard>
-            <CardContent sx={{ p: 6, textAlign: 'center' }}>
-              <TrendingUp sx={{ fontSize: 80, color: '#8b5cf6', mb: 3, opacity: 0.7 }} />
-              <Typography variant="h5" sx={{ color: 'white', mb: 2, fontWeight: '700' }}>
-                Recent Activity
-              </Typography>
-              <Typography variant="body1" sx={{ color: 'rgba(255, 255, 255, 0.6)', maxWidth: '400px', mx: 'auto' }}>
-                No recent activity to display. Start by adding inventory items or making assignments to see your activity feed here.
-              </Typography>
-            </CardContent>
-          </UltraModernCard>
-        </Box>
-      );
+            <UltraModernCard>
+              <CardContent sx={{ p: 6, textAlign: 'center' }}>
+                <TrendingUp sx={{ fontSize: 80, color: '#8b5cf6', mb: 3, opacity: 0.7 }} />
+                <Typography variant="h5" sx={{ color: '#1f2937', mb: 2, fontWeight: '700' }}>
+                  Recent Activity
+                </Typography>
+                <Typography variant="body1" sx={{ color: '#6b7280' }}>
+                  No recent activity to display.
+                </Typography>
+              </CardContent>
+            </UltraModernCard>
+          </Box>
+        );
     }
   };
 
@@ -589,11 +558,7 @@ const Dashboard = ({ children }) => {
         }}>
           <AutoAwesome sx={{ fontSize: 24, color: 'white' }} />
         </Box>
-        <Typography variant="h6" sx={{ 
-          fontWeight: '700', 
-          color: '#1f2937',
-          mb: 1
-        }}>
+        <Typography variant="h6" sx={{ fontWeight: '700', color: '#1f2937', mb: 1 }}>
           Inventory Pro
         </Typography>
         <Typography variant="body2" sx={{ color: '#6b7280', fontWeight: '500' }}>
@@ -608,10 +573,7 @@ const Dashboard = ({ children }) => {
               active={currentView === item.view ? 1 : 0}
               onClick={() => setCurrentView(item.view)}
             >
-              <ListItemIcon sx={{ 
-                color: 'inherit', 
-                minWidth: 48,
-              }}>
+              <ListItemIcon sx={{ color: 'inherit', minWidth: 48 }}>
                 {item.icon}
               </ListItemIcon>
               <ListItemText 
@@ -638,7 +600,7 @@ const Dashboard = ({ children }) => {
           textAlign: 'center'
         }}>
           <Typography variant="h4" sx={{ color: '#2563eb', fontWeight: '800', mb: 1 }}>
-            {stats.totalItems.toLocaleString()}
+            {stats.totalItems}
           </Typography>
           <Typography variant="body2" sx={{ color: '#64748b', fontWeight: '600' }}>
             Total Items Managed
@@ -653,8 +615,116 @@ const Dashboard = ({ children }) => {
       <Box sx={{ 
         display: 'flex',
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #1a1856 0%, #312e81 50%, #1e1b4b 100%)',
+        background: '#f8f9fa',
       }}>
+        <Snackbar
+          open={snackbar.open}
+          autoHideDuration={6000}
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+        >
+          <MuiAlert onClose={() => setSnackbar({ ...snackbar, open: false })} severity={snackbar.severity}>
+            {snackbar.message}
+          </MuiAlert>
+        </Snackbar>
+
+        <Dialog open={openAddDialog} onClose={() => setOpenAddDialog(false)} maxWidth="sm" fullWidth>
+          <DialogTitle>Add New Item</DialogTitle>
+          <DialogContent>
+            <Grid container spacing={2} sx={{ mt: 1 }}>
+              <Grid item xs={12}>
+                <StyledTextField fullWidth label="Item Name" value={newItem.name} onChange={(e) => setNewItem({ ...newItem, name: e.target.value })} />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <StyledTextField fullWidth label="Brand" value={newItem.brand} onChange={(e) => setNewItem({ ...newItem, brand: e.target.value })} />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <StyledTextField fullWidth label="Model" value={newItem.model} onChange={(e) => setNewItem({ ...newItem, model: e.target.value })} />
+              </Grid>
+              <Grid item xs={12}>
+                <StyledTextField fullWidth label="Serial Number" value={newItem.serialNumber} onChange={(e) => setNewItem({ ...newItem, serialNumber: e.target.value })} />
+              </Grid>
+            </Grid>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setOpenAddDialog(false)}>Cancel</Button>
+            <FloatingActionButton onClick={handleAddItem}>Add Item</FloatingActionButton>
+          </DialogActions>
+        </Dialog>
+
+        {/* Check Out Dialog */}
+        {openCheckOutDialog && (
+          <Dialog open onClose={() => setOpenCheckOutDialog(null)} maxWidth="sm" fullWidth>
+            <DialogTitle>Check Out Item</DialogTitle>
+            <DialogContent>
+              <Grid container spacing={2} sx={{ mt: 1 }}>
+                <Grid item xs={12}>
+                  <StyledTextField fullWidth label="Assigned To" value={assignmentData.assignedTo} onChange={(e) => setAssignmentData({ ...assignmentData, assignedTo: e.target.value })} />
+                </Grid>
+                <Grid item xs={12}>
+                  <StyledTextField fullWidth label="Department" value={assignmentData.department} onChange={(e) => setAssignmentData({ ...assignmentData, department: e.target.value })} />
+                </Grid>
+              </Grid>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setOpenCheckOutDialog(null)}>Cancel</Button>
+              <FloatingActionButton onClick={() => handleCheckOut(openCheckOutDialog)}>Check Out</FloatingActionButton>
+            </DialogActions>
+          </Dialog>
+        )}
+
+        {/* Check In Dialog */}
+        {openCheckInDialog && (
+          <Dialog open onClose={() => setOpenCheckInDialog(null)} maxWidth="sm" fullWidth>
+            <DialogTitle>Check In Item</DialogTitle>
+            <DialogContent>
+              <Grid container spacing={2} sx={{ mt: 1 }}>
+                <Grid item xs={12}>
+                  <FormControl fullWidth>
+                    <InputLabel>Condition</InputLabel>
+                    <Select
+                      value={returnData.condition}
+                      label="Condition"
+                      onChange={(e) => setReturnData({ ...returnData, condition: e.target.value })}
+                    >
+                      <MenuItem value="good">Good</MenuItem>
+                      <MenuItem value="fair">Fair</MenuItem>
+                      <MenuItem value="damaged">Damaged</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+                <Grid item xs={12}>
+                  <StyledTextField
+                    fullWidth
+                    multiline
+                    rows={3}
+                    label="Notes"
+                    value={returnData.notes}
+                    onChange={(e) => setReturnData({ ...returnData, notes: e.target.value })}
+                  />
+                </Grid>
+              </Grid>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setOpenCheckInDialog(null)}>Cancel</Button>
+              <FloatingActionButton onClick={() => handleCheckIn(openCheckInDialog)}>Check In</FloatingActionButton>
+            </DialogActions>
+          </Dialog>
+        )}
+
+        {/* Delete Confirmation */}
+        {deleteConfirm && (
+          <Dialog open onClose={() => setDeleteConfirm(null)}>
+            <DialogTitle>Confirm Delete</DialogTitle>
+            <DialogContent>
+              <Typography>Are you sure you want to delete this item? This action cannot be undone.</Typography>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setDeleteConfirm(null)}>Cancel</Button>
+              <Button color="error" onClick={() => handleDeleteItem(deleteConfirm)}>Delete</Button>
+            </DialogActions>
+          </Dialog>
+        )}
+
         <ModernAppBar
           position="fixed"
           sx={{

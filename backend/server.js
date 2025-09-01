@@ -1,4 +1,3 @@
-// backend/server.js
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -15,9 +14,11 @@ const PORT = process.env.PORT || 5000;
 // Middleware
 app.use(helmet());
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' ? 'your-domain.com' : 'http://localhost:3000',
+  origin: 'http://localhost:3000', // Explicitly allow frontend
   credentials: true
 }));
+
+// Body parsing - MUST be before routes
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
@@ -64,7 +65,6 @@ async function startServer() {
     process.exit(1);
   }
 }
-
 
 startServer();
 
