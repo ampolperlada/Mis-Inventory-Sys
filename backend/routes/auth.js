@@ -50,8 +50,7 @@ router.post('/login', async (req, res) => {
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
-        role: user.role,
-        department: user.department
+        role: user.role
       }
     });
   } catch (error) {
@@ -121,7 +120,7 @@ router.get('/me', authenticateToken, async (req, res) => {
   try {
     const pool = getPool();
     const [users] = await pool.execute(
-      'SELECT id, username, email, firstName, lastName, role, department FROM users WHERE id = ?',
+      'SELECT id, username, email, firstName, lastName, role FROM users WHERE id = ?',
       [req.user.userId]
     );
     
