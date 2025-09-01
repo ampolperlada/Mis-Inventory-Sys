@@ -46,7 +46,12 @@ import {
   Star,
   AutoAwesome,
   AssignmentTurnedIn as Assignment,
-  Search
+  Search,
+  PersonAdd,
+  Business,
+  CalendarToday,
+  ArrowBack,
+  ArrowForward
 } from '@mui/icons-material';
 
 const drawerWidth = 300;
@@ -86,21 +91,6 @@ const ModernDrawer = styled(Drawer)(({ theme }) => ({
     backdropFilter: 'blur(20px)',
     border: 'none',
     boxShadow: '20px 0 40px rgba(0, 0, 0, 0.5)',
-    overflow: 'hidden',
-    position: 'relative',
-    '&::before': {
-      content: '""',
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      background: `
-        radial-gradient(circle at 20% 20%, rgba(139, 92, 246, 0.15) 0%, transparent 50%),
-        radial-gradient(circle at 80% 80%, rgba(168, 85, 247, 0.1) 0%, transparent 50%)
-      `,
-      pointerEvents: 'none',
-    },
   },
 }));
 
@@ -120,8 +110,6 @@ const NavItem = styled(ListItemButton)(({ theme, active }) => ({
   border: active ? '1px solid rgba(139, 92, 246, 0.4)' : '1px solid transparent',
   color: active ? '#c4b5fd' : 'rgba(255, 255, 255, 0.7)',
   transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-  position: 'relative',
-  overflow: 'hidden',
   '&:hover': {
     background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(168, 85, 247, 0.15) 100%)',
     transform: 'translateX(8px) scale(1.02)',
@@ -135,18 +123,6 @@ const UltraModernCard = styled(Card)(({ theme }) => ({
   border: '1px solid rgba(139, 92, 246, 0.3)',
   borderRadius: '24px',
   transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-  position: 'relative',
-  overflow: 'hidden',
-  '&::before': {
-    content: '""',
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.08) 0%, transparent 100%)',
-    pointerEvents: 'none',
-  },
   '&:hover': {
     transform: 'translateY(-8px)',
     background: 'rgba(31, 31, 62, 0.8)',
@@ -159,22 +135,8 @@ const GlowingStatCard = styled(Card)(({ gradient, glowColor }) => ({
   background: gradient,
   borderRadius: '24px',
   border: 'none',
-  position: 'relative',
-  overflow: 'hidden',
   transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
   height: '140px',
-  width: '100%',
-  minWidth: '200px',
-  '&::before': {
-    content: '""',
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, transparent 100%)',
-    pointerEvents: 'none',
-  },
   '&:hover': {
     transform: 'translateY(-8px) scale(1.05)',
     boxShadow: `0 25px 50px ${glowColor}60`,
@@ -248,16 +210,47 @@ const Dashboard = ({ children }) => {
   const handleProfileMenuOpen = (event) => setAnchorEl(event.currentTarget);
   const handleMenuClose = () => setAnchorEl(null);
 
-  // Component views
+  // Simple Add Item Form
   const AddItemForm = () => (
     <UltraModernCard sx={{ mb: 4 }}>
       <CardContent sx={{ p: 4 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4 }}>
-          <AddIcon sx={{ color: '#8b5cf6', fontSize: 28 }} />
-          <Typography variant="h4" sx={{ color: 'white', fontWeight: '800' }}>
+          <AddIcon sx={{ color: '#8b5cf6', fontSize: 32 }} />
+          <Typography variant="h3" sx={{ color: 'white', fontWeight: '900' }}>
             Add New Item
           </Typography>
         </Box>
+        
+        <Grid container spacing={3}>
+          <Grid item xs={12} md={6}>
+            <StyledTextField
+              fullWidth
+              label="Item Name"
+              placeholder="Enter item name"
+            />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <StyledTextField
+              fullWidth
+              label="Brand"
+              placeholder="Enter brand"
+            />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <StyledTextField
+              fullWidth
+              label="Model"
+              placeholder="Enter model"
+            />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <StyledTextField
+              fullWidth
+              label="Serial Number"
+              placeholder="Enter serial number"
+            />
+          </Grid>
+        </Grid>
         
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 4 }}>
           <Button 
@@ -274,11 +267,12 @@ const Dashboard = ({ children }) => {
     </UltraModernCard>
   );
 
+  // Simple View Items
   const ViewItems = () => (
-    <Box sx={{ space: 4 }}>
+    <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
         <Box>
-          <Typography variant="h4" sx={{ color: 'white', fontWeight: '800', mb: 1 }}>
+          <Typography variant="h3" sx={{ color: 'white', fontWeight: '900', mb: 1 }}>
             Inventory Items
           </Typography>
           <Typography sx={{ color: '#c4b5fd' }}>
@@ -301,7 +295,7 @@ const Dashboard = ({ children }) => {
               No assets found
             </Typography>
             <Typography>
-              Add new assets or connect to your backend to populate inventory data
+              Add new assets to see them listed here
             </Typography>
           </Box>
         </CardContent>
@@ -309,6 +303,7 @@ const Dashboard = ({ children }) => {
     </Box>
   );
 
+  // Simple Check Out
   const CheckOut = () => (
     <UltraModernCard>
       <CardContent sx={{ p: 6, textAlign: 'center' }}>
@@ -323,6 +318,7 @@ const Dashboard = ({ children }) => {
     </UltraModernCard>
   );
 
+  // Simple Check In
   const CheckIn = () => (
     <UltraModernCard>
       <CardContent sx={{ p: 6, textAlign: 'center' }}>
@@ -337,10 +333,11 @@ const Dashboard = ({ children }) => {
     </UltraModernCard>
   );
 
+  // Simple Reports
   const Reports = () => (
-    <Box sx={{ space: 4 }}>
+    <Box>
       <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" sx={{ color: 'white', fontWeight: '800', mb: 1 }}>
+        <Typography variant="h3" sx={{ color: 'white', fontWeight: '900', mb: 1 }}>
           Reports & Analytics
         </Typography>
         <Typography sx={{ color: '#c4b5fd' }}>
@@ -351,9 +348,9 @@ const Dashboard = ({ children }) => {
       <Grid container spacing={3} sx={{ mb: 6 }}>
         <Grid item xs={12} sm={6} lg={3}>
           <GlowingStatCard gradient="linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)" glowColor="#8b5cf6">
-            <CardContent sx={{ position: 'relative', zIndex: 1, p: 3, textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%' }}>
+            <CardContent sx={{ p: 3, textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%' }}>
               <Inventory2 sx={{ fontSize: 40, color: 'white', mb: 1, opacity: 0.9 }} />
-              <Typography variant="h4" sx={{ fontWeight: '900', mb: 1, color: 'white', lineHeight: 1 }}>
+              <Typography variant="h4" sx={{ fontWeight: '900', mb: 1, color: 'white' }}>
                 {stats.totalItems}
               </Typography>
               <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: '600', color: 'white' }}>
@@ -364,9 +361,9 @@ const Dashboard = ({ children }) => {
         </Grid>
         <Grid item xs={12} sm={6} lg={3}>
           <GlowingStatCard gradient="linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)" glowColor="#06b6d4">
-            <CardContent sx={{ position: 'relative', zIndex: 1, p: 3, textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%' }}>
+            <CardContent sx={{ p: 3, textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%' }}>
               <CheckCircleOutline sx={{ fontSize: 40, color: 'white', mb: 1, opacity: 0.9 }} />
-              <Typography variant="h4" sx={{ fontWeight: '900', mb: 1, color: 'white', lineHeight: 1 }}>
+              <Typography variant="h4" sx={{ fontWeight: '900', mb: 1, color: 'white' }}>
                 {stats.available}
               </Typography>
               <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: '600', color: 'white' }}>
@@ -377,9 +374,9 @@ const Dashboard = ({ children }) => {
         </Grid>
         <Grid item xs={12} sm={6} lg={3}>
           <GlowingStatCard gradient="linear-gradient(135deg, #f59e0b 0%, #d97706 100%)" glowColor="#f59e0b">
-            <CardContent sx={{ position: 'relative', zIndex: 1, p: 3, textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%' }}>
+            <CardContent sx={{ p: 3, textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%' }}>
               <Assignment sx={{ fontSize: 40, color: 'white', mb: 1, opacity: 0.9 }} />
-              <Typography variant="h4" sx={{ fontWeight: '900', mb: 1, color: 'white', lineHeight: 1 }}>
+              <Typography variant="h4" sx={{ fontWeight: '900', mb: 1, color: 'white' }}>
                 {stats.assigned}
               </Typography>
               <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: '600', color: 'white' }}>
@@ -390,9 +387,9 @@ const Dashboard = ({ children }) => {
         </Grid>
         <Grid item xs={12} sm={6} lg={3}>
           <GlowingStatCard gradient="linear-gradient(135deg, #ef4444 0%, #dc2626 100%)" glowColor="#ef4444">
-            <CardContent sx={{ position: 'relative', zIndex: 1, p: 3, textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%' }}>
+            <CardContent sx={{ p: 3, textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%' }}>
               <Warning sx={{ fontSize: 40, color: 'white', mb: 1, opacity: 0.9 }} />
-              <Typography variant="h4" sx={{ fontWeight: '900', mb: 1, color: 'white', lineHeight: 1 }}>
+              <Typography variant="h4" sx={{ fontWeight: '900', mb: 1, color: 'white' }}>
                 {stats.maintenance}
               </Typography>
               <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: '600', color: 'white' }}>
@@ -425,7 +422,7 @@ const Dashboard = ({ children }) => {
       case 'checkin': return <CheckIn />;
       case 'reports': return <Reports />;
       default: return (
-        <Box sx={{ position: 'relative', zIndex: 1, width: '100%' }}>
+        <Box sx={{ width: '100%' }}>
           <Box sx={{ mb: 6, textAlign: 'center' }}>
             <Typography variant="h2" sx={{ 
               fontWeight: '900', 
@@ -451,9 +448,9 @@ const Dashboard = ({ children }) => {
           <Grid container spacing={3} sx={{ mb: 6 }}>
             <Grid item xs={12} sm={6} lg={3}>
               <GlowingStatCard gradient="linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)" glowColor="#8b5cf6">
-                <CardContent sx={{ position: 'relative', zIndex: 1, p: 3, textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%' }}>
+                <CardContent sx={{ p: 3, textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%' }}>
                   <Inventory2 sx={{ fontSize: 40, color: 'white', mb: 1, opacity: 0.9 }} />
-                  <Typography variant="h4" sx={{ fontWeight: '900', mb: 1, color: 'white', lineHeight: 1 }}>
+                  <Typography variant="h4" sx={{ fontWeight: '900', mb: 1, color: 'white' }}>
                     {stats.totalItems.toLocaleString()}
                   </Typography>
                   <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: '600', color: 'white' }}>
@@ -465,9 +462,9 @@ const Dashboard = ({ children }) => {
 
             <Grid item xs={12} sm={6} lg={3}>
               <GlowingStatCard gradient="linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)" glowColor="#06b6d4">
-                <CardContent sx={{ position: 'relative', zIndex: 1, p: 3, textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%' }}>
+                <CardContent sx={{ p: 3, textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%' }}>
                   <CheckCircleOutline sx={{ fontSize: 40, color: 'white', mb: 1, opacity: 0.9 }} />
-                  <Typography variant="h4" sx={{ fontWeight: '900', mb: 1, color: 'white', lineHeight: 1 }}>
+                  <Typography variant="h4" sx={{ fontWeight: '900', mb: 1, color: 'white' }}>
                     {stats.available.toLocaleString()}
                   </Typography>
                   <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: '600', color: 'white' }}>
@@ -479,9 +476,9 @@ const Dashboard = ({ children }) => {
 
             <Grid item xs={12} sm={6} lg={3}>
               <GlowingStatCard gradient="linear-gradient(135deg, #f59e0b 0%, #d97706 100%)" glowColor="#f59e0b">
-                <CardContent sx={{ position: 'relative', zIndex: 1, p: 3, textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%' }}>
+                <CardContent sx={{ p: 3, textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%' }}>
                   <Assignment sx={{ fontSize: 40, color: 'white', mb: 1, opacity: 0.9 }} />
-                  <Typography variant="h4" sx={{ fontWeight: '900', mb: 1, color: 'white', lineHeight: 1 }}>
+                  <Typography variant="h4" sx={{ fontWeight: '900', mb: 1, color: 'white' }}>
                     {stats.assigned.toLocaleString()}
                   </Typography>
                   <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: '600', color: 'white' }}>
@@ -493,9 +490,9 @@ const Dashboard = ({ children }) => {
 
             <Grid item xs={12} sm={6} lg={3}>
               <GlowingStatCard gradient="linear-gradient(135deg, #ef4444 0%, #dc2626 100%)" glowColor="#ef4444">
-                <CardContent sx={{ position: 'relative', zIndex: 1, p: 3, textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%' }}>
+                <CardContent sx={{ p: 3, textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%' }}>
                   <Warning sx={{ fontSize: 40, color: 'white', mb: 1, opacity: 0.9 }} />
-                  <Typography variant="h4" sx={{ fontWeight: '900', mb: 1, color: 'white', lineHeight: 1 }}>
+                  <Typography variant="h4" sx={{ fontWeight: '900', mb: 1, color: 'white' }}>
                     {stats.maintenance.toLocaleString()}
                   </Typography>
                   <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: '600', color: 'white' }}>
@@ -506,8 +503,8 @@ const Dashboard = ({ children }) => {
             </Grid>
           </Grid>
 
-          <UltraModernCard sx={{ mb: 6, width: '100%' }}>
-            <CardContent sx={{ p: 4, position: 'relative', zIndex: 1 }}>
+          <UltraModernCard sx={{ mb: 6 }}>
+            <CardContent sx={{ p: 4 }}>
               <Typography variant="h4" sx={{ 
                 fontWeight: '800', 
                 mb: 4, 
@@ -557,8 +554,8 @@ const Dashboard = ({ children }) => {
             </CardContent>
           </UltraModernCard>
 
-          <UltraModernCard sx={{ width: '100%' }}>
-            <CardContent sx={{ p: 6, textAlign: 'center', position: 'relative', zIndex: 1 }}>
+          <UltraModernCard>
+            <CardContent sx={{ p: 6, textAlign: 'center' }}>
               <TrendingUp sx={{ fontSize: 80, color: '#8b5cf6', mb: 3, opacity: 0.7 }} />
               <Typography variant="h5" sx={{ color: 'white', mb: 2, fontWeight: '700' }}>
                 Recent Activity
@@ -574,7 +571,7 @@ const Dashboard = ({ children }) => {
   };
 
   const drawer = (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', position: 'relative', zIndex: 1 }}>
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <Box sx={{ p: 4, textAlign: 'center' }}>
         <Box sx={{ 
           display: 'inline-flex', 
@@ -610,9 +607,6 @@ const Dashboard = ({ children }) => {
               <ListItemIcon sx={{ 
                 color: 'inherit', 
                 minWidth: 48,
-                '& svg': {
-                  fontSize: 24,
-                }
               }}>
                 {item.icon}
               </ListItemIcon>
@@ -656,12 +650,7 @@ const Dashboard = ({ children }) => {
       <Box sx={{ 
         display: 'flex',
         minHeight: '100vh',
-        background: `
-          radial-gradient(circle at 20% 80%, #312e81 0%, transparent 50%),
-          radial-gradient(circle at 80% 20%, #1e1b4b 0%, transparent 50%),
-          radial-gradient(circle at 40% 40%, #1a1856 0%, transparent 50%),
-          linear-gradient(135deg, #1a1856 0%, #312e81 50%, #1e1b4b 100%)
-        `,
+        background: 'linear-gradient(135deg, #1a1856 0%, #312e81 50%, #1e1b4b 100%)',
       }}>
         <ModernAppBar
           position="fixed"
@@ -673,14 +662,12 @@ const Dashboard = ({ children }) => {
           <Toolbar>
             <IconButton
               color="inherit"
-              aria-label="open drawer"
-              edge="start"
               onClick={handleDrawerToggle}
               sx={{ mr: 2, display: { md: 'none' } }}
             >
               <MenuIcon />
             </IconButton>
-            <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1, fontWeight: '700' }}>
+            <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: '700' }}>
               {currentView === 'dashboard' ? 'Dashboard' :
                currentView === 'add' ? 'Add Item' :
                currentView === 'view' ? 'View Items' :
@@ -701,7 +688,6 @@ const Dashboard = ({ children }) => {
             />
             
             <IconButton
-              size="large"
               onClick={handleProfileMenuOpen}
               color="inherit"
             >
@@ -765,7 +751,6 @@ const Dashboard = ({ children }) => {
             display: 'flex',
             flexDirection: 'column',
             minHeight: '100vh',
-            background: 'transparent',
           }}
         >
           <Toolbar />
@@ -777,7 +762,6 @@ const Dashboard = ({ children }) => {
             width: '100%',
             display: 'flex',
             flexDirection: 'column',
-            minHeight: 'calc(100vh - 64px)',
           }}>
             {renderCurrentView()}
           </Box>
