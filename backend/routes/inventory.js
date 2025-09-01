@@ -130,21 +130,43 @@ router.get('/items/:id', async (req, res) => {
 router.post('/items', async (req, res) => {
   try {
     const pool = getPool();
-    const {
-      item_name, brand, model, category_id, serial_number, location,
-      status = 'available', condition_status = 'new', processor, ram,
-      storage, operating_system, hostname, mac_address, ip_address,
-      purchase_date, purchase_price, supplier, warranty_period,
-      description, notes
-    } = req.body;
     
-    if (!item_name) {
+    // Destructure with defaults to null for optional fields
+    const {
+      item_name,
+      brand = null,
+      model = null,
+      category_id = null,
+      serial_number,
+      location = null,
+      status = 'available',
+      condition_status = 'new',
+      processor = null,
+      ram = null,
+      storage = null,
+      operating_system = null,
+      hostname = null,
+      mac_address = null,
+      ip_address = null,
+      purchase_date = null,
+      purchase_price = null,
+      supplier = null,
+      warranty_period = null,
+      description = null,
+      notes = null
+    } = req.body;
+
+    // Validate required fields
+    if (!item_name || !item_name.trim()) {
       return res.status(400).json({ error: 'Item name is required' });
     }
-    
+    if (!serial_number || !serial_number.trim()) {
+      return res.status(400).json({ error: 'Serial number is required' });
+    }
+
     // Generate unique asset tag
     const asset_tag_number = generateAssetTag();
-    
+
     const [result] = await pool.execute(`
       INSERT INTO inventory_items (
         item_name, brand, model, category_id, asset_tag_number,
@@ -155,12 +177,29 @@ router.post('/items', async (req, res) => {
         description, notes, created_by
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
-      item_name, brand, model, category_id, asset_tag_number,
-      serial_number, location, status, condition_status,
-      processor, ram, storage, operating_system,
-      hostname, mac_address, ip_address,
-      purchase_date, purchase_price, supplier, warranty_period,
-      description, notes, 1 // Default to admin user, replace with actual user ID
+      item_name,
+      brand,
+      model,
+      category_id,
+      asset_tag_number,
+      serial_number,
+      location,
+      status,
+      condition_status,
+      processor,
+      ram,
+      storage,
+      operating_system,
+      hostname,
+      mac_address,
+      ip_address,
+      purchase_date,
+      purchase_price,
+      supplier,
+      warranty_period,
+      description,
+      notes,
+      1 // created_by (admin user)
     ]);
     
     // Fetch the created item with relationships
