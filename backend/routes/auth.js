@@ -26,7 +26,7 @@ router.post('/login', async (req, res) => {
     }
     
     const user = users[0];
-    const validPassword = await bcrypt.compare(password, user.password_hash);
+    const validPassword = await bcrypt.compare(password, user.password);
     
     if (!validPassword) {
       return res.status(401).json({ error: 'Invalid credentials' });
@@ -48,7 +48,8 @@ router.post('/login', async (req, res) => {
         id: user.id,
         username: user.username,
         email: user.email,
-        full_name: user.full_name,
+        firstName: user.firstName,
+        lastName: user.lastName,
         role: user.role,
         department: user.department
       }
@@ -120,7 +121,7 @@ router.get('/me', authenticateToken, async (req, res) => {
   try {
     const pool = getPool();
     const [users] = await pool.execute(
-      'SELECT id, username, email, full_name, role, department FROM users WHERE id = ?',
+      'SELECT id, username, email, firstName, lastName, role, department FROM users WHERE id = ?',
       [req.user.userId]
     );
     
