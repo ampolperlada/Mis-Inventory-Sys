@@ -25,6 +25,53 @@ import {
   TextField,
   Select,
   FormControl,
+  InputLabel,
+  CircularProgress,
+  Alert
+} from '@mui/material';
+import { styled, createTheme, ThemeProvider } from '@mui/material/styles';
+import {
+  Dashboard as DashboardIcon,
+  Add as AddIcon,
+  ViewList as ViewListIcon,
+  CheckCircle as CheckInIcon,
+  Assignment as CheckOutIcon,
+  Assessment as ReportsIcon,
+  Menu as MenuIcon,
+  AccountCircle,
+  Logout,
+  Settings,
+  Inventory2,
+  TrendingUp,
+  Warning,
+  CheckCircleOutline,
+  Star,
+  AutoAwesome,
+  AssignmentTurnedIn as Assignment,
+  Search,
+  PersonAdd,
+  Business,
+  CalendarToday,
+  ArrowBack,
+  ArrowForward
+} from '@mui/icons-material';
+
+// Import our API service
+import { useInventoryItems, useDashboardStats } from '../hooks/useInventory';,
+  Card,
+  CardContent,
+  Grid,
+  Button,
+  Avatar,
+  Menu,
+  MenuItem,
+  useTheme,
+  useMediaQuery,
+  Chip,
+  Paper,
+  TextField,
+  Select,
+  FormControl,
   InputLabel
 } from '@mui/material';
 import { styled, createTheme, ThemeProvider } from '@mui/material/styles';
@@ -56,23 +103,23 @@ import {
 
 const drawerWidth = 300;
 
-// Create custom dark purple theme
-const darkPurpleTheme = createTheme({
+// Create clean white theme (as requested by manager)
+const whiteTheme = createTheme({
   palette: {
-    mode: 'dark',
+    mode: 'light',
     primary: {
-      main: '#8b5cf6',
+      main: '#2563eb',
     },
     secondary: {
-      main: '#a855f7',
+      main: '#7c3aed',
     },
     background: {
-      default: '#1e1b4b',
-      paper: '#1f1f3e',
+      default: '#ffffff',
+      paper: '#ffffff',
     },
     text: {
-      primary: '#ffffff',
-      secondary: '#c4b5fd',
+      primary: '#1f2937',
+      secondary: '#6b7280',
     }
   },
   typography: {
@@ -83,102 +130,97 @@ const darkPurpleTheme = createTheme({
   }
 });
 
-// Styled components
+// Clean white styled components
 const ModernDrawer = styled(Drawer)(({ theme }) => ({
   '& .MuiDrawer-paper': {
     width: drawerWidth,
-    background: 'linear-gradient(145deg, #312e81 0%, #1e1b4b 50%, #1a1856 100%)',
-    backdropFilter: 'blur(20px)',
-    border: 'none',
-    boxShadow: '20px 0 40px rgba(0, 0, 0, 0.5)',
+    background: '#ffffff',
+    border: '1px solid #e5e7eb',
+    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
   },
 }));
 
 const ModernAppBar = styled(AppBar)(({ theme }) => ({
-  background: 'rgba(31, 31, 62, 0.95)',
-  backdropFilter: 'blur(20px)',
-  boxShadow: '0 8px 32px rgba(139, 92, 246, 0.3)',
-  border: '1px solid rgba(139, 92, 246, 0.2)',
+  background: '#ffffff',
+  color: '#1f2937',
+  boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+  border: '1px solid #e5e7eb',
+  borderTop: 'none',
 }));
 
 const NavItem = styled(ListItemButton)(({ theme, active }) => ({
-  margin: '8px 16px',
-  borderRadius: '16px',
-  background: active 
-    ? 'linear-gradient(135deg, rgba(139, 92, 246, 0.3) 0%, rgba(168, 85, 247, 0.2) 100%)'
-    : 'transparent',
-  border: active ? '1px solid rgba(139, 92, 246, 0.4)' : '1px solid transparent',
-  color: active ? '#c4b5fd' : 'rgba(255, 255, 255, 0.7)',
-  transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+  margin: '4px 16px',
+  borderRadius: '8px',
+  background: active ? '#eff6ff' : 'transparent',
+  border: active ? '1px solid #dbeafe' : '1px solid transparent',
+  color: active ? '#2563eb' : '#6b7280',
+  transition: 'all 0.2s ease-in-out',
   '&:hover': {
-    background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(168, 85, 247, 0.15) 100%)',
-    transform: 'translateX(8px) scale(1.02)',
-    color: '#ffffff',
+    background: '#f9fafb',
+    color: '#1f2937',
   },
 }));
 
 const UltraModernCard = styled(Card)(({ theme }) => ({
-  background: 'rgba(31, 31, 62, 0.6)',
-  backdropFilter: 'blur(20px)',
-  border: '1px solid rgba(139, 92, 246, 0.3)',
-  borderRadius: '24px',
-  transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+  background: '#ffffff',
+  border: '1px solid #e5e7eb',
+  borderRadius: '12px',
+  boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+  transition: 'all 0.2s ease-in-out',
   '&:hover': {
-    transform: 'translateY(-8px)',
-    background: 'rgba(31, 31, 62, 0.8)',
-    border: '1px solid rgba(139, 92, 246, 0.5)',
-    boxShadow: '0 25px 50px rgba(139, 92, 246, 0.4)',
+    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
   },
 }));
 
 const GlowingStatCard = styled(Card)(({ gradient, glowColor }) => ({
   background: gradient,
-  borderRadius: '24px',
+  borderRadius: '12px',
   border: 'none',
-  transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+  transition: 'all 0.2s ease-in-out',
   height: '140px',
+  boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
   '&:hover': {
-    transform: 'translateY(-8px) scale(1.05)',
-    boxShadow: `0 25px 50px ${glowColor}60`,
+    transform: 'translateY(-2px)',
+    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
   },
 }));
 
 const FloatingActionButton = styled(Button)(({ theme }) => ({
-  borderRadius: '20px',
-  padding: '16px 32px',
-  background: 'linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%)',
+  borderRadius: '8px',
+  padding: '12px 24px',
+  background: '#2563eb',
   color: 'white',
-  fontWeight: '700',
-  fontSize: '16px',
+  fontWeight: '600',
+  fontSize: '14px',
   textTransform: 'none',
-  transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-  boxShadow: '0 8px 32px rgba(139, 92, 246, 0.5)',
+  transition: 'all 0.2s ease-in-out',
+  boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
   '&:hover': {
-    transform: 'translateY(-4px) scale(1.05)',
-    boxShadow: '0 20px 40px rgba(139, 92, 246, 0.7)',
+    background: '#1d4ed8',
+    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
   },
 }));
 
 const StyledTextField = styled(TextField)(({ theme }) => ({
   '& .MuiOutlinedInput-root': {
-    background: 'rgba(31, 31, 62, 0.6)',
-    borderRadius: '12px',
+    background: '#ffffff',
+    borderRadius: '8px',
     '& fieldset': {
-      borderColor: 'rgba(139, 92, 246, 0.3)',
+      borderColor: '#d1d5db',
     },
     '&:hover fieldset': {
-      borderColor: 'rgba(139, 92, 246, 0.5)',
+      borderColor: '#9ca3af',
     },
     '&.Mui-focused fieldset': {
-      borderColor: '#8b5cf6',
+      borderColor: '#2563eb',
     },
   },
   '& .MuiInputLabel-root': {
-    color: '#c4b5fd',
+    color: '#6b7280',
     fontWeight: 500,
   },
   '& .MuiOutlinedInput-input': {
-    color: 'white',
+    color: '#1f2937',
   },
 }));
 
@@ -215,8 +257,8 @@ const Dashboard = ({ children }) => {
     <UltraModernCard sx={{ mb: 4 }}>
       <CardContent sx={{ p: 4 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4 }}>
-          <AddIcon sx={{ color: '#8b5cf6', fontSize: 32 }} />
-          <Typography variant="h3" sx={{ color: 'white', fontWeight: '900' }}>
+          <AddIcon sx={{ color: '#2563eb', fontSize: 32 }} />
+          <Typography variant="h3" sx={{ color: '#1f2937', fontWeight: '900' }}>
             Add New Item
           </Typography>
         </Box>
@@ -426,22 +468,18 @@ const Dashboard = ({ children }) => {
           <Box sx={{ mb: 6, textAlign: 'center' }}>
             <Typography variant="h2" sx={{ 
               fontWeight: '900', 
-              color: 'white', 
-              mb: 2,
-              background: 'linear-gradient(135deg, #ffffff 0%, #8b5cf6 50%, #a855f7 100%)',
-              backgroundClip: 'text',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
+              color: '#1f2937', 
+              mb: 2
             }}>
               Dashboard
             </Typography>
             <Typography variant="h6" sx={{ 
-              color: 'rgba(255, 255, 255, 0.7)', 
+              color: '#6b7280', 
               fontWeight: '400',
               maxWidth: '600px',
               mx: 'auto'
             }}>
-              Welcome to the future of inventory management
+              Inventory Management System
             </Typography>
           </Box>
 
@@ -577,23 +615,23 @@ const Dashboard = ({ children }) => {
           display: 'inline-flex', 
           alignItems: 'center', 
           justifyContent: 'center',
-          width: 64,
-          height: 64,
-          borderRadius: '20px',
-          background: 'linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%)',
+          width: 48,
+          height: 48,
+          borderRadius: '8px',
+          background: '#2563eb',
           mb: 2,
         }}>
-          <AutoAwesome sx={{ fontSize: 28, color: 'white' }} />
+          <AutoAwesome sx={{ fontSize: 24, color: 'white' }} />
         </Box>
-        <Typography variant="h5" sx={{ 
-          fontWeight: '800', 
-          color: 'white',
+        <Typography variant="h6" sx={{ 
+          fontWeight: '700', 
+          color: '#1f2937',
           mb: 1
         }}>
           Inventory Pro
         </Typography>
-        <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.6)', fontWeight: '500' }}>
-          Next-Gen Management
+        <Typography variant="body2" sx={{ color: '#6b7280', fontWeight: '500' }}>
+          Management System
         </Typography>
       </Box>
       
@@ -628,16 +666,15 @@ const Dashboard = ({ children }) => {
       <Box sx={{ p: 3 }}>
         <Paper sx={{ 
           p: 3, 
-          background: 'rgba(139, 92, 246, 0.15)',
-          backdropFilter: 'blur(10px)',
-          border: '1px solid rgba(139, 92, 246, 0.3)',
-          borderRadius: '16px',
+          background: '#f8fafc',
+          border: '1px solid #e2e8f0',
+          borderRadius: '8px',
           textAlign: 'center'
         }}>
-          <Typography variant="h4" sx={{ color: '#8b5cf6', fontWeight: '800', mb: 1 }}>
+          <Typography variant="h4" sx={{ color: '#2563eb', fontWeight: '800', mb: 1 }}>
             {stats.totalItems.toLocaleString()}
           </Typography>
-          <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.8)', fontWeight: '600' }}>
+          <Typography variant="body2" sx={{ color: '#64748b', fontWeight: '600' }}>
             Total Items Managed
           </Typography>
         </Paper>
