@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+
+// All MUI components from @mui/material
 import {
   Box,
   Drawer,
@@ -27,9 +29,14 @@ import {
   FormControl,
   InputLabel,
   CircularProgress,
-  Alert
+  Alert,
+  styled
 } from '@mui/material';
-import { styled, createTheme, ThemeProvider } from '@mui/material/styles';
+
+// Only import createTheme and ThemeProvider from @mui/material/styles
+import { createTheme, ThemeProvider } from '@mui/material/styles';
+
+// Icons
 import {
   Dashboard as DashboardIcon,
   Add as AddIcon,
@@ -56,54 +63,12 @@ import {
   ArrowForward
 } from '@mui/icons-material';
 
-// Import our API service
-import { useInventoryItems, useDashboardStats } from '../hooks/useInventory';,
-  Card,
-  CardContent,
-  Grid,
-  Button,
-  Avatar,
-  Menu,
-  MenuItem,
-  useTheme,
-  useMediaQuery,
-  Chip,
-  Paper,
-  TextField,
-  Select,
-  FormControl,
-  InputLabel
-} from '@mui/material';
-import { styled, createTheme, ThemeProvider } from '@mui/material/styles';
-import {
-  Dashboard as DashboardIcon,
-  Add as AddIcon,
-  ViewList as ViewListIcon,
-  CheckCircle as CheckInIcon,
-  Assignment as CheckOutIcon,
-  Assessment as ReportsIcon,
-  Menu as MenuIcon,
-  AccountCircle,
-  Logout,
-  Settings,
-  Inventory2,
-  TrendingUp,
-  Warning,
-  CheckCircleOutline,
-  Star,
-  AutoAwesome,
-  AssignmentTurnedIn as Assignment,
-  Search,
-  PersonAdd,
-  Business,
-  CalendarToday,
-  ArrowBack,
-  ArrowForward
-} from '@mui/icons-material';
+// Import our API service (hooks)
+import { useInventoryItems, useDashboardStats } from '../hooks/useInventory';
 
+// Create clean white theme
 const drawerWidth = 300;
 
-// Create clean white theme (as requested by manager)
 const whiteTheme = createTheme({
   palette: {
     mode: 'light',
@@ -130,7 +95,7 @@ const whiteTheme = createTheme({
   }
 });
 
-// Clean white styled components
+// Styled Components
 const ModernDrawer = styled(Drawer)(({ theme }) => ({
   '& .MuiDrawer-paper': {
     width: drawerWidth,
@@ -224,6 +189,7 @@ const StyledTextField = styled(TextField)(({ theme }) => ({
   },
 }));
 
+// Dashboard Component
 const Dashboard = ({ children }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -683,7 +649,7 @@ const Dashboard = ({ children }) => {
   );
 
   return (
-    <ThemeProvider theme={darkPurpleTheme}>
+    <ThemeProvider theme={whiteTheme}>
       <Box sx={{ 
         display: 'flex',
         minHeight: '100vh',
