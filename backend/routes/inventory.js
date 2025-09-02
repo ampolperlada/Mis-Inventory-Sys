@@ -44,7 +44,7 @@ router.get('/items', async (req, res) => {
     }
     
     if (search) {
-      query += ' AND (i.name LIKE ? OR i.brand LIKE ? OR i.model LIKE ? OR i.serial_number LIKE ?)';
+      query += ' AND (i.item_name LIKE ? OR i.brand LIKE ? OR i.model LIKE ? OR i.serial_number LIKE ?)';
       const searchTerm = `%${search}%`;
       params.push(searchTerm, searchTerm, searchTerm, searchTerm);
     }
@@ -73,7 +73,7 @@ router.get('/items', async (req, res) => {
     }
     
     if (search) {
-      countQuery += ' AND (i.name LIKE ? OR i.brand LIKE ? OR i.model LIKE ? OR i.serial_number LIKE ?)';
+      countQuery += ' AND (i.item_name LIKE ? OR i.brand LIKE ? OR i.model LIKE ? OR i.serial_number LIKE ?)';
       const searchTerm = `%${search}%`;
       countParams.push(searchTerm, searchTerm, searchTerm, searchTerm);
     }
@@ -123,222 +123,6 @@ router.get('/items/:id', async (req, res) => {
   } catch (error) {
     console.error('Error fetching item:', error);
     res.status(500).json({ error: 'Failed to fetch item' });
-  }
-});
-
-// POST /api/inventory/items - Create new item
-router.post('/items', async (req, res) => {
-  try {
-    console.log('📥 Creating item:', req.body);
-
-    const pool = getPool();
-    
-    const {
-      name = null,
-      brand = null,
-      model = null,
-      category_id = null,
-      serialNumber,
-      location = null,
-      status = 'AVAILABLE',
-      condition = 'Good',
-      quantity = 1,
-      notes = null,
-      created_by = 1,
-      updated_by = 1
-    } = req.body;
-
-    // Validate required fields
-    if (!name || !name.trim()) {
-      return res.status(400).json({ error: 'Item name is required' });
-    }
-    if (!serialNumber || !serialNumber.trim()) {
-      return res.status(400).json({ error: 'Serial number is required' });
-    }
-
-    const asset_tag_number = generateAssetTag();
-
-    const [result] = await pool.execute(`
-      INSERT INTO inventory_items (
-        name, brand, model, category_id, serialNumber, 
-        location, status, \`condition\`, quantity, notes,
-        created_at, updated_at, created_by, updated_by
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `, [
-      name,
-      brand,
-      model,
-      category_id,
-      serialNumber,
-      location,
-      status,
-      condition,
-      quantity,
-      notes,
-      new Date(),
-      new Date(),
-      created_by,
-      updated_by
-    ]);
-    
-    const [newItem] = await pool.execute(`
-      SELECT i.*, c.name as category_name
-      FROM inventory_items i
-      LEFT JOIN categories c ON i.category_id = c.id
-      WHERE i.id = ?
-    `, [result.insertId]);
-    
-    res.status(201).json(newItem[0]);
-  } catch (error) {
-    console.error('❌ Error creating item:', error);
-    if (error.code === 'ER_DUP_ENTRY') {
-      res.status(409).json({ error: 'Serial number or asset tag already exists' });
-    } else {
-      res.status(500).json({ error: 'Failed to create item' });
-    }
-  }
-});
-
-// PUT /api/inventory/items/:id - Update item
-router.put('/items/:id', async (req, res) => {
-  try {
-    const pool = getPool();
-    const { id } = req.params;
-    const updateData = req.body;
-    
-    // Remove fields that shouldn't be updated directly
-    delete updateData.id;
-    delete updateData.asset_tag_number;
-    delete updateData.created_at;
-    delete updateData.created_by;
-    
-    if (Object.keys(updateData).length === 0) {
-      return res.status(400).json({ error: 'No valid fields to update' });
-    }
-    
-    // Build dynamic update query
-    const fields = Object.keys(updateData).map(field => `${field} = ?`).join(', ');
-    const values = Object.values(updateData);
-    values.push(1, id); // updated_by, id
-    
-    const [result] = await pool.execute(`
-      UPDATE inventory_items 
-      SET ${fields}, updated_by = ?, updated_at = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `, values);
-    
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ error: 'Item not found' });
-    }
-    
-    // Fetch updated item
-    const [updatedItem] = await pool.execute(`
-      SELECT i.*, c.name as category_name
-      FROM inventory_items i
-      LEFT JOIN categories c ON i.category_id = c.id
-      WHERE i.id = ?
-    `, [id]);
-    
-    res.json(updatedItem[0]);
-  } catch (error) {
-    console.error('Error updating item:', error);
-    res.status(500).json({ error: 'Failed to update item' });
-  }
-});
-
-// DELETE /api/inventory/items/:id - Delete item
-router.delete('/items/:id', async (req, res) => {
-  try {
-    const pool = getPool();
-    const { id } = req.params;
-    
-    // Check if item exists and get details for logging
-    const [items] = await pool.execute('SELECT name FROM inventory_items WHERE id = ?', [id]);
-    
-    if (items.length === 0) {
-      return res.status(404).json({ error: 'Item not found' });
-    }
-    
-    const itemName = items[0].name;
-    
-    // Delete the item
-    await pool.execute('DELETE FROM inventory_items WHERE id = ?', [id]);
-    
-    res.json({ message: 'Item deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting item:', error);
-    res.status(500).json({ error: 'Failed to delete item' });
-  }
-});
-
-// POST /api/inventory/items/:id/checkout - Check out item
-router.post('/items/:id/checkout', async (req, res) => {
-  try {
-    const pool = getPool();
-    const { id } = req.params;
-    const {
-      assigned_to_name, employee_id, department, email, phone,
-      assignment_date, expected_return_date, assignment_notes
-    } = req.body;
-    
-    if (!assigned_to_name) {
-      return res.status(400).json({ error: 'Assigned to name is required' });
-    }
-    
-    // Update item status
-    const [updateResult] = await pool.execute(
-      'UPDATE inventory_items SET status = ? WHERE id = ? AND status = ?',
-      ['assigned', id, 'available']
-    );
-    
-    if (updateResult.affectedRows === 0) {
-      return res.status(404).json({ error: 'Item not found or not available for checkout' });
-    }
-    
-    // Fetch updated item
-    const [item] = await pool.execute(`
-      SELECT i.*, c.name as category_name
-      FROM inventory_items i
-      LEFT JOIN categories c ON i.category_id = c.id
-      WHERE i.id = ?
-    `, [id]);
-    
-    res.json(item[0]);
-  } catch (error) {
-    console.error('Error checking out item:', error);
-    res.status(500).json({ error: 'Failed to check out item' });
-  }
-});
-
-// POST /api/inventory/items/:id/checkin - Check in item
-router.post('/items/:id/checkin', async (req, res) => {
-  try {
-    const pool = getPool();
-    const { id } = req.params;
-    const { return_notes, return_condition = 'good' } = req.body;
-    
-    // Update item status
-    const [updateResult] = await pool.execute(
-      'UPDATE inventory_items SET status = ? WHERE id = ? AND status = ?',
-      ['available', id, 'assigned']
-    );
-    
-    if (updateResult.affectedRows === 0) {
-      return res.status(404).json({ error: 'Item not found or not currently assigned' });
-    }
-    
-    // Fetch updated item
-    const [item] = await pool.execute(`
-      SELECT i.*, c.name as category_name
-      FROM inventory_items i
-      LEFT JOIN categories c ON i.category_id = c.id
-      WHERE i.id = ?
-    `, [id]);
-    
-    res.json(item[0]);
-  } catch (error) {
-    console.error('Error checking in item:', error);
-    res.status(500).json({ error: 'Failed to check in item' });
   }
 });
 
@@ -433,6 +217,149 @@ router.post('/items', async (req, res) => {
     } else {
       res.status(500).json({ error: 'Failed to create item' });
     }
+  }
+});
+
+// PUT /api/inventory/items/:id - Update item
+router.put('/items/:id', async (req, res) => {
+  try {
+    const pool = getPool();
+    const { id } = req.params;
+    const updateData = req.body;
+    
+    // Remove fields that shouldn't be updated directly
+    delete updateData.id;
+    delete updateData.asset_tag_number;
+    delete updateData.created_at;
+    delete updateData.created_by;
+    
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({ error: 'No valid fields to update' });
+    }
+    
+    // Build dynamic update query
+    const fields = Object.keys(updateData).map(field => `${field} = ?`).join(', ');
+    const values = Object.values(updateData);
+    values.push(1, id); // updated_by, id
+    
+    const [result] = await pool.execute(`
+      UPDATE inventory_items 
+      SET ${fields}, updated_by = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `, values);
+    
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Item not found' });
+    }
+    
+    // Fetch updated item
+    const [updatedItem] = await pool.execute(`
+      SELECT i.*, c.name as category_name
+      FROM inventory_items i
+      LEFT JOIN categories c ON i.category_id = c.id
+      WHERE i.id = ?
+    `, [id]);
+    
+    res.json(updatedItem[0]);
+  } catch (error) {
+    console.error('Error updating item:', error);
+    res.status(500).json({ error: 'Failed to update item' });
+  }
+});
+
+// DELETE /api/inventory/items/:id - Delete item
+router.delete('/items/:id', async (req, res) => {
+  try {
+    const pool = getPool();
+    const { id } = req.params;
+    
+    // Check if item exists and get details for logging
+    const [items] = await pool.execute('SELECT item_name FROM inventory_items WHERE id = ?', [id]);
+    
+    if (items.length === 0) {
+      return res.status(404).json({ error: 'Item not found' });
+    }
+    
+    const itemName = items[0].item_name;
+    
+    // Delete the item
+    await pool.execute('DELETE FROM inventory_items WHERE id = ?', [id]);
+    
+    res.json({ message: 'Item deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting item:', error);
+    res.status(500).json({ error: 'Failed to delete item' });
+  }
+});
+
+// POST /api/inventory/items/:id/checkout - Check out item
+router.post('/items/:id/checkout', async (req, res) => {
+  try {
+    const pool = getPool();
+    const { id } = req.params;
+    const {
+      assigned_to_name, employee_id, department, email, phone,
+      assignment_date, expected_return_date, assignment_notes
+    } = req.body;
+    
+    if (!assigned_to_name) {
+      return res.status(400).json({ error: 'Assigned to name is required' });
+    }
+    
+    // Update item status
+    const [updateResult] = await pool.execute(
+      'UPDATE inventory_items SET status = ? WHERE id = ? AND status = ?',
+      ['assigned', id, 'available']
+    );
+    
+    if (updateResult.affectedRows === 0) {
+      return res.status(404).json({ error: 'Item not found or not available for checkout' });
+    }
+    
+    // Fetch updated item
+    const [item] = await pool.execute(`
+      SELECT i.*, c.name as category_name
+      FROM inventory_items i
+      LEFT JOIN categories c ON i.category_id = c.id
+      WHERE i.id = ?
+    `, [id]);
+    
+    res.json(item[0]);
+  } catch (error) {
+    console.error('Error checking out item:', error);
+    res.status(500).json({ error: 'Failed to check out item' });
+  }
+});
+
+// POST /api/inventory/items/:id/checkin - Check in item
+router.post('/items/:id/checkin', async (req, res) => {
+  try {
+    const pool = getPool();
+    const { id } = req.params;
+    const { return_notes, return_condition = 'good' } = req.body;
+    
+    // Update item status
+    const [updateResult] = await pool.execute(
+      'UPDATE inventory_items SET status = ? WHERE id = ? AND status = ?',
+      ['available', id, 'assigned']
+    );
+    
+    if (updateResult.affectedRows === 0) {
+      return res.status(404).json({ error: 'Item not found or not currently assigned' });
+    }
+    
+    // Fetch updated item
+    const [item] = await pool.execute(`
+      SELECT i.*, c.name as category_name
+      FROM inventory_items i
+      LEFT JOIN categories c ON i.category_id = c.id
+      WHERE i.id = ?
+    `, [id]);
+    
+    res.json(item[0]);
+  } catch (error) {
+    console.error('Error checking in item:', error);
+    res.status(500).json({ error: 'Failed to check in item' });
   }
 });
 
