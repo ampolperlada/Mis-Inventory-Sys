@@ -44,7 +44,7 @@ router.get('/items', async (req, res) => {
     }
     
     if (search) {
-      query += ' AND (i.item_name LIKE ? OR i.brand LIKE ? OR i.model LIKE ? OR i.serial_number LIKE ?)';
+      query += ' AND (i.name LIKE ? OR i.brand LIKE ? OR i.model LIKE ? OR i.serial_number LIKE ?)';
       const searchTerm = `%${search}%`;
       params.push(searchTerm, searchTerm, searchTerm, searchTerm);
     }
@@ -73,7 +73,7 @@ router.get('/items', async (req, res) => {
     }
     
     if (search) {
-      countQuery += ' AND (i.item_name LIKE ? OR i.brand LIKE ? OR i.model LIKE ? OR i.serial_number LIKE ?)';
+      countQuery += ' AND (i.name LIKE ? OR i.brand LIKE ? OR i.model LIKE ? OR i.serial_number LIKE ?)';
       const searchTerm = `%${search}%`;
       countParams.push(searchTerm, searchTerm, searchTerm, searchTerm);
     }
@@ -131,9 +131,9 @@ router.post('/items', async (req, res) => {
   try {
     const pool = getPool();
     
-    // Destructure with defaults to null for optional fields
+    // Destructure with defaults to null - use 'name' not 'item_name'
     const {
-      item_name,
+      name,  // <-- Changed from item_name to name
       brand = null,
       model = null,
       category_id = null,
@@ -157,7 +157,7 @@ router.post('/items', async (req, res) => {
     } = req.body;
 
     // Validate required fields
-    if (!item_name || !item_name.trim()) {
+    if (!name || !name.trim()) {
       return res.status(400).json({ error: 'Item name is required' });
     }
     if (!serial_number || !serial_number.trim()) {
@@ -169,7 +169,7 @@ router.post('/items', async (req, res) => {
 
     const [result] = await pool.execute(`
       INSERT INTO inventory_items (
-        item_name, brand, model, category_id, asset_tag_number,
+        name, brand, model, category_id, asset_tag_number,
         serial_number, location, status, condition_status,
         processor, ram, storage, operating_system,
         hostname, mac_address, ip_address,
@@ -177,7 +177,7 @@ router.post('/items', async (req, res) => {
         description, notes, created_by
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
-      item_name,
+      name,
       brand,
       model,
       category_id,
@@ -199,7 +199,7 @@ router.post('/items', async (req, res) => {
       warranty_period,
       description,
       notes,
-      1 // created_by (admin user)
+      1 // created_by (admin)
     ]);
     
     // Fetch the created item with relationships
@@ -275,13 +275,13 @@ router.delete('/items/:id', async (req, res) => {
     const { id } = req.params;
     
     // Check if item exists and get details for logging
-    const [items] = await pool.execute('SELECT item_name FROM inventory_items WHERE id = ?', [id]);
+    const [items] = await pool.execute('SELECT name FROM inventory_items WHERE id = ?', [id]);
     
     if (items.length === 0) {
       return res.status(404).json({ error: 'Item not found' });
     }
     
-    const itemName = items[0].item_name;
+    const itemName = items[0].name;
     
     // Delete the item
     await pool.execute('DELETE FROM inventory_items WHERE id = ?', [id]);

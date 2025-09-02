@@ -39,7 +39,6 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Input,
 } from '@mui/material';
 import { styled, createTheme, ThemeProvider } from '@mui/material/styles';
 import MuiAlert from '@mui/material/Alert';
@@ -238,39 +237,39 @@ const Dashboard = () => {
 
   // Handlers
   const handleAddItem = async () => {
-  if (!newItem.name?.trim()) {
-    showSnackbar('Item name is required', 'error');
-    return;
-  }
-  if (!newItem.serialNumber?.trim()) {
-    showSnackbar('Serial number is required', 'error');
-    return;
-  }
+    if (!newItem.name?.trim()) {
+      showSnackbar('Item name is required', 'error');
+      return;
+    }
+    if (!newItem.serialNumber?.trim()) {
+      showSnackbar('Serial number is required', 'error');
+      return;
+    }
 
-  const itemData = {
-    item_name: newItem.name.trim(),
-    brand: newItem.brand?.trim() || null,
-    model: newItem.model?.trim() || null,
-    serial_number: newItem.serialNumber.trim(),
-    status: 'available',
-    category_id: 1, // Default category
-    location: 'Office',
-    condition_status: 'new',
-    description: '',
-    notes: '',
-    created_by: 1,
+    const itemData = {
+      name: newItem.name.trim(),           // ✅ Changed from item_name to name
+      brand: newItem.brand?.trim() || null,
+      model: newItem.model?.trim() || null,
+      serial_number: newItem.serialNumber.trim(),
+      status: 'available',
+      category_id: 1,
+      location: 'Office',
+      condition_status: 'new',
+      description: '',
+      notes: '',
+      created_by: 1,
+    };
+
+    try {
+      await addItem(itemData);
+      setNewItem({ name: '', brand: '', model: '', serialNumber: '' });
+      setOpenAddDialog(false);
+      showSnackbar('Item added successfully!', 'success');
+    } catch (err) {
+      console.error('Add item error:', err);
+      showSnackbar('Failed to add item: ' + (err.response?.data?.error || err.message), 'error');
+    }
   };
-
-  try {
-    await addItem(itemData);
-    setNewItem({ name: '', brand: '', model: '', serialNumber: '' });
-    setOpenAddDialog(false);
-    showSnackbar('Item added successfully!', 'success');
-  } catch (err) {
-    console.error('Add item error:', err);
-    showSnackbar('Failed to add item: ' + (err.response?.data?.error || err.message), 'error');
-  }
-};
 
   const handleDeleteItem = async (id) => {
     try {
@@ -399,7 +398,7 @@ const Dashboard = () => {
                     ) : (
                       items.map((item) => (
                         <TableRow key={item.id}>
-                          <TableCell>{item.item_name}</TableCell>
+                          <TableCell>{item.name}</TableCell>  {/* ✅ Changed from item_name */}
                           <TableCell>{item.brand}</TableCell>
                           <TableCell>{item.model}</TableCell>
                           <TableCell>{item.serial_number}</TableCell>
@@ -427,7 +426,7 @@ const Dashboard = () => {
                             <IconButton size="small" onClick={() => setOpenCheckInDialog(item.id)}>
                               <CheckInIcon fontSize="small" />
                             </IconButton>
-                            <IconButton size="small" vaults="small" onClick={() => setDeleteConfirm(item.id)}>
+                            <IconButton size="small" onClick={() => setDeleteConfirm(item.id)}>
                               <Delete fontSize="small" color="error" />
                             </IconButton>
                           </TableCell>
@@ -497,7 +496,7 @@ const Dashboard = () => {
                 <GlowingStatCard gradient="linear-gradient(135deg, #ef4444 0%, #dc2626 100%)" glowColor="#ef4444">
                   <CardContent sx={{ p: 2, textAlign: 'center' }}>
                     <Warning sx={{ fontSize: 32, color: 'white', mb: 1 }} />
-                    <Typography variant="h4" sx={{ fontირ: 'h4', fontWeight: '900', color: 'white' }}>
+                    <Typography variant="h4" sx={{ fontWeight: '900', color: 'white' }}>
                       {stats.maintenance}
                     </Typography>
                     <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: '600', color: 'white' }}>
