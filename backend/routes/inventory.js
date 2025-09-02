@@ -217,8 +217,7 @@ router.get('/items/:id', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch item' });
   }
 });
-
-// POST /api/inventory/items - Create new item
+// POST /api/inventory/items - Create new item (FIXED)
 router.post('/items', async (req, res) => {
   try {
     console.log('📥 Creating item:', req.body);
@@ -246,42 +245,61 @@ router.post('/items', async (req, res) => {
       return res.status(400).json({ error: 'Serial number is required' });
     }
 
-    // Set a default category if none provided - use 'OTHER' which should exist
+    // Set a default category if none provided
     const categoryToUse = category_id || 'OTHER';
 
+    // FIXED: Remove createdAt, updatedAt - let MySQL handle auto-timestamps
     const [result] = await pool.execute(`
       INSERT INTO inventory_items (
         item_name, serialNumber, brand, model, category,
         location, status, \`condition\`, quantity, notes,
-        createdAt, updatedAt, created_by, updated_by
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        created_by, updated_by
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
-      item_name,        // Now using item_name column you added
-      serial_number,    // maps to serialNumber column
+      item_name,        
+      serial_number,    
       brand,
       model,
-      categoryToUse,    // Use default 'OTHER' if no category provided
+      categoryToUse,    
       location,
       status,
-      condition_status, // maps to condition column
+      condition_status, 
       quantity,
       notes,
-      new Date(),      // createdAt
-      new Date(),      // updatedAt
       1,              // created_by
       1               // updated_by
     ]);
     
-    // Fetch the created item to return it
+    // Fetch the created item and map fields properly
     const [newItem] = await pool.execute(`
-      SELECT * FROM inventory_items WHERE id = ?
+      SELECT 
+        id,
+        item_name,
+        brand,
+        model,
+        serialNumber as serial_number,
+        category,
+        status,
+        \`condition\` as condition_status,
+        location,
+        quantity,
+        notes,
+        createdAt as created_at,
+        updatedAt as updated_at
+      FROM inventory_items 
+      WHERE id = ?
     `, [result.insertId]);
     
+    console.log('✅ Item created successfully with ID:', result.insertId);
     res.status(201).json(newItem[0]);
   } catch (error) {
     console.error('❌ Error creating item:', error);
     if (error.code === 'ER_DUP_ENTRY') {
-      res.status(409).json({ error: 'Serial number already exists' });
+      if (error.sqlMessage.includes('serialNumber')) {
+        res.status(409).json({ error: 'Serial number already exists' });
+      } else {
+        res.status(409).json({ error: 'Duplicate entry error' });
+      }
     } else {
       res.status(500).json({ error: 'Failed to create item: ' + error.message });
     }

@@ -1,34 +1,42 @@
-// backend/config/database.js - Fixed version
+// backend/config/database.js - Environment-based configuration
 const mysql = require('mysql2/promise');
+require('dotenv').config();
 
 let pool = null;
 
-// Database connection configuration
+// Database connection configuration from environment variables
 const dbConfig = {
   host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
+  user: process.env.DB_USER || 'root', 
   password: process.env.DB_PASSWORD || '',
   database: process.env.DB_NAME || 'inventory_system',
+  port: parseInt(process.env.DB_PORT) || 3306,
   waitForConnections: true,
   connectionLimit: 10,
-  queueLimit: 0,
-  acquireTimeout: 60000,
-  timeout: 60000,
-  reconnect: true
+  queueLimit: 0
 };
 
 // Connect to database and create pool
 const connectDatabase = async () => {
   try {
+    console.log('🔌 Connecting to database with config:', {
+      host: dbConfig.host,
+      user: dbConfig.user,
+      database: dbConfig.database,
+      port: dbConfig.port
+    });
+
     // First, connect without database to create it if it doesn't exist
     const tempConnection = await mysql.createConnection({
       host: dbConfig.host,
       user: dbConfig.user,
-      password: dbConfig.password
+      password: dbConfig.password,
+      port: dbConfig.port
     });
 
     // Create database if it doesn't exist
     await tempConnection.execute(`CREATE DATABASE IF NOT EXISTS \`${dbConfig.database}\``);
+    console.log(`📂 Database '${dbConfig.database}' created or verified`);
     await tempConnection.end();
 
     // Now create the pool with the database
@@ -39,10 +47,16 @@ const connectDatabase = async () => {
     await connection.ping();
     connection.release();
     
-    console.log('Database connection pool created successfully');
+    console.log('✅ Database connection pool created successfully');
     return pool;
   } catch (error) {
-    console.error('Database connection failed:', error);
+    console.error('❌ Database connection failed:', error.message);
+    console.error('📋 Check your .env file configuration:');
+    console.error(`   DB_HOST=${process.env.DB_HOST || 'not set'}`);
+    console.error(`   DB_USER=${process.env.DB_USER || 'not set'}`);
+    console.error(`   DB_PASSWORD=${process.env.DB_PASSWORD ? '***set***' : 'not set'}`);
+    console.error(`   DB_NAME=${process.env.DB_NAME || 'not set'}`);
+    console.error(`   DB_PORT=${process.env.DB_PORT || 'not set'}`);
     throw error;
   }
 };
@@ -59,6 +73,8 @@ const getPool = () => {
 const initializeDatabase = async () => {
   try {
     const pool = getPool();
+    
+    console.log('🔨 Initializing database tables...');
     
     // Create categories table
     await pool.execute(`
@@ -112,6 +128,8 @@ const initializeDatabase = async () => {
       )
     `);
 
+    console.log('📋 Database tables created successfully');
+
     // Insert default categories
     const categories = [
       ['DESKTOP', 'Desktop computers'],
@@ -130,7 +148,7 @@ const initializeDatabase = async () => {
     }
 
     // Create default admin user
-    const bcrypt = require('bcrypt');
+    const bcrypt = require('bcryptjs'); // Using bcryptjs for better Windows compatibility
     const hashedPassword = await bcrypt.hash('admin123', 10);
     
     await pool.execute(`
@@ -139,10 +157,11 @@ const initializeDatabase = async () => {
     `, ['Admin', 'User', 'admin@inventory.com', hashedPassword, 'admin']);
 
     console.log('✅ Default categories and admin user created');
+    console.log('🔑 Default admin credentials: admin@inventory.com / admin123');
     console.log('✅ Database tables initialized successfully');
     
   } catch (error) {
-    console.error('Error initializing database:', error);
+    console.error('❌ Error initializing database:', error);
     throw error;
   }
 };
@@ -152,7 +171,7 @@ const closeDatabase = async () => {
   if (pool) {
     await pool.end();
     pool = null;
-    console.log('Database connection closed');
+    console.log('🔌 Database connection closed');
   }
 };
 
