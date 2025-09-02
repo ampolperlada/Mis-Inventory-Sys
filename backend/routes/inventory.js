@@ -388,40 +388,68 @@ router.delete('/items/:id', async (req, res) => {
   }
 });
 
-// POST /api/inventory/items/:id/checkout - Check out item
+// POST /api/inventory/items/:id/checkout - Assign item
 router.post('/items/:id/checkout', async (req, res) => {
   try {
     const pool = getPool();
     const { id } = req.params;
     const {
-      assigned_to_name, employee_id, department, email, phone,
-      assignment_date, expected_return_date, assignment_notes
+      assigned_to_name, 
+      department, 
+      email, 
+      phone,
+      assignment_date = new Date().toISOString()
     } = req.body;
     
     if (!assigned_to_name) {
       return res.status(400).json({ error: 'Assigned to name is required' });
     }
     
-    // Update item status
-    const [updateResult] = await pool.execute(
-      'UPDATE inventory_items SET status = ?, updatedAt = ? WHERE id = ? AND status = ?',
-      ['ASSIGNED', new Date(), id, 'AVAILABLE']
-    );
+    // Update item with assignment details
+    const [updateResult] = await pool.execute(`
+      UPDATE inventory_items 
+      SET status = ?, 
+          assigned_to = ?, 
+          department = ?, 
+          assigned_email = ?, 
+          assigned_phone = ?,
+          assignment_date = ?,
+          updatedAt = ? 
+      WHERE id = ? AND status = ?
+    `, [
+      'ASSIGNED', 
+      assigned_to_name, 
+      department, 
+      email, 
+      phone,
+      assignment_date,
+      new Date(), 
+      id, 
+      'AVAILABLE'
+    ]);
     
     if (updateResult.affectedRows === 0) {
-      return res.status(404).json({ error: 'Item not found or not available for checkout' });
+      return res.status(404).json({ error: 'Item not found or not available for assignment' });
     }
     
-    // Fetch updated item
+    // Fetch updated item with assignment details
     const [item] = await pool.execute(`
-      SELECT * FROM inventory_items WHERE id = ?
+      SELECT 
+        i.*,
+        i.assigned_to,
+        i.department as assigned_department,
+        i.assigned_email,
+        i.assigned_phone,
+        i.assignment_date
+      FROM inventory_items i 
+      WHERE i.id = ?
     `, [id]);
     
-    console.log(`📤 Checked out item ID: ${id} to ${assigned_to_name}`);
+    console.log(`📤 Assigned item ID: ${id} to ${assigned_to_name} (${department})`);
     res.json(item[0]);
   } catch (error) {
-    console.error('Error checking out item:', error);
-    res.status(500).json({ error: 'Failed to check out item' });
+    console.error('Error assigning item:', error);
+    res.status(500).json({ error: 'Failed to assign item' });
   }
 });
 

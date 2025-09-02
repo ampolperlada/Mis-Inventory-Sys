@@ -95,28 +95,38 @@ export const useInventoryItems = () => {
   };
 
   // Check out item
-  const checkOutItem = async (id, assignmentData) => {
-    try {
-      setError(null);
-      const response = await api.post(`/inventory/items/${id}/checkout`, {
-        assigned_to_name: assignmentData.assignedTo,
+const checkOutItem = async (id, assignmentData) => {
+  try {
+    setError(null);
+    const response = await api.post(`/inventory/items/${id}/checkout`, {
+      assigned_to_name: assignmentData.assignedTo,
+      department: assignmentData.department,
+      email: assignmentData.email,
+      phone: assignmentData.phone,
+      assignment_date: new Date().toISOString(),
+    });
+    
+    // Update local state
+    setItems(prev => prev.map(item => 
+      item.id === id ? { 
+        ...item, 
+        status: 'assigned',
+        assigned_to: assignmentData.assignedTo,
         department: assignmentData.department,
-        assignment_date: new Date().toISOString(),
-      });
-      
-      // Update local state
-      setItems(prev => prev.map(item => 
-        item.id === id ? { ...item, status: 'assigned' } : item
-      ));
-      
-      return response.data;
-    } catch (err) {
-      console.error('Error checking out item:', err);
-      const errorMessage = err.response?.data?.error || 'Failed to check out item';
-      setError(errorMessage);
-      throw new Error(errorMessage);
-    }
-  };
+        assigned_email: assignmentData.email,
+        assigned_phone: assignmentData.phone,
+        assignment_date: new Date().toISOString()
+      } : item
+    ));
+    
+    return response.data;
+  } catch (err) {
+    console.error('Error assigning item:', err);
+    const errorMessage = err.response?.data?.error || 'Failed to assign item';
+    setError(errorMessage);
+    throw new Error(errorMessage);
+  }
+};
 
   // Check in item
   const checkInItem = async (id, returnData) => {

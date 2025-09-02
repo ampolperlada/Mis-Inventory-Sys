@@ -705,60 +705,197 @@ const Dashboard = () => {
               </Typography>
             </Box>
 
-            <Grid container spacing={2} sx={{ mb: 6 }}>
-              <Grid item xs={12} sm={3}>
-                <GlowingStatCard gradient="linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)" glowColor="#8b5cf6">
-                  <CardContent sx={{ p: 2, textAlign: 'center' }}>
-                    <Inventory2 sx={{ fontSize: 32, color: 'white', mb: 1 }} />
-                    <Typography variant="h4" sx={{ fontWeight: '900', color: 'white' }}>
-                      {stats.totalItems}
-                    </Typography>
-                    <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: '600', color: 'white' }}>
-                      Total Items
-                    </Typography>
-                  </CardContent>
-                </GlowingStatCard>
+            <Box sx={{ display: 'flex', justifyContent: 'center', mb: 6 }}>
+              <Grid container spacing={3} sx={{ maxWidth: '1000px' }}>
+                <Grid item xs={12} sm={6} md={3}>
+                  <UltraModernCard sx={{ 
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    color: 'white',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    '&::before': {
+                      content: '""',
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      background: 'rgba(255,255,255,0.1)',
+                      opacity: 0,
+                      transition: 'opacity 0.3s ease',
+                    },
+                    '&:hover::before': {
+                      opacity: 1,
+                    }
+                  }}>
+                    <CardContent sx={{ p: 3, position: 'relative', zIndex: 1 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                        <Box sx={{ 
+                          background: 'rgba(255,255,255,0.2)', 
+                          borderRadius: '12px', 
+                          p: 1.5,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}>
+                          <Inventory2 sx={{ fontSize: 28, color: 'white' }} />
+                        </Box>
+                        <Typography variant="h3" sx={{ fontWeight: '800', color: 'white' }}>
+                          {stats.totalItems}
+                        </Typography>
+                      </Box>
+                      <Typography variant="body1" sx={{ fontWeight: '600', color: 'rgba(255,255,255,0.9)' }}>
+                        Total Items
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)', mt: 0.5 }}>
+                        All inventory items
+                      </Typography>
+                    </CardContent>
+                  </UltraModernCard>
+                </Grid>
+                
+                <Grid item xs={12} sm={6} md={3}>
+                  <UltraModernCard sx={{ 
+                    background: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
+                    color: 'white',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    '&::before': {
+                      content: '""',
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      background: 'rgba(255,255,255,0.1)',
+                      opacity: 0,
+                      transition: 'opacity 0.3s ease',
+                    },
+                    '&:hover::before': {
+                      opacity: 1,
+                    }
+                  }}>
+                    <CardContent sx={{ p: 3, position: 'relative', zIndex: 1 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                        <Box sx={{ 
+                          background: 'rgba(255,255,255,0.2)', 
+                          borderRadius: '12px', 
+                          p: 1.5,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}>
+                          <CheckCircleOutline sx={{ fontSize: 28, color: 'white' }} />
+                        </Box>
+                        <Typography variant="h3" sx={{ fontWeight: '800', color: 'white' }}>
+                          {stats.available}
+                        </Typography>
+                      </Box>
+                      <Typography variant="body1" sx={{ fontWeight: '600', color: 'rgba(255,255,255,0.9)' }}>
+                        Available
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)', mt: 0.5 }}>
+                        Ready to assign
+                      </Typography>
+                    </CardContent>
+                  </UltraModernCard>
+                </Grid>
+                
+                <Grid item xs={12} sm={6} md={3}>
+                  <UltraModernCard sx={{ 
+                    background: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
+                    color: '#8b4513',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    '&::before': {
+                      content: '""',
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      background: 'rgba(255,255,255,0.2)',
+                      opacity: 0,
+                      transition: 'opacity 0.3s ease',
+                    },
+                    '&:hover::before': {
+                      opacity: 1,
+                    }
+                  }}>
+                    <CardContent sx={{ p: 3, position: 'relative', zIndex: 1 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                        <Box sx={{ 
+                          background: 'rgba(139,69,19,0.2)', 
+                          borderRadius: '12px', 
+                          p: 1.5,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}>
+                          <Assignment sx={{ fontSize: 28, color: '#8b4513' }} />
+                        </Box>
+                        <Typography variant="h3" sx={{ fontWeight: '800', color: '#8b4513' }}>
+                          {stats.assigned}
+                        </Typography>
+                      </Box>
+                      <Typography variant="body1" sx={{ fontWeight: '600', color: '#8b4513' }}>
+                        Assigned
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: 'rgba(139,69,19,0.7)', mt: 0.5 }}>
+                        Currently in use
+                      </Typography>
+                    </CardContent>
+                  </UltraModernCard>
+                </Grid>
+                
+                <Grid item xs={12} sm={6} md={3}>
+                  <UltraModernCard sx={{ 
+                    background: 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
+                    color: '#c53030',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    '&::before': {
+                      content: '""',
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      background: 'rgba(255,255,255,0.2)',
+                      opacity: 0,
+                      transition: 'opacity 0.3s ease',
+                    },
+                    '&:hover::before': {
+                      opacity: 1,
+                    }
+                  }}>
+                    <CardContent sx={{ p: 3, position: 'relative', zIndex: 1 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                        <Box sx={{ 
+                          background: 'rgba(197,48,48,0.2)', 
+                          borderRadius: '12px', 
+                          p: 1.5,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}>
+                          <Warning sx={{ fontSize: 28, color: '#c53030' }} />
+                        </Box>
+                        <Typography variant="h3" sx={{ fontWeight: '800', color: '#c53030' }}>
+                          {stats.maintenance}
+                        </Typography>
+                      </Box>
+                      <Typography variant="body1" sx={{ fontWeight: '600', color: '#c53030' }}>
+                        Maintenance
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: 'rgba(197,48,48,0.7)', mt: 0.5 }}>
+                        Needs attention
+                      </Typography>
+                    </CardContent>
+                  </UltraModernCard>
+                </Grid>
               </Grid>
-              <Grid item xs={12} sm={3}>
-                <GlowingStatCard gradient="linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)" glowColor="#06b6d4">
-                  <CardContent sx={{ p: 2, textAlign: 'center' }}>
-                    <CheckCircleOutline sx={{ fontSize: 32, color: 'white', mb: 1 }} />
-                    <Typography variant="h4" sx={{ fontWeight: '900', color: 'white' }}>
-                      {stats.available}
-                    </Typography>
-                    <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: '600', color: 'white' }}>
-                      Available
-                    </Typography>
-                  </CardContent>
-                </GlowingStatCard>
-              </Grid>
-              <Grid item xs={12} sm={3}>
-                <GlowingStatCard gradient="linear-gradient(135deg, #f59e0b 0%, #d97706 100%)" glowColor="#f59e0b">
-                  <CardContent sx={{ p: 2, textAlign: 'center' }}>
-                    <Assignment sx={{ fontSize: 32, color: 'white', mb: 1 }} />
-                    <Typography variant="h4" sx={{ fontWeight: '900', color: 'white' }}>
-                      {stats.assigned}
-                    </Typography>
-                    <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: '600', color: 'white' }}>
-                      Assigned
-                    </Typography>
-                  </CardContent>
-                </GlowingStatCard>
-              </Grid>
-              <Grid item xs={12} sm={3}>
-                <GlowingStatCard gradient="linear-gradient(135deg, #ef4444 0%, #dc2626 100%)" glowColor="#ef4444">
-                  <CardContent sx={{ p: 2, textAlign: 'center' }}>
-                    <Warning sx={{ fontSize: 32, color: 'white', mb: 1 }} />
-                    <Typography variant="h4" sx={{ fontWeight: '900', color: 'white' }}>
-                      {stats.maintenance}
-                    </Typography>
-                    <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: '600', color: 'white' }}>
-                      Maintenance
-                    </Typography>
-                  </CardContent>
-                </GlowingStatCard>
-              </Grid>
-            </Grid>
+            </Box>
 
             <UltraModernCard sx={{ mb: 6 }}>
               <CardContent sx={{ p: 4, textAlign: 'center' }}>
