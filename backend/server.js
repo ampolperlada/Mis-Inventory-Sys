@@ -1,80 +1,106 @@
+// backend/server.js - Fixed version with proper routing
 const express = require('express');
 const cors = require('cors');
-const helmet = require('helmet');
-require('dotenv').config();
-
-const { initializeDatabase } = require('./config/database');
+const { connectDatabase, initializeDatabase } = require('./config/database');
 const inventoryRoutes = require('./routes/inventory');
 const authRoutes = require('./routes/auth');
-const dashboardRoutes = require('./routes/dashboard');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
-app.use(helmet());
 app.use(cors({
-  origin: 'http://localhost:3000', // Explicitly allow frontend
+  origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
   credentials: true
 }));
 
-// Body parsing - MUST be before routes
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/inventory', inventoryRoutes);
-app.use('/api/dashboard', dashboardRoutes);
+// Request logging middleware
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+  next();
+});
 
 // Health check endpoint
-app.get('/api/health', (req, res) => {
+app.get('/health', (req, res) => {
   res.json({ 
     status: 'OK', 
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development'
+    message: 'Server is running',
+    timestamp: new Date().toISOString()
   });
 });
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ 
-    error: 'Something went wrong!',
-    message: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error'
+// API Routes
+app.use('/api/inventory', inventoryRoutes);
+app.use('/api/auth', authRoutes);
+
+// Root endpoint
+app.get('/', (req, res) => {
+  res.json({ 
+    message: 'Inventory Management System API',
+    version: '1.0.0',
+    endpoints: {
+      health: '/health',
+      inventory: '/api/inventory/*',
+      auth: '/api/auth/*'
+    }
   });
 });
 
-// 404 handler
+// 404 handler for undefined routes
 app.use('*', (req, res) => {
-  res.status(404).json({ error: 'Route not found' });
+  console.log(`❌ Route not found: ${req.method} ${req.originalUrl}`);
+  res.status(404).json({ 
+    error: 'Route not found',
+    path: req.originalUrl,
+    method: req.method,
+    available_endpoints: [
+      'GET /health',
+      'GET /api/inventory/items',
+      'GET /api/inventory/stats',
+      'POST /api/inventory/items',
+      'PUT /api/inventory/items/:id',
+      'DELETE /api/inventory/items/:id'
+    ]
+  });
 });
 
-// Initialize database and start server
-async function startServer() {
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error('❌ Server Error:', err);
+  res.status(500).json({ 
+    error: 'Internal server error',
+    message: err.message,
+    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+  });
+});
+
+// Start server
+const startServer = async () => {
   try {
-    await initializeDatabase();
+    // Connect to database
+    await connectDatabase();
+    console.log('✅ Database connected successfully');
     
+    // Initialize database (create tables, default data)
+    await initializeDatabase();
+    console.log('✅ Database initialized successfully');
+    
+    // Start the server
     app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
       console.log(`🔗 API URL: http://localhost:${PORT}/api`);
+      console.log(`🏥 Health Check: http://localhost:${PORT}/health`);
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error);
     process.exit(1);
   }
-}
+};
 
 startServer();
 
-// Graceful shutdown
-process.on('SIGINT', () => {
-  console.log('\n👋 Shutting down gracefully...');
-  process.exit(0);
-});
-
-process.on('SIGTERM', () => {
-  console.log('👋 Shutting down gracefully...');
-  process.exit(0);
-});
+module.exports = app;
