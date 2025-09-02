@@ -247,7 +247,7 @@ const Dashboard = () => {
     }
 
     const itemData = {
-      name: newItem.name.trim(),           // ✅ Changed from item_name to name
+      name: newItem.name.trim(),
       brand: newItem.brand?.trim() || null,
       model: newItem.model?.trim() || null,
       serial_number: newItem.serialNumber.trim(),
@@ -398,7 +398,7 @@ const Dashboard = () => {
                     ) : (
                       items.map((item) => (
                         <TableRow key={item.id}>
-                          <TableCell>{item.name}</TableCell>  {/* ✅ Changed from item_name */}
+                          <TableCell>{item.name}</TableCell>
                           <TableCell>{item.brand}</TableCell>
                           <TableCell>{item.model}</TableCell>
                           <TableCell>{item.serial_number}</TableCell>

@@ -364,6 +364,100 @@ router.post('/items/:id/checkin', async (req, res) => {
   }
 });
 
+// POST /api/inventory/items - Create new item
+router.post('/items', async (req, res) => {
+  try {
+    console.log('📥 Creating item:', req.body);
+
+    const pool = getPool();
+    
+    const {
+      item_name,
+      brand = null,
+      model = null,
+      category_id = null,
+      serial_number,
+      location = null,
+      status = 'available',
+      condition_status = 'new',
+      processor = null,
+      ram = null,
+      storage = null,
+      operating_system = null,
+      hostname = null,
+      mac_address = null,
+      ip_address = null,
+      purchase_date = null,
+      purchase_price = null,
+      supplier = null,
+      warranty_period = null,
+      description = null,
+      notes = null
+    } = req.body;
+
+    // Validate required fields
+    if (!item_name || !item_name.trim()) {
+      return res.status(400).json({ error: 'Item name is required' });
+    }
+    if (!serial_number || !serial_number.trim()) {
+      return res.status(400).json({ error: 'Serial number is required' });
+    }
+
+    const asset_tag_number = generateAssetTag();
+
+    const [result] = await pool.execute(`
+      INSERT INTO inventory_items (
+        item_name, brand, model, category_id, asset_tag_number,
+        serial_number, location, status, condition_status,
+        processor, ram, storage, operating_system,
+        hostname, mac_address, ip_address,
+        purchase_date, purchase_price, supplier, warranty_period,
+        description, notes, created_by
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `, [
+      item_name,
+      brand,
+      model,
+      category_id,
+      asset_tag_number,
+      serial_number,
+      location,
+      status,
+      condition_status,
+      processor,
+      ram,
+      storage,
+      operating_system,
+      hostname,
+      mac_address,
+      ip_address,
+      purchase_date,
+      purchase_price,
+      supplier,
+      warranty_period,
+      description,
+      notes,
+      1
+    ]);
+    
+    const [newItem] = await pool.execute(`
+      SELECT i.*, c.name as category_name
+      FROM inventory_items i
+      LEFT JOIN categories c ON i.category_id = c.id
+      WHERE i.id = ?
+    `, [result.insertId]);
+    
+    res.status(201).json(newItem[0]);
+  } catch (error) {
+    console.error('❌ Error creating item:', error);
+    if (error.code === 'ER_DUP_ENTRY') {
+      res.status(409).json({ error: 'Serial number or asset tag already exists' });
+    } else {
+      res.status(500).json({ error: 'Failed to create item' });
+    }
+  }
+});
+
 // GET /api/inventory/categories - Get all categories
 router.get('/categories', async (req, res) => {
   try {
