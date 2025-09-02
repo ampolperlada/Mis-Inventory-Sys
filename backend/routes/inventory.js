@@ -126,7 +126,8 @@ router.get('/items/:id', async (req, res) => {
   }
 });
 
-// POST /api/inventory/items - Create new item
+// POST /api/inventory/items - Create new item (CORRECTED FOR YOUR ACTUAL TABLE)
+// POST /api/inventory/items - Create new item (FINAL FIX)
 router.post('/items', async (req, res) => {
   try {
     console.log('📥 Creating item:', req.body);
@@ -140,20 +141,9 @@ router.post('/items', async (req, res) => {
       category_id = null,
       serial_number,
       location = null,
-      status = 'available',
-      condition_status = 'new',
-      processor = null,
-      ram = null,
-      storage = null,
-      operating_system = null,
-      hostname = null,
-      mac_address = null,
-      ip_address = null,
-      purchase_date = null,
-      purchase_price = null,
-      supplier = null,
-      warranty_period = null,
-      description = null,
+      status = 'AVAILABLE',
+      condition_status = 'Good',
+      quantity = 1,
       notes = null
     } = req.body;
 
@@ -165,61 +155,47 @@ router.post('/items', async (req, res) => {
       return res.status(400).json({ error: 'Serial number is required' });
     }
 
-    const asset_tag_number = generateAssetTag();
+    // Set a default category if none provided - use 'OTHER' which should exist
+    const categoryToUse = category_id || 'OTHER';
 
     const [result] = await pool.execute(`
       INSERT INTO inventory_items (
-        item_name, brand, model, category_id, asset_tag_number,
-        serial_number, location, status, condition_status,
-        processor, ram, storage, operating_system,
-        hostname, mac_address, ip_address,
-        purchase_date, purchase_price, supplier, warranty_period,
-        description, notes, created_by
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        item_name, serialNumber, brand, model, category,
+        location, status, \`condition\`, quantity, notes,
+        createdAt, updatedAt, created_by, updated_by
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
-      item_name,
+      item_name,        // Now using item_name column you added
+      serial_number,    // maps to serialNumber column
       brand,
       model,
-      category_id,
-      asset_tag_number,
-      serial_number,
+      categoryToUse,    // Use default 'OTHER' if no category provided
       location,
       status,
-      condition_status,
-      processor,
-      ram,
-      storage,
-      operating_system,
-      hostname,
-      mac_address,
-      ip_address,
-      purchase_date,
-      purchase_price,
-      supplier,
-      warranty_period,
-      description,
+      condition_status, // maps to condition column
+      quantity,
       notes,
-      1
+      new Date(),      // createdAt
+      new Date(),      // updatedAt
+      1,              // created_by
+      1               // updated_by
     ]);
     
+    // Fetch the created item to return it
     const [newItem] = await pool.execute(`
-      SELECT i.*, c.name as category_name
-      FROM inventory_items i
-      LEFT JOIN categories c ON i.category_id = c.id
-      WHERE i.id = ?
+      SELECT * FROM inventory_items WHERE id = ?
     `, [result.insertId]);
     
     res.status(201).json(newItem[0]);
   } catch (error) {
     console.error('❌ Error creating item:', error);
     if (error.code === 'ER_DUP_ENTRY') {
-      res.status(409).json({ error: 'Serial number or asset tag already exists' });
+      res.status(409).json({ error: 'Serial number already exists' });
     } else {
-      res.status(500).json({ error: 'Failed to create item' });
+      res.status(500).json({ error: 'Failed to create item: ' + error.message });
     }
   }
 });
-
 // PUT /api/inventory/items/:id - Update item
 router.put('/items/:id', async (req, res) => {
   try {

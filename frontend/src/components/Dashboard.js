@@ -235,7 +235,7 @@ const Dashboard = () => {
     { text: 'Reports', icon: <ReportsIcon />, view: 'reports' },
   ];
 
-  // Handlers
+  // FIXED: Updated handlers to use correct field names
   const handleAddItem = async () => {
     if (!newItem.name?.trim()) {
       showSnackbar('Item name is required', 'error');
@@ -246,13 +246,14 @@ const Dashboard = () => {
       return;
     }
 
+    // FIXED: Updated field names to match backend
     const itemData = {
-      name: newItem.name.trim(),
-      serialNumber: newItem.serialNumber.trim(),
+      item_name: newItem.name.trim(),           // Changed from 'name'
+      serial_number: newItem.serialNumber.trim(), // Changed from 'serialNumber'
       brand: newItem.brand?.trim() || null,
       model: newItem.model?.trim() || null,
-      status: 'AVAILABLE',
-      condition: 'Good',
+      status: 'available',                      // Changed from 'AVAILABLE'
+      condition_status: 'good',                 // Changed from 'condition': 'Good'
       quantity: 1,
       notes: '',
     };
@@ -395,22 +396,23 @@ const Dashboard = () => {
                     ) : (
                       items.map((item) => (
                         <TableRow key={item.id}>
-                          <TableCell>{item.name}</TableCell>
+                          {/* FIXED: Updated field names */}
+                          <TableCell>{item.item_name}</TableCell>
                           <TableCell>{item.brand}</TableCell>
                           <TableCell>{item.model}</TableCell>
-                          <TableCell>{item.serialNumber}</TableCell>
+                          <TableCell>{item.serial_number}</TableCell>
                           <TableCell>
                             <Chip
                               label={item.status}
                               size="small"
                               sx={{
                                 background:
-                                  item.status === 'AVAILABLE' ? '#dcfce7' :
-                                  item.status === 'ASSIGNED' ? '#fef3c7' :
+                                  item.status === 'available' ? '#dcfce7' :
+                                  item.status === 'assigned' ? '#fef3c7' :
                                   '#fee2e2',
                                 color:
-                                  item.status === 'AVAILABLE' ? '#166534' :
-                                  item.status === 'ASSIGNED' ? '#92400e' :
+                                  item.status === 'available' ? '#166534' :
+                                  item.status === 'assigned' ? '#92400e' :
                                   '#991b1b',
                                 fontWeight: '600'
                               }}
