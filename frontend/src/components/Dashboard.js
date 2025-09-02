@@ -248,16 +248,13 @@ const Dashboard = () => {
 
     const itemData = {
       name: newItem.name.trim(),
+      serialNumber: newItem.serialNumber.trim(),
       brand: newItem.brand?.trim() || null,
       model: newItem.model?.trim() || null,
-      serial_number: newItem.serialNumber.trim(),
-      status: 'available',
-      category_id: 1,
-      location: 'Office',
-      condition_status: 'new',
-      description: '',
+      status: 'AVAILABLE',
+      condition: 'Good',
+      quantity: 1,
       notes: '',
-      created_by: 1,
     };
 
     try {
@@ -401,19 +398,19 @@ const Dashboard = () => {
                           <TableCell>{item.name}</TableCell>
                           <TableCell>{item.brand}</TableCell>
                           <TableCell>{item.model}</TableCell>
-                          <TableCell>{item.serial_number}</TableCell>
+                          <TableCell>{item.serialNumber}</TableCell>
                           <TableCell>
                             <Chip
                               label={item.status}
                               size="small"
                               sx={{
                                 background:
-                                  item.status === 'available' ? '#dcfce7' :
-                                  item.status === 'assigned' ? '#fef3c7' :
+                                  item.status === 'AVAILABLE' ? '#dcfce7' :
+                                  item.status === 'ASSIGNED' ? '#fef3c7' :
                                   '#fee2e2',
                                 color:
-                                  item.status === 'available' ? '#166534' :
-                                  item.status === 'assigned' ? '#92400e' :
+                                  item.status === 'AVAILABLE' ? '#166534' :
+                                  item.status === 'ASSIGNED' ? '#92400e' :
                                   '#991b1b',
                                 fontWeight: '600'
                               }}
