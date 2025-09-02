@@ -1,4 +1,4 @@
-// backend/routes/inventory.js
+// backend/routes/inventory.js - Complete functional version
 const express = require('express');
 const router = express.Router();
 const { getPool } = require('../config/database');
@@ -11,22 +11,77 @@ function generateAssetTag() {
   return `${prefix}${timestamp}${random}`;
 }
 
+// GET /api/inventory/stats - Dashboard statistics
+router.get('/stats', async (req, res) => {
+  try {
+    const pool = getPool();
+    
+    // Get total items count
+    const [totalResult] = await pool.execute('SELECT COUNT(*) as total FROM inventory_items');
+    const totalItems = totalResult[0].total;
+    
+    // Get counts by status
+    const [statusResult] = await pool.execute(`
+      SELECT 
+        status,
+        COUNT(*) as count 
+      FROM inventory_items 
+      GROUP BY status
+    `);
+    
+    // Initialize stats
+    const stats = {
+      totalItems: totalItems,
+      available: 0,
+      assigned: 0,
+      maintenance: 0
+    };
+    
+    // Map status counts
+    statusResult.forEach(row => {
+      const status = row.status.toLowerCase();
+      switch (status) {
+        case 'available':
+          stats.available = row.count;
+          break;
+        case 'assigned':
+          stats.assigned = row.count;
+          break;
+        case 'maintenance':
+          stats.maintenance = row.count;
+          break;
+      }
+    });
+    
+    res.json(stats);
+  } catch (error) {
+    console.error('Error fetching stats:', error);
+    res.status(500).json({ error: 'Failed to fetch statistics' });
+  }
+});
+
 // GET /api/inventory/items - Get all items with filtering
 router.get('/items', async (req, res) => {
   try {
     const pool = getPool();
-    const { status, category, department, search, page = 1, limit = 50 } = req.query;
+    const { status, category, search, page = 1, limit = 50 } = req.query;
     
     let query = `
       SELECT 
-        i.*,
-        c.name as category_name,
-        CONCAT(u_created.firstName, ' ', u_created.lastName) as created_by_name,
-        CONCAT(u_updated.firstName, ' ', u_updated.lastName) as updated_by_name
+        i.id,
+        i.item_name,
+        i.brand,
+        i.model,
+        i.serialNumber,
+        i.category,
+        i.status,
+        i.condition,
+        i.location,
+        i.quantity,
+        i.notes,
+        i.createdAt,
+        i.updatedAt
       FROM inventory_items i
-      LEFT JOIN categories c ON i.category_id = c.id
-      LEFT JOIN users u_created ON i.created_by = u_created.id
-      LEFT JOIN users u_updated ON i.updated_by = u_updated.id
       WHERE 1=1
     `;
     
@@ -39,27 +94,40 @@ router.get('/items', async (req, res) => {
     }
     
     if (category) {
-      query += ' AND i.category_id = ?';
+      query += ' AND i.category = ?';
       params.push(category);
     }
     
     if (search) {
-      query += ' AND (i.item_name LIKE ? OR i.brand LIKE ? OR i.model LIKE ? OR i.serial_number LIKE ?)';
+      query += ' AND (i.item_name LIKE ? OR i.brand LIKE ? OR i.model LIKE ? OR i.serialNumber LIKE ?)';
       const searchTerm = `%${search}%`;
       params.push(searchTerm, searchTerm, searchTerm, searchTerm);
     }
     
-    query += ' ORDER BY i.created_at DESC LIMIT ? OFFSET ?';
+    query += ' ORDER BY i.createdAt DESC LIMIT ? OFFSET ?';
     params.push(parseInt(limit), (parseInt(page) - 1) * parseInt(limit));
     
     const [items] = await pool.execute(query, params);
     
+    // Map database fields to what frontend expects
+    const mappedItems = items.map(item => ({
+      id: item.id,
+      item_name: item.item_name,
+      brand: item.brand,
+      model: item.model,
+      serial_number: item.serialNumber, // Map serialNumber to serial_number for frontend
+      category: item.category,
+      status: item.status ? item.status.toLowerCase() : 'available', // Ensure lowercase status
+      condition_status: item.condition,
+      location: item.location,
+      quantity: item.quantity,
+      notes: item.notes,
+      created_at: item.createdAt,
+      updated_at: item.updatedAt
+    }));
+    
     // Get total count for pagination
-    let countQuery = `
-      SELECT COUNT(*) as total
-      FROM inventory_items i
-      WHERE 1=1
-    `;
+    let countQuery = `SELECT COUNT(*) as total FROM inventory_items i WHERE 1=1`;
     const countParams = [];
     
     if (status) {
@@ -68,12 +136,12 @@ router.get('/items', async (req, res) => {
     }
     
     if (category) {
-      countQuery += ' AND i.category_id = ?';
+      countQuery += ' AND i.category = ?';
       countParams.push(category);
     }
     
     if (search) {
-      countQuery += ' AND (i.item_name LIKE ? OR i.brand LIKE ? OR i.model LIKE ? OR i.serial_number LIKE ?)';
+      countQuery += ' AND (i.item_name LIKE ? OR i.brand LIKE ? OR i.model LIKE ? OR i.serialNumber LIKE ?)';
       const searchTerm = `%${search}%`;
       countParams.push(searchTerm, searchTerm, searchTerm, searchTerm);
     }
@@ -82,7 +150,7 @@ router.get('/items', async (req, res) => {
     const total = countResult[0].total;
     
     res.json({
-      items,
+      items: mappedItems,
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
@@ -104,14 +172,20 @@ router.get('/items/:id', async (req, res) => {
     
     const [items] = await pool.execute(`
       SELECT 
-        i.*,
-        c.name as category_name,
-        CONCAT(u_created.firstName, ' ', u_created.lastName) as created_by_name,
-        CONCAT(u_updated.firstName, ' ', u_updated.lastName) as updated_by_name
+        i.id,
+        i.item_name,
+        i.brand,
+        i.model,
+        i.serialNumber,
+        i.category,
+        i.status,
+        i.condition,
+        i.location,
+        i.quantity,
+        i.notes,
+        i.createdAt,
+        i.updatedAt
       FROM inventory_items i
-      LEFT JOIN categories c ON i.category_id = c.id
-      LEFT JOIN users u_created ON i.created_by = u_created.id
-      LEFT JOIN users u_updated ON i.updated_by = u_updated.id
       WHERE i.id = ?
     `, [id]);
     
@@ -119,15 +193,32 @@ router.get('/items/:id', async (req, res) => {
       return res.status(404).json({ error: 'Item not found' });
     }
     
-    res.json(items[0]);
+    // Map database fields to what frontend expects
+    const item = items[0];
+    const mappedItem = {
+      id: item.id,
+      item_name: item.item_name,
+      brand: item.brand,
+      model: item.model,
+      serial_number: item.serialNumber,
+      category: item.category,
+      status: item.status ? item.status.toLowerCase() : 'available',
+      condition_status: item.condition,
+      location: item.location,
+      quantity: item.quantity,
+      notes: item.notes,
+      created_at: item.createdAt,
+      updated_at: item.updatedAt
+    };
+    
+    res.json(mappedItem);
   } catch (error) {
     console.error('Error fetching item:', error);
     res.status(500).json({ error: 'Failed to fetch item' });
   }
 });
 
-// POST /api/inventory/items - Create new item (CORRECTED FOR YOUR ACTUAL TABLE)
-// POST /api/inventory/items - Create new item (FINAL FIX)
+// POST /api/inventory/items - Create new item
 router.post('/items', async (req, res) => {
   try {
     console.log('📥 Creating item:', req.body);
@@ -196,6 +287,7 @@ router.post('/items', async (req, res) => {
     }
   }
 });
+
 // PUT /api/inventory/items/:id - Update item
 router.put('/items/:id', async (req, res) => {
   try {
@@ -205,7 +297,6 @@ router.put('/items/:id', async (req, res) => {
     
     // Remove fields that shouldn't be updated directly
     delete updateData.id;
-    delete updateData.asset_tag_number;
     delete updateData.created_at;
     delete updateData.created_by;
     
@@ -213,14 +304,27 @@ router.put('/items/:id', async (req, res) => {
       return res.status(400).json({ error: 'No valid fields to update' });
     }
     
+    // Map frontend field names to database column names
+    const fieldMapping = {
+      'item_name': 'item_name',
+      'serial_number': 'serialNumber',
+      'condition_status': 'condition'
+    };
+    
+    const mappedData = {};
+    for (const [key, value] of Object.entries(updateData)) {
+      const dbField = fieldMapping[key] || key;
+      mappedData[dbField] = value;
+    }
+    
     // Build dynamic update query
-    const fields = Object.keys(updateData).map(field => `${field} = ?`).join(', ');
-    const values = Object.values(updateData);
-    values.push(1, id); // updated_by, id
+    const fields = Object.keys(mappedData).map(field => `${field} = ?`).join(', ');
+    const values = Object.values(mappedData);
+    values.push(new Date(), 1, id); // updatedAt, updated_by, id
     
     const [result] = await pool.execute(`
       UPDATE inventory_items 
-      SET ${fields}, updated_by = ?, updated_at = CURRENT_TIMESTAMP
+      SET ${fields}, updatedAt = ?, updated_by = ?
       WHERE id = ?
     `, values);
     
@@ -230,10 +334,7 @@ router.put('/items/:id', async (req, res) => {
     
     // Fetch updated item
     const [updatedItem] = await pool.execute(`
-      SELECT i.*, c.name as category_name
-      FROM inventory_items i
-      LEFT JOIN categories c ON i.category_id = c.id
-      WHERE i.id = ?
+      SELECT * FROM inventory_items WHERE id = ?
     `, [id]);
     
     res.json(updatedItem[0]);
@@ -261,6 +362,7 @@ router.delete('/items/:id', async (req, res) => {
     // Delete the item
     await pool.execute('DELETE FROM inventory_items WHERE id = ?', [id]);
     
+    console.log(`🗑️ Deleted item: ${itemName} (ID: ${id})`);
     res.json({ message: 'Item deleted successfully' });
   } catch (error) {
     console.error('Error deleting item:', error);
@@ -284,8 +386,8 @@ router.post('/items/:id/checkout', async (req, res) => {
     
     // Update item status
     const [updateResult] = await pool.execute(
-      'UPDATE inventory_items SET status = ? WHERE id = ? AND status = ?',
-      ['assigned', id, 'available']
+      'UPDATE inventory_items SET status = ?, updatedAt = ? WHERE id = ? AND status = ?',
+      ['ASSIGNED', new Date(), id, 'AVAILABLE']
     );
     
     if (updateResult.affectedRows === 0) {
@@ -294,12 +396,10 @@ router.post('/items/:id/checkout', async (req, res) => {
     
     // Fetch updated item
     const [item] = await pool.execute(`
-      SELECT i.*, c.name as category_name
-      FROM inventory_items i
-      LEFT JOIN categories c ON i.category_id = c.id
-      WHERE i.id = ?
+      SELECT * FROM inventory_items WHERE id = ?
     `, [id]);
     
+    console.log(`📤 Checked out item ID: ${id} to ${assigned_to_name}`);
     res.json(item[0]);
   } catch (error) {
     console.error('Error checking out item:', error);
@@ -312,12 +412,12 @@ router.post('/items/:id/checkin', async (req, res) => {
   try {
     const pool = getPool();
     const { id } = req.params;
-    const { return_notes, return_condition = 'good' } = req.body;
+    const { return_notes, return_condition = 'Good' } = req.body;
     
-    // Update item status
+    // Update item status and condition
     const [updateResult] = await pool.execute(
-      'UPDATE inventory_items SET status = ? WHERE id = ? AND status = ?',
-      ['available', id, 'assigned']
+      'UPDATE inventory_items SET status = ?, `condition` = ?, updatedAt = ? WHERE id = ? AND status = ?',
+      ['AVAILABLE', return_condition, new Date(), id, 'ASSIGNED']
     );
     
     if (updateResult.affectedRows === 0) {
@@ -326,12 +426,10 @@ router.post('/items/:id/checkin', async (req, res) => {
     
     // Fetch updated item
     const [item] = await pool.execute(`
-      SELECT i.*, c.name as category_name
-      FROM inventory_items i
-      LEFT JOIN categories c ON i.category_id = c.id
-      WHERE i.id = ?
+      SELECT * FROM inventory_items WHERE id = ?
     `, [id]);
     
+    console.log(`📥 Checked in item ID: ${id}, condition: ${return_condition}`);
     res.json(item[0]);
   } catch (error) {
     console.error('Error checking in item:', error);
