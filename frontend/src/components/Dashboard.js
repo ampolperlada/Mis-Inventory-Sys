@@ -15,9 +15,6 @@ import {
   CardContent,
   Grid,
   Button,
-  Avatar,
-  Menu,
-  MenuItem,
   useTheme,
   useMediaQuery,
   Chip,
@@ -39,6 +36,7 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  MenuItem,
 } from '@mui/material';
 import { styled, createTheme, ThemeProvider } from '@mui/material/styles';
 import MuiAlert from '@mui/material/Alert';
@@ -46,13 +44,10 @@ import {
   Dashboard as DashboardIcon,
   Add as AddIcon,
   ViewList as ViewListIcon,
-  CheckCircle as CheckInIcon,
-  Assignment as CheckOutIcon,
+  CheckCircle as ReceiveIcon,
+  Assignment as AssignIcon,
   Assessment as ReportsIcon,
   Menu as MenuIcon,
-  AccountCircle,
-  Logout,
-  Settings,
   Inventory2,
   TrendingUp,
   Warning,
@@ -60,9 +55,7 @@ import {
   Star,
   AutoAwesome,
   AssignmentTurnedIn as Assignment,
-  Search,
   Delete,
-  Edit,
   Person,
   CalendarToday,
 } from '@mui/icons-material';
@@ -197,7 +190,6 @@ const Dashboard = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [anchorEl, setAnchorEl] = useState(null);
   const [currentView, setCurrentView] = useState('dashboard');
 
   // Hooks
@@ -206,21 +198,19 @@ const Dashboard = () => {
 
   // Dialog states
   const [openAddDialog, setOpenAddDialog] = useState(false);
-  const [openCheckOutDialog, setOpenCheckOutDialog] = useState(null);
-  const [openCheckInDialog, setOpenCheckInDialog] = useState(null);
+  const [openAssignDialog, setOpenAssignDialog] = useState(null);
+  const [openReceiveDialog, setOpenReceiveDialog] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
 
   // Form states
   const [newItem, setNewItem] = useState({ name: '', brand: '', model: '', serialNumber: '' });
-  const [assignmentData, setAssignmentData] = useState({ assignedTo: '', department: '' });
+  const [assignmentData, setAssignmentData] = useState({ assignedTo: '', department: '', email: '', phone: '' });
   const [returnData, setReturnData] = useState({ condition: 'good', notes: '' });
 
   // Snackbar
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
   const handleDrawerToggle = () => setMobileOpen(!mobileOpen);
-  const handleProfileMenuOpen = (event) => setAnchorEl(event.currentTarget);
-  const handleMenuClose = () => setAnchorEl(null);
 
   const showSnackbar = (message, severity = 'success') => {
     setSnackbar({ open: true, message, severity });
@@ -230,12 +220,12 @@ const Dashboard = () => {
     { text: 'Dashboard', icon: <DashboardIcon />, view: 'dashboard' },
     { text: 'Add Item', icon: <AddIcon />, view: 'add' },
     { text: 'View Items', icon: <ViewListIcon />, view: 'view' },
-    { text: 'Check Out', icon: <CheckOutIcon />, view: 'checkout' },
-    { text: 'Check In', icon: <CheckInIcon />, view: 'checkin' },
+    { text: 'Assign', icon: <AssignIcon />, view: 'assign' },
+    { text: 'Receive', icon: <ReceiveIcon />, view: 'receive' },
     { text: 'Reports', icon: <ReportsIcon />, view: 'reports' },
   ];
 
-  // FIXED: Updated handlers to use correct field names
+  // Handlers
   const handleAddItem = async () => {
     if (!newItem.name?.trim()) {
       showSnackbar('Item name is required', 'error');
@@ -246,14 +236,13 @@ const Dashboard = () => {
       return;
     }
 
-    // FIXED: Updated field names to match backend
     const itemData = {
-      item_name: newItem.name.trim(),           // Changed from 'name'
-      serial_number: newItem.serialNumber.trim(), // Changed from 'serialNumber'
+      item_name: newItem.name.trim(),
+      serial_number: newItem.serialNumber.trim(),
       brand: newItem.brand?.trim() || null,
       model: newItem.model?.trim() || null,
-      status: 'available',                      // Changed from 'AVAILABLE'
-      condition_status: 'good',                 // Changed from 'condition': 'Good'
+      status: 'available',
+      condition_status: 'good',
       quantity: 1,
       notes: '',
     };
@@ -279,25 +268,36 @@ const Dashboard = () => {
     }
   };
 
-  const handleCheckOut = async (id) => {
+  const handleAssign = async (id) => {
+    if (!assignmentData.assignedTo?.trim()) {
+      showSnackbar('Please enter who the item is assigned to', 'error');
+      return;
+    }
+
     try {
-      await checkOutItem(id, assignmentData);
-      setOpenCheckOutDialog(null);
-      setAssignmentData({ assignedTo: '', department: '' });
-      showSnackbar('Item checked out successfully!');
+      await checkOutItem(id, {
+        assigned_to_name: assignmentData.assignedTo,
+        department: assignmentData.department,
+        email: assignmentData.email,
+        phone: assignmentData.phone,
+        assignment_date: new Date().toISOString(),
+      });
+      setOpenAssignDialog(null);
+      setAssignmentData({ assignedTo: '', department: '', email: '', phone: '' });
+      showSnackbar('Item assigned successfully!');
     } catch (err) {
-      showSnackbar('Failed to check out: ' + err.message, 'error');
+      showSnackbar('Failed to assign item: ' + err.message, 'error');
     }
   };
 
-  const handleCheckIn = async (id) => {
+  const handleReceive = async (id) => {
     try {
       await checkInItem(id, returnData);
-      setOpenCheckInDialog(null);
+      setOpenReceiveDialog(null);
       setReturnData({ condition: 'good', notes: '' });
-      showSnackbar('Item checked in successfully!');
+      showSnackbar('Item received back successfully!');
     } catch (err) {
-      showSnackbar('Failed to check in: ' + err.message, 'error');
+      showSnackbar('Failed to receive item: ' + err.message, 'error');
     }
   };
 
@@ -396,7 +396,6 @@ const Dashboard = () => {
                     ) : (
                       items.map((item) => (
                         <TableRow key={item.id}>
-                          {/* FIXED: Updated field names */}
                           <TableCell>{item.item_name}</TableCell>
                           <TableCell>{item.brand}</TableCell>
                           <TableCell>{item.model}</TableCell>
@@ -419,11 +418,11 @@ const Dashboard = () => {
                             />
                           </TableCell>
                           <TableCell>
-                            <IconButton size="small" onClick={() => setOpenCheckOutDialog(item.id)}>
-                              <CheckOutIcon fontSize="small" />
+                            <IconButton size="small" onClick={() => setOpenAssignDialog(item.id)}>
+                              <AssignIcon fontSize="small" />
                             </IconButton>
-                            <IconButton size="small" onClick={() => setOpenCheckInDialog(item.id)}>
-                              <CheckInIcon fontSize="small" />
+                            <IconButton size="small" onClick={() => setOpenReceiveDialog(item.id)}>
+                              <ReceiveIcon fontSize="small" />
                             </IconButton>
                             <IconButton size="small" onClick={() => setDeleteConfirm(item.id)}>
                               <Delete fontSize="small" color="error" />
@@ -439,6 +438,261 @@ const Dashboard = () => {
           </Box>
         );
 
+      case 'assign':
+        return (
+          <Box>
+            <Typography variant="h4" sx={{ color: '#1f2937', mb: 3 }}>Assign Items</Typography>
+            
+            {/* Available Items Section */}
+            <UltraModernCard sx={{ mb: 4 }}>
+              <CardContent sx={{ p: 4 }}>
+                <Typography variant="h6" sx={{ mb: 2 }}>Available Items for Assignment</Typography>
+                {loading ? (
+                  <CircularProgress />
+                ) : (
+                  <TableContainer>
+                    <Table>
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>Item Name</TableCell>
+                          <TableCell>Brand</TableCell>
+                          <TableCell>Model</TableCell>
+                          <TableCell>Serial Number</TableCell>
+                          <TableCell>Action</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {items.filter(item => item.status === 'available').map((item) => (
+                          <TableRow key={item.id}>
+                            <TableCell>{item.item_name}</TableCell>
+                            <TableCell>{item.brand}</TableCell>
+                            <TableCell>{item.model}</TableCell>
+                            <TableCell>{item.serial_number}</TableCell>
+                            <TableCell>
+                              <Button 
+                                variant="contained" 
+                                size="small"
+                                onClick={() => setOpenAssignDialog(item.id)}
+                              >
+                                Assign
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                        {items.filter(item => item.status === 'available').length === 0 && (
+                          <TableRow>
+                            <TableCell colSpan={5} align="center" sx={{ color: '#6b7280', py: 4 }}>
+                              No available items to assign
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                )}
+              </CardContent>
+            </UltraModernCard>
+
+            {/* Currently Assigned Items Section */}
+            <UltraModernCard>
+              <CardContent sx={{ p: 4 }}>
+                <Typography variant="h6" sx={{ mb: 2 }}>Currently Assigned Items</Typography>
+                {loading ? (
+                  <CircularProgress />
+                ) : (
+                  <TableContainer>
+                    <Table>
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>Item Name</TableCell>
+                          <TableCell>Brand</TableCell>
+                          <TableCell>Model</TableCell>
+                          <TableCell>Serial Number</TableCell>
+                          <TableCell>Assigned To</TableCell>
+                          <TableCell>Department</TableCell>
+                          <TableCell>Date Assigned</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {items.filter(item => item.status === 'assigned').map((item) => (
+                          <TableRow key={item.id}>
+                            <TableCell>{item.item_name}</TableCell>
+                            <TableCell>{item.brand}</TableCell>
+                            <TableCell>{item.model}</TableCell>
+                            <TableCell>{item.serial_number}</TableCell>
+                            <TableCell>{item.assigned_to || 'Not specified'}</TableCell>
+                            <TableCell>{item.department || 'Not specified'}</TableCell>
+                            <TableCell>
+                              {item.assignment_date ? new Date(item.assignment_date).toLocaleDateString() : 'Not specified'}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                        {items.filter(item => item.status === 'assigned').length === 0 && (
+                          <TableRow>
+                            <TableCell colSpan={7} align="center" sx={{ color: '#6b7280', py: 4 }}>
+                              No items currently assigned
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                )}
+              </CardContent>
+            </UltraModernCard>
+          </Box>
+        );
+
+      case 'receive':
+        return (
+          <Box>
+            <Typography variant="h4" sx={{ color: '#1f2937', mb: 3 }}>Receive Items</Typography>
+            <UltraModernCard>
+              <CardContent sx={{ p: 4 }}>
+                <Typography variant="h6" sx={{ mb: 2 }}>Assigned Items for Return</Typography>
+                {loading ? (
+                  <CircularProgress />
+                ) : (
+                  <TableContainer>
+                    <Table>
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>Item Name</TableCell>
+                          <TableCell>Brand</TableCell>
+                          <TableCell>Model</TableCell>
+                          <TableCell>Serial Number</TableCell>
+                          <TableCell>Assigned To</TableCell>
+                          <TableCell>Action</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {items.filter(item => item.status === 'assigned').map((item) => (
+                          <TableRow key={item.id}>
+                            <TableCell>{item.item_name}</TableCell>
+                            <TableCell>{item.brand}</TableCell>
+                            <TableCell>{item.model}</TableCell>
+                            <TableCell>{item.serial_number}</TableCell>
+                            <TableCell>{item.assigned_to || 'Unknown'}</TableCell>
+                            <TableCell>
+                              <Button 
+                                variant="contained" 
+                                color="success"
+                                size="small"
+                                onClick={() => setOpenReceiveDialog(item.id)}
+                              >
+                                Receive
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                        {items.filter(item => item.status === 'assigned').length === 0 && (
+                          <TableRow>
+                            <TableCell colSpan={6} align="center" sx={{ color: '#6b7280', py: 4 }}>
+                              No assigned items to receive
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                )}
+              </CardContent>
+            </UltraModernCard>
+          </Box>
+        );
+
+      case 'reports':
+        return (
+          <Box>
+            <Typography variant="h4" sx={{ color: '#1f2937', mb: 3 }}>Reports & Analytics</Typography>
+            
+            <Grid container spacing={3} sx={{ mb: 4 }}>
+              <Grid item xs={12} md={6}>
+                <UltraModernCard>
+                  <CardContent sx={{ p: 3 }}>
+                    <Typography variant="h6" sx={{ mb: 2 }}>Inventory Summary</Typography>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                      <Typography>Total Items:</Typography>
+                      <Typography fontWeight="bold">{stats.totalItems}</Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                      <Typography>Available:</Typography>
+                      <Typography fontWeight="bold" color="success.main">{stats.available}</Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                      <Typography>Assigned:</Typography>
+                      <Typography fontWeight="bold" color="warning.main">{stats.assigned}</Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <Typography>Maintenance:</Typography>
+                      <Typography fontWeight="bold" color="error.main">{stats.maintenance}</Typography>
+                    </Box>
+                  </CardContent>
+                </UltraModernCard>
+              </Grid>
+              
+              <Grid item xs={12} md={6}>
+                <UltraModernCard>
+                  <CardContent sx={{ p: 3 }}>
+                    <Typography variant="h6" sx={{ mb: 2 }}>Quick Actions</Typography>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      <Button variant="outlined" startIcon={<AddIcon />} onClick={() => setCurrentView('add')}>
+                        Add New Item
+                      </Button>
+                      <Button variant="outlined" startIcon={<ViewListIcon />} onClick={() => setCurrentView('view')}>
+                        View All Items
+                      </Button>
+                      <Button variant="outlined" startIcon={<AssignIcon />} onClick={() => setCurrentView('assign')}>
+                        Assign Item
+                      </Button>
+                    </Box>
+                  </CardContent>
+                </UltraModernCard>
+              </Grid>
+            </Grid>
+
+            <UltraModernCard>
+              <CardContent sx={{ p: 4 }}>
+                <Typography variant="h6" sx={{ mb: 3 }}>Recent Items</Typography>
+                {loading ? (
+                  <CircularProgress />
+                ) : items.length > 0 ? (
+                  <TableContainer>
+                    <Table>
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>Item Name</TableCell>
+                          <TableCell>Brand</TableCell>
+                          <TableCell>Status</TableCell>
+                          <TableCell>Date Added</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {items.slice(0, 5).map((item) => (
+                          <TableRow key={item.id}>
+                            <TableCell>{item.item_name}</TableCell>
+                            <TableCell>{item.brand}</TableCell>
+                            <TableCell>
+                              <Chip 
+                                label={item.status} 
+                                size="small"
+                                color={item.status === 'available' ? 'success' : 'warning'}
+                              />
+                            </TableCell>
+                            <TableCell>{new Date(item.created_at).toLocaleDateString()}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                ) : (
+                  <Typography color="textSecondary">No items found.</Typography>
+                )}
+              </CardContent>
+            </UltraModernCard>
+          </Box>
+        );
+
       default:
         return (
           <Box sx={{ width: '100%' }}>
@@ -447,7 +701,7 @@ const Dashboard = () => {
                 Dashboard
               </Typography>
               <Typography variant="h6" sx={{ color: '#6b7280', maxWidth: '600px', mx: 'auto' }}>
-                Inventory Management System
+                MIS Inventory Management System
               </Typography>
             </Box>
 
@@ -512,11 +766,11 @@ const Dashboard = () => {
                   <FloatingActionButton startIcon={<AddIcon />} onClick={() => setCurrentView('add')}>
                     Add Item
                   </FloatingActionButton>
-                  <FloatingActionButton startIcon={<CheckOutIcon />} onClick={() => setCurrentView('view')}>
-                    Check Out
+                  <FloatingActionButton startIcon={<AssignIcon />} onClick={() => setCurrentView('assign')}>
+                    Assign Item
                   </FloatingActionButton>
-                  <FloatingActionButton startIcon={<CheckInIcon />} onClick={() => setCurrentView('view')}>
-                    Check In
+                  <FloatingActionButton startIcon={<ReceiveIcon />} onClick={() => setCurrentView('receive')}>
+                    Receive Item
                   </FloatingActionButton>
                   <FloatingActionButton startIcon={<ReportsIcon />} onClick={() => setCurrentView('reports')}>
                     Reports
@@ -557,7 +811,7 @@ const Dashboard = () => {
           <AutoAwesome sx={{ fontSize: 24, color: 'white' }} />
         </Box>
         <Typography variant="h6" sx={{ fontWeight: '700', color: '#1f2937', mb: 1 }}>
-          Inventory Pro
+          MIS Inventory
         </Typography>
         <Typography variant="body2" sx={{ color: '#6b7280', fontWeight: '500' }}>
           Management System
@@ -649,31 +903,58 @@ const Dashboard = () => {
           </DialogActions>
         </Dialog>
 
-        {/* Check Out Dialog */}
-        {openCheckOutDialog && (
-          <Dialog open onClose={() => setOpenCheckOutDialog(null)} maxWidth="sm" fullWidth>
-            <DialogTitle>Check Out Item</DialogTitle>
+        {/* Assign Dialog */}
+        {openAssignDialog && (
+          <Dialog open onClose={() => setOpenAssignDialog(null)} maxWidth="sm" fullWidth>
+            <DialogTitle>Assign Item</DialogTitle>
             <DialogContent>
               <Grid container spacing={2} sx={{ mt: 1 }}>
                 <Grid item xs={12}>
-                  <StyledTextField fullWidth label="Assigned To" value={assignmentData.assignedTo} onChange={(e) => setAssignmentData({ ...assignmentData, assignedTo: e.target.value })} />
+                  <StyledTextField 
+                    fullWidth 
+                    label="Assigned To *" 
+                    value={assignmentData.assignedTo} 
+                    onChange={(e) => setAssignmentData({ ...assignmentData, assignedTo: e.target.value })} 
+                  />
                 </Grid>
                 <Grid item xs={12}>
-                  <StyledTextField fullWidth label="Department" value={assignmentData.department} onChange={(e) => setAssignmentData({ ...assignmentData, department: e.target.value })} />
+                  <StyledTextField 
+                    fullWidth 
+                    label="Department" 
+                    value={assignmentData.department} 
+                    onChange={(e) => setAssignmentData({ ...assignmentData, department: e.target.value })} 
+                  />
+                </Grid>
+                <Grid item xs={12}>
+                  <StyledTextField 
+                    fullWidth 
+                    label="Email" 
+                    type="email"
+                    value={assignmentData.email} 
+                    onChange={(e) => setAssignmentData({ ...assignmentData, email: e.target.value })} 
+                  />
+                </Grid>
+                <Grid item xs={12}>
+                  <StyledTextField 
+                    fullWidth 
+                    label="Phone" 
+                    value={assignmentData.phone} 
+                    onChange={(e) => setAssignmentData({ ...assignmentData, phone: e.target.value })} 
+                  />
                 </Grid>
               </Grid>
             </DialogContent>
             <DialogActions>
-              <Button onClick={() => setOpenCheckOutDialog(null)}>Cancel</Button>
-              <FloatingActionButton onClick={() => handleCheckOut(openCheckOutDialog)}>Check Out</FloatingActionButton>
+              <Button onClick={() => setOpenAssignDialog(null)}>Cancel</Button>
+              <FloatingActionButton onClick={() => handleAssign(openAssignDialog)}>Assign</FloatingActionButton>
             </DialogActions>
           </Dialog>
         )}
 
-        {/* Check In Dialog */}
-        {openCheckInDialog && (
-          <Dialog open onClose={() => setOpenCheckInDialog(null)} maxWidth="sm" fullWidth>
-            <DialogTitle>Check In Item</DialogTitle>
+        {/* Receive Dialog */}
+        {openReceiveDialog && (
+          <Dialog open onClose={() => setOpenReceiveDialog(null)} maxWidth="sm" fullWidth>
+            <DialogTitle>Receive Item</DialogTitle>
             <DialogContent>
               <Grid container spacing={2} sx={{ mt: 1 }}>
                 <Grid item xs={12}>
@@ -703,8 +984,8 @@ const Dashboard = () => {
               </Grid>
             </DialogContent>
             <DialogActions>
-              <Button onClick={() => setOpenCheckInDialog(null)}>Cancel</Button>
-              <FloatingActionButton onClick={() => handleCheckIn(openCheckInDialog)}>Check In</FloatingActionButton>
+              <Button onClick={() => setOpenReceiveDialog(null)}>Cancel</Button>
+              <FloatingActionButton onClick={() => handleReceive(openReceiveDialog)}>Receive</FloatingActionButton>
             </DialogActions>
           </Dialog>
         )}
@@ -742,56 +1023,10 @@ const Dashboard = () => {
               {currentView === 'dashboard' ? 'Dashboard' :
                currentView === 'add' ? 'Add Item' :
                currentView === 'view' ? 'View Items' :
-               currentView === 'checkout' ? 'Check Out' :
-               currentView === 'checkin' ? 'Check In' :
+               currentView === 'assign' ? 'Assign' :
+               currentView === 'receive' ? 'Receive' :
                currentView === 'reports' ? 'Reports' : 'Dashboard'}
             </Typography>
-            
-            <Chip 
-              label="Admin" 
-              size="small" 
-              sx={{ 
-                mr: 2, 
-                background: 'linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%)',
-                color: 'white',
-                fontWeight: '600'
-              }} 
-            />
-            
-            <IconButton
-              onClick={handleProfileMenuOpen}
-              color="inherit"
-            >
-              <Avatar sx={{ 
-                width: 36, 
-                height: 36, 
-                background: 'linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%)' 
-              }}>
-                <AccountCircle />
-              </Avatar>
-            </IconButton>
-            <Menu
-              anchorEl={anchorEl}
-              open={Boolean(anchorEl)}
-              onClose={handleMenuClose}
-              PaperProps={{
-                sx: {
-                  background: 'rgba(31, 31, 62, 0.95)',
-                  backdropFilter: 'blur(20px)',
-                  border: '1px solid rgba(139, 92, 246, 0.3)',
-                  borderRadius: '12px',
-                }
-              }}
-            >
-              <MenuItem onClick={handleMenuClose} sx={{ color: 'white' }}>
-                <Settings sx={{ mr: 2 }} />
-                Settings
-              </MenuItem>
-              <MenuItem onClick={() => setCurrentView('dashboard')} sx={{ color: 'white' }}>
-                <Logout sx={{ mr: 2 }} />
-                Logout
-              </MenuItem>
-            </Menu>
           </Toolbar>
         </ModernAppBar>
 
