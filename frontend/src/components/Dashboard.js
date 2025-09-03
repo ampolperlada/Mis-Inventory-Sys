@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+
+// MUI Core Components
 import {
   Box,
   Drawer,
@@ -38,8 +40,8 @@ import {
   DialogActions,
   MenuItem,
 } from '@mui/material';
-import { styled, createTheme, ThemeProvider } from '@mui/material/styles';
-import MuiAlert from '@mui/material/Alert';
+
+// MUI Icons
 import {
   Dashboard as DashboardIcon,
   Add as AddIcon,
@@ -56,10 +58,14 @@ import {
   AutoAwesome,
   AssignmentTurnedIn as Assignment,
   Delete,
-  Person,
-  CalendarToday,
+  Visibility as VisibilityIcon,
 } from '@mui/icons-material';
 
+// MUI Styles
+import { styled, createTheme, ThemeProvider } from '@mui/material/styles';
+import MuiAlert from '@mui/material/Alert';
+
+// Custom Hooks
 import { useInventoryItems, useDashboardStats } from '../hooks/useInventory';
 
 // Create clean white theme
@@ -191,6 +197,8 @@ const Dashboard = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [mobileOpen, setMobileOpen] = useState(false);
   const [currentView, setCurrentView] = useState('dashboard');
+  const [openDetailsDialog, setOpenDetailsDialog] = useState(null);
+  const [details, setDetails] = useState(null);
 
   // Hooks
   const { items, loading, error, addItem, deleteItem, checkOutItem, checkInItem } = useInventoryItems();
@@ -214,6 +222,16 @@ const Dashboard = () => {
 
   const showSnackbar = (message, severity = 'success') => {
     setSnackbar({ open: true, message, severity });
+  };
+
+  const handleOpenDetails = async (id) => {
+    try {
+      const item = items.find(item => item.id === id);
+      setDetails(item);
+      setOpenDetailsDialog(id);
+    } catch (err) {
+      showSnackbar('Failed to load item details', 'error');
+    }
   };
 
   const menuItems = [
@@ -418,6 +436,9 @@ const Dashboard = () => {
                             />
                           </TableCell>
                           <TableCell>
+                            <IconButton size="small" onClick={() => handleOpenDetails(item.id)}>
+                              <VisibilityIcon fontSize="small" />
+                            </IconButton>
                             <IconButton size="small" onClick={() => setOpenAssignDialog(item.id)}>
                               <AssignIcon fontSize="small" />
                             </IconButton>
@@ -434,6 +455,43 @@ const Dashboard = () => {
                   </TableBody>
                 </Table>
               </TableContainer>
+            )}
+            {openDetailsDialog && (
+              <Dialog open onClose={() => setOpenDetailsDialog(null)} maxWidth="md" fullWidth>
+                <DialogTitle>Item Details</DialogTitle>
+                <DialogContent>
+                  <Grid container spacing={3} sx={{ mt: 2 }}>
+                    <Grid item xs={12} sm={6}>
+                      <Typography variant="h6">Basic Info</Typography>
+                      <Box sx={{ mt: 1 }}>
+                        <Typography><strong>Name:</strong> {details?.item_name}</Typography>
+                        <Typography><strong>Brand:</strong> {details?.brand}</Typography>
+                        <Typography><strong>Model:</strong> {details?.model}</Typography>
+                        <Typography><strong>Serial Number:</strong> {details?.serial_number}</Typography>
+                        <Typography><strong>Status:</strong> {details?.status}</Typography>
+                        <Typography><strong>Category:</strong> {details?.category || 'N/A'}</Typography>
+                      </Box>
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <Typography variant="h6">Technical Specs</Typography>
+                      <Box sx={{ mt: 1 }}>
+                        <Typography><strong>Hostname:</strong> {details?.hostname || 'N/A'}</Typography>
+                        <Typography><strong>OS:</strong> {details?.operating_system || 'N/A'}</Typography>
+                        <Typography><strong>Processor:</strong> {details?.processor || 'N/A'}</Typography>
+                        <Typography><strong>Ram:</strong> {details?.ram || 'N/A'}</Typography>
+                        <Typography><strong>Storage:</strong> {details?.storage || 'N/A'}</Typography>
+                        <Typography><strong>Date Purchased:</strong> {details?.purchase_date || 'N/A'}</Typography>
+                        <Typography><strong>Warranty:</strong> {details?.warranty_period || 'N/A'}</Typography>
+                        <Typography><strong>Date Deployed:</strong> {details?.deployment_date || 'N/A'}</Typography>
+                        <Typography><strong>Remarks:</strong> {details?.notes || 'N/A'}</Typography>
+                      </Box>
+                    </Grid>
+                  </Grid>
+                </DialogContent>
+                <DialogActions>
+                  <Button onClick={() => setOpenDetailsDialog(null)}>Close</Button>
+                </DialogActions>
+              </Dialog>
             )}
           </Box>
         );

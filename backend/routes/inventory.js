@@ -387,22 +387,42 @@ router.delete('/items/:id', async (req, res) => {
     res.status(500).json({ error: 'Failed to delete item' });
   }
 });
-
 // POST /api/inventory/items/:id/checkout - Assign item
 router.post('/items/:id/checkout', async (req, res) => {
   try {
     const pool = getPool();
     const { id } = req.params;
+    
+    console.log('📥 Assignment request body:', req.body);
+    
     const {
       assigned_to_name, 
+      assignedTo,  // Add this fallback
       department, 
       email, 
       phone,
       assignment_date = new Date().toISOString()
     } = req.body;
     
-    if (!assigned_to_name) {
+    // Use either field name (for backward compatibility)
+    const assignedToName = assigned_to_name || assignedTo;
+    
+    if (!assignedToName) {
+      console.log('❌ Missing assigned to name');
       return res.status(400).json({ error: 'Assigned to name is required' });
+    }
+    
+    // First, add the missing columns if they don't exist
+    try {
+      await pool.execute(`
+        ALTER TABLE inventory_items 
+        ADD COLUMN IF NOT EXISTS assigned_to VARCHAR(255),
+        ADD COLUMN IF NOT EXISTS assigned_email VARCHAR(255),
+        ADD COLUMN IF NOT EXISTS assigned_phone VARCHAR(50),
+        ADD COLUMN IF NOT EXISTS assignment_date DATETIME
+      `);
+    } catch (alterError) {
+      console.log('Columns may already exist:', alterError.message);
     }
     
     // Update item with assignment details
@@ -410,20 +430,17 @@ router.post('/items/:id/checkout', async (req, res) => {
       UPDATE inventory_items 
       SET status = ?, 
           assigned_to = ?, 
-          department = ?, 
           assigned_email = ?, 
           assigned_phone = ?,
           assignment_date = ?,
-          updatedAt = ? 
+          updatedAt = CURRENT_TIMESTAMP
       WHERE id = ? AND status = ?
     `, [
       'ASSIGNED', 
-      assigned_to_name, 
-      department, 
-      email, 
-      phone,
+      assignedToName, 
+      email || null, 
+      phone || null,
       assignment_date,
-      new Date(), 
       id, 
       'AVAILABLE'
     ]);
@@ -432,27 +449,18 @@ router.post('/items/:id/checkout', async (req, res) => {
       return res.status(404).json({ error: 'Item not found or not available for assignment' });
     }
     
-    // Fetch updated item with assignment details
+    // Fetch updated item
     const [item] = await pool.execute(`
-      SELECT 
-        i.*,
-        i.assigned_to,
-        i.department as assigned_department,
-        i.assigned_email,
-        i.assigned_phone,
-        i.assignment_date
-      FROM inventory_items i 
-      WHERE i.id = ?
+      SELECT * FROM inventory_items WHERE id = ?
     `, [id]);
     
-    console.log(`📤 Assigned item ID: ${id} to ${assigned_to_name} (${department})`);
+    console.log(`✅ Assigned item ID: ${id} to ${assignedToName} (${department || 'No dept'})`);
     res.json(item[0]);
   } catch (error) {
-    console.error('Error assigning item:', error);
-    res.status(500).json({ error: 'Failed to assign item' });
+    console.error('❌ Error assigning item:', error);
+    res.status(500).json({ error: 'Failed to assign item: ' + error.message });
   }
 });
-
 // POST /api/inventory/items/:id/checkin - Check in item
 router.post('/items/:id/checkin', async (req, res) => {
   try {
