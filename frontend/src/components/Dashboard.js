@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-
 // MUI Core Components
 import {
   Box,
@@ -39,8 +38,8 @@ import {
   DialogContent,
   DialogActions,
   MenuItem,
+  Tooltip,
 } from '@mui/material';
-
 // MUI Icons
 import {
   Dashboard as DashboardIcon,
@@ -59,18 +58,19 @@ import {
   AssignmentTurnedIn as Assignment,
   Delete,
   Visibility as VisibilityIcon,
+  Edit as EditIcon,
+  Save as SaveIcon,
+  Cancel as CancelIcon,
+  DeleteForever as DeleteForeverIcon,
 } from '@mui/icons-material';
-
 // MUI Styles
 import { styled, createTheme, ThemeProvider } from '@mui/material/styles';
 import MuiAlert from '@mui/material/Alert';
-
 // Custom Hooks
 import { useInventoryItems, useDashboardStats } from '../hooks/useInventory';
 
 // Create clean white theme
 const drawerWidth = 300;
-
 const whiteTheme = createTheme({
   palette: {
     mode: 'light',
@@ -106,7 +106,6 @@ const ModernDrawer = styled(Drawer)(({ theme }) => ({
     boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
   },
 }));
-
 const ModernAppBar = styled(AppBar)(({ theme }) => ({
   background: '#ffffff',
   color: '#1f2937',
@@ -114,7 +113,6 @@ const ModernAppBar = styled(AppBar)(({ theme }) => ({
   border: '1px solid #e5e7eb',
   borderTop: 'none',
 }));
-
 const NavItem = styled(ListItemButton)(({ theme, active }) => ({
   margin: '4px 16px',
   borderRadius: '8px',
@@ -127,7 +125,6 @@ const NavItem = styled(ListItemButton)(({ theme, active }) => ({
     color: '#1f2937',
   },
 }));
-
 const UltraModernCard = styled(Card)(({ theme }) => ({
   background: '#ffffff',
   border: '1px solid #e5e7eb',
@@ -138,20 +135,6 @@ const UltraModernCard = styled(Card)(({ theme }) => ({
     boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
   },
 }));
-
-const GlowingStatCard = styled(Card)(({ gradient, glowColor }) => ({
-  background: gradient,
-  borderRadius: '12px',
-  border: 'none',
-  transition: 'all 0.2s ease-in-out',
-  height: '100px',
-  boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
-  '&:hover': {
-    transform: 'translateY(-2px)',
-    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-  },
-}));
-
 const FloatingActionButton = styled(Button)(({ theme }) => ({
   borderRadius: '8px',
   padding: '12px 24px',
@@ -167,7 +150,6 @@ const FloatingActionButton = styled(Button)(({ theme }) => ({
     boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
   },
 }));
-
 const StyledTextField = styled(TextField)(({ theme }) => ({
   '& .MuiOutlinedInput-root': {
     background: '#ffffff',
@@ -190,8 +172,94 @@ const StyledTextField = styled(TextField)(({ theme }) => ({
     color: '#1f2937',
   },
 }));
-
-
+const EditableTableCell = ({ value, onSave, type = 'text', options = [] }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState(value || '');
+  const handleSave = () => {
+    onSave(editValue);
+    setIsEditing(false);
+  };
+  const handleCancel = () => {
+    setEditValue(value || '');
+    setIsEditing(false);
+  };
+  if (isEditing) {
+    return (
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 200 }}>
+        {type === 'select' ? (
+          <FormControl size="small" fullWidth>
+            <Select
+              value={editValue}
+              onChange={(e) => setEditValue(e.target.value)}
+              sx={{ fontSize: '0.875rem' }}
+            >
+              {options.map((option) => (
+                <MenuItem key={option} value={option}>
+                  {option}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        ) : (
+          <TextField
+            size="small"
+            value={editValue}
+            onChange={(e) => setEditValue(e.target.value)}
+            type={type}
+            fullWidth
+            sx={{
+              '& .MuiOutlinedInput-input': { fontSize: '0.875rem' },
+            }}
+          />
+        )}
+        <IconButton size="small" onClick={handleSave} color="success">
+          <SaveIcon fontSize="small" />
+        </IconButton>
+        <IconButton size="small" onClick={handleCancel} color="error">
+          <CancelIcon fontSize="small" />
+        </IconButton>
+      </Box>
+    );
+  }
+  return (
+    <Box 
+      onClick={() => setIsEditing(true)} 
+      sx={{ 
+        cursor: 'pointer', 
+        padding: '8px',
+        borderRadius: '4px',
+        '&:hover': { 
+          background: '#f3f4f6',
+        },
+        minHeight: '40px',
+        display: 'flex',
+        alignItems: 'center'
+      }}
+    >
+      {type === 'status' ? (
+        <Chip
+          label={value}
+          size="small"
+          sx={{
+            background:
+              value === 'available' ? '#dcfce7' :
+              value === 'assigned' ? '#fef3c7' :
+              '#fee2e2',
+            color:
+              value === 'available' ? '#166534' :
+              value === 'assigned' ? '#92400e' :
+              '#991b1b',
+            fontWeight: '600'
+          }}
+        />
+      ) : (
+        <Typography variant="body2" sx={{ fontSize: '0.875rem' }}>
+          {value || 'Click to edit'}
+        </Typography>
+      )}
+    </Box>
+  );
+};
 
 // Dashboard Component
 const Dashboard = () => {
@@ -203,7 +271,7 @@ const Dashboard = () => {
   const [details, setDetails] = useState(null);
 
   // Hooks
-  const { items, loading, error, addItem, deleteItem, checkOutItem, checkInItem } = useInventoryItems();
+  const { items, loading, error, addItem, deleteItem, updateItem, checkOutItem, checkInItem } = useInventoryItems();
   const { stats, loading: statsLoading } = useDashboardStats();
 
   // Dialog states
@@ -211,14 +279,48 @@ const Dashboard = () => {
   const [openAssignDialog, setOpenAssignDialog] = useState(null);
   const [openReceiveDialog, setOpenReceiveDialog] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [disposalConfirm, setDisposalConfirm] = useState(null);
 
-  // Form states
-  const [newItem, setNewItem] = useState({ name: '', brand: '', model: '', serialNumber: '' });
-  const [assignmentData, setAssignmentData] = useState({ assignedTo: '', department: '', email: '', phone: '' });
-  const [returnData, setReturnData] = useState({ condition: 'good', notes: '' });
+  // Enhanced form states with more fields
+  const [newItem, setNewItem] = useState({
+    name: '',
+    brand: '',
+    model: '',
+    serialNumber: '',
+    category: 'Desktop',
+    hostname: '',
+    operatingSystem: '',
+    processor: '',
+    ram: '',
+    storage: '',
+    purchaseDate: '',
+    warrantyPeriod: '',
+    deploymentDate: '',
+    location: '',
+    notes: ''
+  });
+  const [assignmentData, setAssignmentData] = useState({ 
+    assignedTo: '', 
+    department: '', 
+    email: '', 
+    phone: '' 
+  });
+  const [returnData, setReturnData] = useState({ 
+    condition: 'good', 
+    notes: '' 
+  });
+  const [disposalData, setDisposalData] = useState({ 
+    reason: '', 
+    disposalDate: '', 
+    notes: '' 
+  });
 
   // Snackbar
-  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [snackbar, setSnackbar] = useState({ 
+    open: false, 
+    message: '', 
+    severity: 'success' 
+  });
 
   const handleDrawerToggle = () => setMobileOpen(!mobileOpen);
 
@@ -236,6 +338,7 @@ const Dashboard = () => {
     }
   };
 
+  // Update menuItems to include Disposal
   const menuItems = [
     { text: 'Dashboard', icon: <DashboardIcon />, view: 'dashboard' },
     { text: 'Add Item', icon: <AddIcon />, view: 'add' },
@@ -243,9 +346,10 @@ const Dashboard = () => {
     { text: 'Assign', icon: <AssignIcon />, view: 'assign' },
     { text: 'Receive', icon: <ReceiveIcon />, view: 'receive' },
     { text: 'Reports', icon: <ReportsIcon />, view: 'reports' },
+    { text: 'Disposal', icon: <DeleteForeverIcon />, view: 'disposal' },
   ];
 
-  // Handlers
+  // Enhanced add item handler with more fields
   const handleAddItem = async () => {
     if (!newItem.name?.trim()) {
       showSnackbar('Item name is required', 'error');
@@ -255,26 +359,48 @@ const Dashboard = () => {
       showSnackbar('Serial number is required', 'error');
       return;
     }
-
     const itemData = {
       item_name: newItem.name.trim(),
       serial_number: newItem.serialNumber.trim(),
       brand: newItem.brand?.trim() || null,
       model: newItem.model?.trim() || null,
+      category: newItem.category,
+      hostname: newItem.hostname?.trim() || null,
+      operating_system: newItem.operatingSystem?.trim() || null,
+      processor: newItem.processor?.trim() || null,
+      ram: newItem.ram?.trim() || null,
+      storage: newItem.storage?.trim() || null,
+      purchase_date: newItem.purchaseDate || null,
+      warranty_period: newItem.warrantyPeriod?.trim() || null,
+      deployment_date: newItem.deploymentDate || null,
+      location: newItem.location?.trim() || null,
       status: 'available',
       condition_status: 'good',
       quantity: 1,
-      notes: '',
+      notes: newItem.notes?.trim() || null,
     };
-
     try {
       await addItem(itemData);
-      setNewItem({ name: '', brand: '', model: '', serialNumber: '' });
+      setNewItem({
+        name: '', brand: '', model: '', serialNumber: '', category: 'Desktop',
+        hostname: '', operatingSystem: '', processor: '', ram: '', storage: '',
+        purchaseDate: '', warrantyPeriod: '', deploymentDate: '', location: '', notes: ''
+      });
       setOpenAddDialog(false);
       showSnackbar('Item added successfully!', 'success');
     } catch (err) {
       console.error('Add item error:', err);
       showSnackbar('Failed to add item: ' + (err.response?.data?.error || err.message), 'error');
+    }
+  };
+
+  // Enhanced field update handler
+  const handleFieldUpdate = async (itemId, field, value) => {
+    try {
+      await updateItem(itemId, { [field]: value });
+      showSnackbar('Item updated successfully!', 'success');
+    } catch (err) {
+      showSnackbar('Failed to update item: ' + err.message, 'error');
     }
   };
 
@@ -288,34 +414,46 @@ const Dashboard = () => {
     }
   };
 
- const handleAssign = async (id) => {
-  if (!assignmentData.assignedTo?.trim()) {
-    showSnackbar('Please enter who the item is assigned to', 'error');
-    return;
-  }
-  console.log('📤 Sending:', {
-  assigned_to_name: assignmentData.assignedTo,
-  department: assignmentData.department,
-  email: assignmentData.email,
-  phone: assignmentData.phone,
-  assignment_date: new Date().toISOString(),
-});
+  const handleDisposal = async (id) => {
+    if (!disposalData.reason?.trim()) {
+      showSnackbar('Please enter a disposal reason', 'error');
+      return;
+    }
+    try {
+      await updateItem(id, {
+        status: 'retired',
+        disposal_reason: disposalData.reason,
+        disposal_date: disposalData.disposalDate || new Date().toISOString(),
+        notes: disposalData.notes || '',
+      });
+      setDisposalConfirm(null);
+      setDisposalData({ reason: '', disposalDate: '', notes: '' });
+      showSnackbar('Item marked for disposal successfully!', 'success');
+    } catch (err) {
+      showSnackbar('Failed to mark item for disposal: ' + err.message, 'error');
+    }
+  };
 
-  try {
-    await checkOutItem(id, {
-      assigned_to_name: assignmentData.assignedTo,  // ✅ Correct field
-      department: assignmentData.department,
-      email: assignmentData.email,
-      phone: assignmentData.phone,
-      assignment_date: new Date().toISOString(),
-    });
-    setOpenAssignDialog(null);
-    setAssignmentData({ assignedTo: '', department: '', email: '', phone: '' });
-    showSnackbar('Item assigned successfully!');
-  } catch (err) {
-    showSnackbar('Failed to assign item: ' + err.message, 'error');
-  }
-};
+  const handleAssign = async (id) => {
+    if (!assignmentData.assignedTo?.trim()) {
+      showSnackbar('Please enter who the item is assigned to', 'error');
+      return;
+    }
+    try {
+      await checkOutItem(id, {
+        assigned_to_name: assignmentData.assignedTo,
+        department: assignmentData.department,
+        email: assignmentData.email,
+        phone: assignmentData.phone,
+        assignment_date: new Date().toISOString(),
+      });
+      setOpenAssignDialog(null);
+      setAssignmentData({ assignedTo: '', department: '', email: '', phone: '' });
+      showSnackbar('Item assigned successfully!');
+    } catch (err) {
+      showSnackbar('Failed to assign item: ' + err.message, 'error');
+    }
+  };
 
   const handleReceive = async (id) => {
     try {
@@ -337,15 +475,43 @@ const Dashboard = () => {
             <UltraModernCard>
               <CardContent sx={{ p: 4 }}>
                 <Grid container spacing={3}>
+                  {/* Basic Information */}
                   <Grid item xs={12}>
+                    <Typography variant="h6" sx={{ mb: 2, color: '#374151', fontWeight: '600' }}>
+                      Basic Information
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} md={6}>
                     <StyledTextField
                       fullWidth
-                      label="Item Name"
+                      label="Item Name *"
                       value={newItem.name}
                       onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
                     />
                   </Grid>
                   <Grid item xs={12} md={6}>
+                    <FormControl fullWidth>
+                      <InputLabel>Category</InputLabel>
+                      <Select
+                        value={newItem.category}
+                        label="Category"
+                        onChange={(e) => setNewItem({ ...newItem, category: e.target.value })}
+                        sx={{
+                          background: '#ffffff',
+                          borderRadius: '8px',
+                        }}
+                      >
+                        <MenuItem value="Desktop">Desktop</MenuItem>
+                        <MenuItem value="Laptop">Laptop</MenuItem>
+                        <MenuItem value="Monitor">Monitor</MenuItem>
+                        <MenuItem value="Network Equipment">Network Equipment</MenuItem>
+                        <MenuItem value="Mobile Device">Mobile Device</MenuItem>
+                        <MenuItem value="Accessories">Accessories</MenuItem>
+                        <MenuItem value="Other">Other</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                  <Grid item xs={12} md={4}>
                     <StyledTextField
                       fullWidth
                       label="Brand"
@@ -353,7 +519,7 @@ const Dashboard = () => {
                       onChange={(e) => setNewItem({ ...newItem, brand: e.target.value })}
                     />
                   </Grid>
-                  <Grid item xs={12} md={6}>
+                  <Grid item xs={12} md={4}>
                     <StyledTextField
                       fullWidth
                       label="Model"
@@ -361,12 +527,111 @@ const Dashboard = () => {
                       onChange={(e) => setNewItem({ ...newItem, model: e.target.value })}
                     />
                   </Grid>
-                  <Grid item xs={12}>
+                  <Grid item xs={12} md={4}>
                     <StyledTextField
                       fullWidth
-                      label="Serial Number"
+                      label="Serial Number *"
                       value={newItem.serialNumber}
                       onChange={(e) => setNewItem({ ...newItem, serialNumber: e.target.value })}
+                    />
+                  </Grid>
+                  {/* Technical Specifications */}
+                  <Grid item xs={12}>
+                    <Typography variant="h6" sx={{ mb: 2, mt: 3, color: '#374151', fontWeight: '600' }}>
+                      Technical Specifications
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <StyledTextField
+                      fullWidth
+                      label="Hostname"
+                      value={newItem.hostname}
+                      onChange={(e) => setNewItem({ ...newItem, hostname: e.target.value })}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <StyledTextField
+                      fullWidth
+                      label="Operating System"
+                      value={newItem.operatingSystem}
+                      onChange={(e) => setNewItem({ ...newItem, operatingSystem: e.target.value })}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={4}>
+                    <StyledTextField
+                      fullWidth
+                      label="Processor"
+                      value={newItem.processor}
+                      onChange={(e) => setNewItem({ ...newItem, processor: e.target.value })}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={4}>
+                    <StyledTextField
+                      fullWidth
+                      label="RAM"
+                      value={newItem.ram}
+                      onChange={(e) => setNewItem({ ...newItem, ram: e.target.value })}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={4}>
+                    <StyledTextField
+                      fullWidth
+                      label="Storage"
+                      value={newItem.storage}
+                      onChange={(e) => setNewItem({ ...newItem, storage: e.target.value })}
+                    />
+                  </Grid>
+                  {/* Dates and Location */}
+                  <Grid item xs={12}>
+                    <Typography variant="h6" sx={{ mb: 2, mt: 3, color: '#374151', fontWeight: '600' }}>
+                      Dates & Location
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} md={4}>
+                    <StyledTextField
+                      fullWidth
+                      label="Purchase Date"
+                      type="date"
+                      value={newItem.purchaseDate}
+                      onChange={(e) => setNewItem({ ...newItem, purchaseDate: e.target.value })}
+                      InputLabelProps={{ shrink: true }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={4}>
+                    <StyledTextField
+                      fullWidth
+                      label="Deployment Date"
+                      type="date"
+                      value={newItem.deploymentDate}
+                      onChange={(e) => setNewItem({ ...newItem, deploymentDate: e.target.value })}
+                      InputLabelProps={{ shrink: true }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={4}>
+                    <StyledTextField
+                      fullWidth
+                      label="Warranty Period"
+                      value={newItem.warrantyPeriod}
+                      onChange={(e) => setNewItem({ ...newItem, warrantyPeriod: e.target.value })}
+                      placeholder="e.g., 3 years"
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <StyledTextField
+                      fullWidth
+                      label="Location"
+                      value={newItem.location}
+                      onChange={(e) => setNewItem({ ...newItem, location: e.target.value })}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <StyledTextField
+                      fullWidth
+                      multiline
+                      rows={3}
+                      label="Notes"
+                      value={newItem.notes}
+                      onChange={(e) => setNewItem({ ...newItem, notes: e.target.value })}
                     />
                   </Grid>
                 </Grid>
@@ -380,7 +645,6 @@ const Dashboard = () => {
             </UltraModernCard>
           </Box>
         );
-
       case 'view':
         return (
           <Box>
@@ -393,7 +657,6 @@ const Dashboard = () => {
                 Add Item
               </FloatingActionButton>
             </Box>
-
             {loading ? (
               <Box sx={{ textAlign: 'center', py: 4 }}>
                 <CircularProgress />
@@ -403,60 +666,114 @@ const Dashboard = () => {
             ) : (
               <TableContainer component={Paper} sx={{ border: '1px solid #e5e7eb' }}>
                 <Table>
-                  <TableHead>
+                  <TableHead sx={{ background: '#f9fafb' }}>
                     <TableRow>
                       <TableCell><strong>Name</strong></TableCell>
+                      <TableCell><strong>Category</strong></TableCell>
                       <TableCell><strong>Brand</strong></TableCell>
                       <TableCell><strong>Model</strong></TableCell>
                       <TableCell><strong>Serial</strong></TableCell>
+                      <TableCell><strong>Hostname</strong></TableCell>
                       <TableCell><strong>Status</strong></TableCell>
+                      <TableCell><strong>Assigned To</strong></TableCell>
+                      <TableCell><strong>Location</strong></TableCell>
                       <TableCell><strong>Actions</strong></TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
                     {items.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={6} align="center" sx={{ color: '#6b7280' }}>
+                        <TableCell colSpan={10} align="center" sx={{ color: '#6b7280', py: 4 }}>
                           No items found. Add one to get started.
                         </TableCell>
                       </TableRow>
                     ) : (
                       items.map((item) => (
-                        <TableRow key={item.id}>
-                          <TableCell>{item.item_name}</TableCell>
-                          <TableCell>{item.brand}</TableCell>
-                          <TableCell>{item.model}</TableCell>
-                          <TableCell>{item.serial_number}</TableCell>
+                        <TableRow key={item.id} sx={{ '&:hover': { background: '#f9fafb' } }}>
                           <TableCell>
-                            <Chip
-                              label={item.status}
-                              size="small"
-                              sx={{
-                                background:
-                                  item.status === 'available' ? '#dcfce7' :
-                                  item.status === 'assigned' ? '#fef3c7' :
-                                  '#fee2e2',
-                                color:
-                                  item.status === 'available' ? '#166534' :
-                                  item.status === 'assigned' ? '#92400e' :
-                                  '#991b1b',
-                                fontWeight: '600'
-                              }}
+                            <EditableTableCell
+                              value={item.item_name}
+                              onSave={(value) => handleFieldUpdate(item.id, 'item_name', value)}
                             />
                           </TableCell>
                           <TableCell>
-                            <IconButton size="small" onClick={() => handleOpenDetails(item.id)}>
-                              <VisibilityIcon fontSize="small" />
-                            </IconButton>
-                            <IconButton size="small" onClick={() => setOpenAssignDialog(item.id)}>
-                              <AssignIcon fontSize="small" />
-                            </IconButton>
-                            <IconButton size="small" onClick={() => setOpenReceiveDialog(item.id)}>
-                              <ReceiveIcon fontSize="small" />
-                            </IconButton>
-                            <IconButton size="small" onClick={() => setDeleteConfirm(item.id)}>
-                              <Delete fontSize="small" color="error" />
-                            </IconButton>
+                            <EditableTableCell
+                              value={item.category || 'Other'}
+                              onSave={(value) => handleFieldUpdate(item.id, 'category', value)}
+                              type="select"
+                              options={['Desktop', 'Laptop', 'Monitor', 'Network Equipment', 'Mobile Device', 'Accessories', 'Other']}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <EditableTableCell
+                              value={item.brand}
+                              onSave={(value) => handleFieldUpdate(item.id, 'brand', value)}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <EditableTableCell
+                              value={item.model}
+                              onSave={(value) => handleFieldUpdate(item.id, 'model', value)}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }}>
+                              {item.serial_number}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <EditableTableCell
+                              value={item.hostname}
+                              onSave={(value) => handleFieldUpdate(item.id, 'hostname', value)}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <EditableTableCell
+                              value={item.status}
+                              onSave={(value) => handleFieldUpdate(item.id, 'status', value)}
+                              type="status"
+                              options={['available', 'assigned', 'maintenance', 'retired']}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2" sx={{ color: item.assigned_to ? '#374151' : '#9ca3af' }}>
+                              {item.assigned_to || 'Not assigned'}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <EditableTableCell
+                              value={item.location}
+                              onSave={(value) => handleFieldUpdate(item.id, 'location', value)}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Box sx={{ display: 'flex', gap: 1 }}>
+                              <Tooltip title="View Details">
+                                <IconButton size="small" onClick={() => handleOpenDetails(item.id)}>
+                                  <VisibilityIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                              <Tooltip title="Assign">
+                                <IconButton size="small" onClick={() => setOpenAssignDialog(item.id)}>
+                                  <AssignIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                              <Tooltip title="Receive">
+                                <IconButton size="small" onClick={() => setOpenReceiveDialog(item.id)}>
+                                  <ReceiveIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                              <Tooltip title="Mark for Disposal">
+                                <IconButton size="small" onClick={() => setDisposalConfirm(item.id)}>
+                                  <DeleteForeverIcon fontSize="small" color="error" />
+                                </IconButton>
+                              </Tooltip>
+                              <Tooltip title="Delete">
+                                <IconButton size="small" onClick={() => setDeleteConfirm(item.id)}>
+                                  <Delete fontSize="small" color="error" />
+                                </IconButton>
+                              </Tooltip>
+                            </Box>
                           </TableCell>
                         </TableRow>
                       ))
@@ -465,51 +782,79 @@ const Dashboard = () => {
                 </Table>
               </TableContainer>
             )}
+            {/* Enhanced Details Dialog */}
             {openDetailsDialog && (
-              <Dialog open onClose={() => setOpenDetailsDialog(null)} maxWidth="md" fullWidth>
-                <DialogTitle>Item Details</DialogTitle>
+              <Dialog open onClose={() => setOpenDetailsDialog(null)} maxWidth="lg" fullWidth>
+                <DialogTitle>
+                  <Typography variant="h6" fontWeight="600">
+                    Item Details - {details?.item_name}
+                  </Typography>
+                </DialogTitle>
                 <DialogContent>
-                  <Grid container spacing={3} sx={{ mt: 2 }}>
-                    <Grid item xs={12} sm={6}>
-                      <Typography variant="h6">Basic Info</Typography>
-                      <Box sx={{ mt: 1 }}>
+                  <Grid container spacing={4} sx={{ mt: 1 }}>
+                    <Grid item xs={12} md={6}>
+                      <Typography variant="h6" sx={{ mb: 2, color: '#374151' }}>Basic Information</Typography>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                         <Typography><strong>Name:</strong> {details?.item_name}</Typography>
+                        <Typography><strong>Category:</strong> {details?.category || 'N/A'}</Typography>
                         <Typography><strong>Brand:</strong> {details?.brand}</Typography>
                         <Typography><strong>Model:</strong> {details?.model}</Typography>
                         <Typography><strong>Serial Number:</strong> {details?.serial_number}</Typography>
                         <Typography><strong>Status:</strong> {details?.status}</Typography>
-                        <Typography><strong>Category:</strong> {details?.category || 'N/A'}</Typography>
+                        <Typography><strong>Location:</strong> {details?.location || 'N/A'}</Typography>
                       </Box>
                     </Grid>
-                    <Grid item xs={12} sm={6}>
-                      <Typography variant="h6">Technical Specs</Typography>
-                      <Box sx={{ mt: 1 }}>
-                        <Typography><strong>Hostname:</strong> {details?.hostname || 'N/A'}</Typography>
-                        <Typography><strong>OS:</strong> {details?.operating_system || 'N/A'}</Typography>
-                        <Typography><strong>Processor:</strong> {details?.processor || 'N/A'}</Typography>
-                        <Typography><strong>Ram:</strong> {details?.ram || 'N/A'}</Typography>
-                        <Typography><strong>Storage:</strong> {details?.storage || 'N/A'}</Typography>
-                        <Typography><strong>Date Purchased:</strong> {details?.purchase_date || 'N/A'}</Typography>
-                        <Typography><strong>Warranty:</strong> {details?.warranty_period || 'N/A'}</Typography>
-                        <Typography><strong>Date Deployed:</strong> {details?.deployment_date || 'N/A'}</Typography>
-                        <Typography><strong>Remarks:</strong> {details?.notes || 'N/A'}</Typography>
+                    <Grid item xs={12} md={6}>
+                      <Typography variant="h6" sx={{ mb: 2, color: '#374151' }}>Assignment Information</Typography>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                        <Typography><strong>Assigned To:</strong> {details?.assigned_to || 'Not assigned'}</Typography>
+                        <Typography><strong>Department:</strong> {details?.department || 'N/A'}</Typography>
+                        <Typography><strong>Email:</strong> {details?.assigned_email || 'N/A'}</Typography>
+                        <Typography><strong>Phone:</strong> {details?.assigned_phone || 'N/A'}</Typography>
+                        <Typography><strong>Assignment Date:</strong> {details?.assignment_date ? new Date(details.assignment_date).toLocaleDateString() : 'N/A'}</Typography>
                       </Box>
+                    </Grid>
+                    <Grid item xs={12} md={6}>
+                      <Typography variant="h6" sx={{ mb: 2, color: '#374151' }}>Purchase & Warranty</Typography>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                        <Typography><strong>Purchase Date:</strong> {details?.purchase_date ? new Date(details.purchase_date).toLocaleDateString() : 'N/A'}</Typography>
+                        <Typography><strong>Warranty Period:</strong> {details?.warranty_period || 'N/A'}</Typography>
+                        <Typography><strong>Deployment Date:</strong> {details?.deployment_date ? new Date(details.deployment_date).toLocaleDateString() : 'N/A'}</Typography>
+                        <Typography><strong>Condition:</strong> {details?.condition_status || 'N/A'}</Typography>
+                        <Typography><strong>Created:</strong> {details?.created_at ? new Date(details.created_at).toLocaleDateString() : 'N/A'}</Typography>
+                      </Box>
+                    </Grid>
+                    <Grid item xs={12}>
+                      <Typography variant="h6" sx={{ mb: 2, color: '#374151' }}>Notes</Typography>
+                      <Paper sx={{ p: 2, background: '#f9fafb' }}>
+                        <Typography variant="body2">
+                          {details?.notes || 'No notes available'}
+                        </Typography>
+                      </Paper>
                     </Grid>
                   </Grid>
                 </DialogContent>
                 <DialogActions>
                   <Button onClick={() => setOpenDetailsDialog(null)}>Close</Button>
+                  <Button 
+                    variant="contained" 
+                    startIcon={<EditIcon />}
+                    onClick={() => {
+                      setOpenDetailsDialog(null);
+                      setCurrentView('view');
+                    }}
+                  >
+                    Edit Item
+                  </Button>
                 </DialogActions>
               </Dialog>
             )}
           </Box>
         );
-
       case 'assign':
         return (
           <Box>
             <Typography variant="h4" sx={{ color: '#1f2937', mb: 3 }}>Assign Items</Typography>
-            
             {/* Available Items Section */}
             <UltraModernCard sx={{ mb: 4 }}>
               <CardContent sx={{ p: 4 }}>
@@ -559,7 +904,6 @@ const Dashboard = () => {
                 )}
               </CardContent>
             </UltraModernCard>
-
             {/* Currently Assigned Items Section */}
             <UltraModernCard>
               <CardContent sx={{ p: 4 }}>
@@ -609,15 +953,13 @@ const Dashboard = () => {
             </UltraModernCard>
           </Box>
         );
-
       case 'receive':
         return (
           <Box>
             <Typography variant="h4" sx={{ color: '#1f2937', mb: 3 }}>Receive Items</Typography>
             <UltraModernCard>
               <CardContent sx={{ p: 4 }}>
-                <Typography variant="h6" sx={{ mb: 2 }}>Assigned Items for Return</Typography>
-                {loading ? (
+        <Typography variant="h6" sx={{ mb: 2 }}>Assigned Items for Return</Typography>                {loading ? (
                   <CircularProgress />
                 ) : (
                   <TableContainer>
@@ -667,12 +1009,10 @@ const Dashboard = () => {
             </UltraModernCard>
           </Box>
         );
-
       case 'reports':
         return (
           <Box>
             <Typography variant="h4" sx={{ color: '#1f2937', mb: 3 }}>Reports & Analytics</Typography>
-            
             <Grid container spacing={3} sx={{ mb: 4 }}>
               <Grid item xs={12} md={6}>
                 <UltraModernCard>
@@ -697,7 +1037,6 @@ const Dashboard = () => {
                   </CardContent>
                 </UltraModernCard>
               </Grid>
-              
               <Grid item xs={12} md={6}>
                 <UltraModernCard>
                   <CardContent sx={{ p: 3 }}>
@@ -717,7 +1056,6 @@ const Dashboard = () => {
                 </UltraModernCard>
               </Grid>
             </Grid>
-
             <UltraModernCard>
               <CardContent sx={{ p: 4 }}>
                 <Typography variant="h6" sx={{ mb: 3 }}>Recent Items</Typography>
@@ -759,7 +1097,61 @@ const Dashboard = () => {
             </UltraModernCard>
           </Box>
         );
-
+      case 'disposal':
+        return (
+          <Box>
+            <Typography variant="h4" sx={{ color: '#1f2937', mb: 3 }}>Items for Disposal</Typography>
+            <UltraModernCard>
+              <CardContent sx={{ p: 4 }}>
+                <Typography variant="h6" sx={{ mb: 2 }}>Items Marked for Disposal</Typography>
+                {loading ? (
+                  <CircularProgress />
+                ) : (
+                  <TableContainer>
+                    <Table>
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>Item Name</TableCell>
+                          <TableCell>Brand</TableCell>
+                          <TableCell>Model</TableCell>
+                          <TableCell>Serial Number</TableCell>
+                          <TableCell>Actions</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {items.filter(item => item.status === 'retired').map((item) => (
+                          <TableRow key={item.id}>
+                            <TableCell>{item.item_name}</TableCell>
+                            <TableCell>{item.brand}</TableCell>
+                            <TableCell>{item.model}</TableCell>
+                            <TableCell>{item.serial_number}</TableCell>
+                            <TableCell>
+                              <Button 
+                                variant="outlined" 
+                                color="error"
+                                size="small"
+                                onClick={() => setDeleteConfirm(item.id)}
+                              >
+                                Remove
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                        {items.filter(item => item.status === 'retired').length === 0 && (
+                          <TableRow>
+                            <TableCell colSpan={5} align="center" sx={{ color: '#6b7280', py: 4 }}>
+                              No items marked for disposal
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                )}
+              </CardContent>
+            </UltraModernCard>
+          </Box>
+        );
       default:
         return (
           <Box sx={{ width: '100%' }}>
@@ -771,7 +1163,6 @@ const Dashboard = () => {
                 MIS Inventory Management System
               </Typography>
             </Box>
-
             <Box sx={{ display: 'flex', justifyContent: 'center', mb: 6 }}>
               <Grid container spacing={3} sx={{ maxWidth: '1000px' }}>
                 <Grid item xs={12} sm={6} md={3}>
@@ -820,7 +1211,6 @@ const Dashboard = () => {
                     </CardContent>
                   </UltraModernCard>
                 </Grid>
-                
                 <Grid item xs={12} sm={6} md={3}>
                   <UltraModernCard sx={{ 
                     background: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
@@ -867,7 +1257,6 @@ const Dashboard = () => {
                     </CardContent>
                   </UltraModernCard>
                 </Grid>
-                
                 <Grid item xs={12} sm={6} md={3}>
                   <UltraModernCard sx={{ 
                     background: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
@@ -914,7 +1303,6 @@ const Dashboard = () => {
                     </CardContent>
                   </UltraModernCard>
                 </Grid>
-                
                 <Grid item xs={12} sm={6} md={3}>
                   <UltraModernCard sx={{ 
                     background: 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
@@ -963,7 +1351,6 @@ const Dashboard = () => {
                 </Grid>
               </Grid>
             </Box>
-
             <UltraModernCard sx={{ mb: 6 }}>
               <CardContent sx={{ p: 4, textAlign: 'center' }}>
                 <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, flexWrap: 'wrap' }}>
@@ -982,7 +1369,6 @@ const Dashboard = () => {
                 </Box>
               </CardContent>
             </UltraModernCard>
-
             <UltraModernCard>
               <CardContent sx={{ p: 6, textAlign: 'center' }}>
                 <TrendingUp sx={{ fontSize: 80, color: '#8b5cf6', mb: 3, opacity: 0.7 }} />
@@ -1021,7 +1407,6 @@ const Dashboard = () => {
           Management System
         </Typography>
       </Box>
-      
       <List sx={{ flex: 1, px: 2 }}>
         {menuItems.map((item) => (
           <ListItem key={item.text} disablePadding>
@@ -1046,7 +1431,6 @@ const Dashboard = () => {
           </ListItem>
         ))}
       </List>
-
       <Box sx={{ p: 3 }}>
         <Paper sx={{ 
           p: 3, 
@@ -1083,31 +1467,204 @@ const Dashboard = () => {
           </MuiAlert>
         </Snackbar>
 
-        <Dialog open={openAddDialog} onClose={() => setOpenAddDialog(false)} maxWidth="sm" fullWidth>
-          <DialogTitle>Add New Item</DialogTitle>
+      {/* Enhanced Add Dialog - FIXED */}
+        <Dialog open={openAddDialog} onClose={() => setOpenAddDialog(false)} maxWidth="lg" fullWidth>
+          <DialogTitle>
+            <Typography variant="h6" fontWeight="600">
+              Add New Item
+            </Typography>
+          </DialogTitle>
           <DialogContent>
-            <Grid container spacing={2} sx={{ mt: 1 }}>
+            <Grid container spacing={3} sx={{ mt: 1 }}>
+              {/* Basic Information Section */}
               <Grid item xs={12}>
-                <StyledTextField fullWidth label="Item Name" value={newItem.name} onChange={(e) => setNewItem({ ...newItem, name: e.target.value })} />
+                <Typography variant="h6" sx={{ mb: 2, color: '#374151', fontWeight: '600' }}>
+                  Basic Information
+                </Typography>
               </Grid>
-              <Grid item xs={12} sm={6}>
-                <StyledTextField fullWidth label="Brand" value={newItem.brand} onChange={(e) => setNewItem({ ...newItem, brand: e.target.value })} />
+              
+              <Grid item xs={12} md={6}>
+                <StyledTextField 
+                  fullWidth 
+                  label="Item Name *" 
+                  value={newItem.name} 
+                  onChange={(e) => setNewItem({ ...newItem, name: e.target.value })} 
+                />
               </Grid>
-              <Grid item xs={12} sm={6}>
-                <StyledTextField fullWidth label="Model" value={newItem.model} onChange={(e) => setNewItem({ ...newItem, model: e.target.value })} />
+              
+              <Grid item xs={12} md={6}>
+                <FormControl fullWidth>
+                  <InputLabel>Category</InputLabel>
+                  <Select 
+                    value={newItem.category} 
+                    label="Category" 
+                    onChange={(e) => setNewItem({ ...newItem, category: e.target.value })}
+                    sx={{
+                      background: '#ffffff',
+                      borderRadius: '8px',
+                    }}
+                  >
+                    <MenuItem value="Desktop">Desktop</MenuItem>
+                    <MenuItem value="Laptop">Laptop</MenuItem>
+                    <MenuItem value="Monitor">Monitor</MenuItem>
+                    <MenuItem value="Network Equipment">Network Equipment</MenuItem>
+                    <MenuItem value="Mobile Device">Mobile Device</MenuItem>
+                    <MenuItem value="Accessories">Accessories</MenuItem>
+                    <MenuItem value="Other">Other</MenuItem>
+                  </Select>
+                </FormControl>
               </Grid>
+
+              <Grid item xs={12} md={4}>
+                <StyledTextField 
+                  fullWidth 
+                  label="Brand" 
+                  value={newItem.brand} 
+                  onChange={(e) => setNewItem({ ...newItem, brand: e.target.value })} 
+                />
+              </Grid>
+              
+              <Grid item xs={12} md={4}>
+                <StyledTextField 
+                  fullWidth 
+                  label="Model" 
+                  value={newItem.model} 
+                  onChange={(e) => setNewItem({ ...newItem, model: e.target.value })} 
+                />
+              </Grid>
+              
+              <Grid item xs={12} md={4}>
+                <StyledTextField 
+                  fullWidth 
+                  label="Serial Number *" 
+                  value={newItem.serialNumber} 
+                  onChange={(e) => setNewItem({ ...newItem, serialNumber: e.target.value })} 
+                />
+              </Grid>
+
+              {/* Technical Specifications Section */}
               <Grid item xs={12}>
-                <StyledTextField fullWidth label="Serial Number" value={newItem.serialNumber} onChange={(e) => setNewItem({ ...newItem, serialNumber: e.target.value })} />
+                <Typography variant="h6" sx={{ mb: 2, mt: 3, color: '#374151', fontWeight: '600' }}>
+                  Technical Specifications
+                </Typography>
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <StyledTextField 
+                  fullWidth 
+                  label="Hostname" 
+                  value={newItem.hostname} 
+                  onChange={(e) => setNewItem({ ...newItem, hostname: e.target.value })} 
+                />
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <StyledTextField 
+                  fullWidth 
+                  label="Operating System" 
+                  value={newItem.operatingSystem} 
+                  onChange={(e) => setNewItem({ ...newItem, operatingSystem: e.target.value })} 
+                />
+              </Grid>
+
+              <Grid item xs={12} md={4}>
+                <StyledTextField 
+                  fullWidth 
+                  label="Processor" 
+                  value={newItem.processor} 
+                  onChange={(e) => setNewItem({ ...newItem, processor: e.target.value })} 
+                />
+              </Grid>
+
+              <Grid item xs={12} md={4}>
+                <StyledTextField 
+                  fullWidth 
+                  label="RAM" 
+                  value={newItem.ram} 
+                  onChange={(e) => setNewItem({ ...newItem, ram: e.target.value })} 
+                />
+              </Grid>
+
+              <Grid item xs={12} md={4}>
+                <StyledTextField 
+                  fullWidth 
+                  label="Storage" 
+                  value={newItem.storage} 
+                  onChange={(e) => setNewItem({ ...newItem, storage: e.target.value })} 
+                />
+              </Grid>
+
+              {/* Dates & Location Section */}
+              <Grid item xs={12}>
+                <Typography variant="h6" sx={{ mb: 2, mt: 3, color: '#374151', fontWeight: '600' }}>
+                  Dates & Location
+                </Typography>
+              </Grid>
+
+              <Grid item xs={12} md={4}>
+                <StyledTextField 
+                  fullWidth 
+                  label="Purchase Date" 
+                  type="date"
+                  value={newItem.purchaseDate} 
+                  onChange={(e) => setNewItem({ ...newItem, purchaseDate: e.target.value })} 
+                  InputLabelProps={{ shrink: true }}
+                />
+              </Grid>
+
+              <Grid item xs={12} md={4}>
+                <StyledTextField 
+                  fullWidth 
+                  label="Deployment Date" 
+                  type="date"
+                  value={newItem.deploymentDate} 
+                  onChange={(e) => setNewItem({ ...newItem, deploymentDate: e.target.value })} 
+                  InputLabelProps={{ shrink: true }}
+                />
+              </Grid>
+
+              <Grid item xs={12} md={4}>
+                <StyledTextField 
+                  fullWidth 
+                  label="Warranty Period" 
+                  value={newItem.warrantyPeriod} 
+                  onChange={(e) => setNewItem({ ...newItem, warrantyPeriod: e.target.value })} 
+                  placeholder="e.g., 3 years"
+                />
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <StyledTextField 
+                  fullWidth 
+                  label="Location" 
+                  value={newItem.location} 
+                  onChange={(e) => setNewItem({ ...newItem, location: e.target.value })} 
+                />
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <StyledTextField 
+                  fullWidth 
+                  multiline
+                  rows={3}
+                  label="Notes" 
+                  value={newItem.notes} 
+                  onChange={(e) => setNewItem({ ...newItem, notes: e.target.value })} 
+                />
               </Grid>
             </Grid>
           </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setOpenAddDialog(false)}>Cancel</Button>
-            <FloatingActionButton onClick={handleAddItem}>Add Item</FloatingActionButton>
+          <DialogActions sx={{ p: 3 }}>
+            <Button onClick={() => setOpenAddDialog(false)} sx={{ mr: 2 }}>
+              Cancel
+            </Button>
+            <FloatingActionButton onClick={handleAddItem}>
+              Add Item
+            </FloatingActionButton>
           </DialogActions>
         </Dialog>
 
-        {/* Assign Dialog */}
+        {/* Assign Dialog - FIXED */}
         {openAssignDialog && (
           <Dialog open onClose={() => setOpenAssignDialog(null)} maxWidth="sm" fullWidth>
             <DialogTitle>Assign Item</DialogTitle>
@@ -1208,6 +1765,49 @@ const Dashboard = () => {
           </Dialog>
         )}
 
+        {/* Disposal Confirmation */}
+        {disposalConfirm && (
+          <Dialog open onClose={() => setDisposalConfirm(null)}>
+            <DialogTitle>Mark for Disposal</DialogTitle>
+            <DialogContent>
+              <Typography>Are you sure you want to mark this item for disposal?</Typography>
+              <Box sx={{ mt: 2 }}>
+                <TextField
+                  fullWidth
+                  label="Reason for Disposal"
+                  value={disposalData.reason}
+                  onChange={(e) => setDisposalData({ ...disposalData, reason: e.target.value })}
+                  margin="normal"
+                />
+                <TextField
+                  fullWidth
+                  label="Disposal Date"
+                  type="date"
+                  value={disposalData.disposalDate}
+                  onChange={(e) => setDisposalData({ ...disposalData, disposalDate: e.target.value })}
+                  margin="normal"
+                  InputLabelProps={{ shrink: true }}
+                />
+                <TextField
+                  fullWidth
+                  multiline
+                  rows={3}
+                  label="Additional Notes"
+                  value={disposalData.notes}
+                  onChange={(e) => setDisposalData({ ...disposalData, notes: e.target.value })}
+                  margin="normal"
+                />
+              </Box>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setDisposalConfirm(null)}>Cancel</Button>
+              <Button color="error" onClick={() => handleDisposal(disposalConfirm)}>
+                Mark for Disposal
+              </Button>
+            </DialogActions>
+          </Dialog>
+        )}
+
         <ModernAppBar
           position="fixed"
           sx={{
@@ -1229,7 +1829,8 @@ const Dashboard = () => {
                currentView === 'view' ? 'View Items' :
                currentView === 'assign' ? 'Assign' :
                currentView === 'receive' ? 'Receive' :
-               currentView === 'reports' ? 'Reports' : 'Dashboard'}
+               currentView === 'reports' ? 'Reports' :
+               currentView === 'disposal' ? 'Disposal' : 'Dashboard'}
             </Typography>
           </Toolbar>
         </ModernAppBar>
