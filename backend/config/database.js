@@ -148,17 +148,7 @@ const initializeDatabase = async () => {
     }
 
     // Create default admin user
-    const bcrypt = require('bcryptjs'); // Using bcryptjs for better Windows compatibility
-    const hashedPassword = await bcrypt.hash('admin123', 10);
-    
-    await pool.execute(`
-      INSERT IGNORE INTO users (firstName, lastName, email, password, role) 
-      VALUES (?, ?, ?, ?, ?)
-    `, ['Admin', 'User', 'admin@inventory.com', hashedPassword, 'admin']);
-
-    console.log('✅ Default categories and admin user created');
-    console.log('🔑 Default admin credentials: admin@inventory.com / admin123');
-    console.log('✅ Database tables initialized successfully');
+  console.log('✅ Database tables initialized successfully');
     
   } catch (error) {
     console.error('❌ Error initializing database:', error);

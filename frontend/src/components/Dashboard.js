@@ -293,6 +293,13 @@ const Dashboard = () => {
     showSnackbar('Please enter who the item is assigned to', 'error');
     return;
   }
+  console.log('📤 Sending:', {
+  assigned_to_name: assignmentData.assignedTo,
+  department: assignmentData.department,
+  email: assignmentData.email,
+  phone: assignmentData.phone,
+  assignment_date: new Date().toISOString(),
+});
 
   try {
     await checkOutItem(id, {

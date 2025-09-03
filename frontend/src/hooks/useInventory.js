@@ -95,11 +95,13 @@ export const useInventoryItems = () => {
   };
 
   // Check out item
+// In your useInventory.js hook, update the checkOutItem function:
+
 const checkOutItem = async (id, assignmentData) => {
   try {
     setError(null);
     const response = await api.post(`/inventory/items/${id}/checkout`, {
-      assigned_to_name: assignmentData.assignedTo,
+      assigned_to_name: assignmentData.assigned_to_name, // Use the correct property
       department: assignmentData.department,
       email: assignmentData.email,
       phone: assignmentData.phone,
@@ -111,7 +113,7 @@ const checkOutItem = async (id, assignmentData) => {
       item.id === id ? { 
         ...item, 
         status: 'assigned',
-        assigned_to: assignmentData.assignedTo,
+        assigned_to: assignmentData.assigned_to_name, // Use correct property
         department: assignmentData.department,
         assigned_email: assignmentData.email,
         assigned_phone: assignmentData.phone,
