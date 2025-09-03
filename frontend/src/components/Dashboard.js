@@ -191,6 +191,8 @@ const StyledTextField = styled(TextField)(({ theme }) => ({
   },
 }));
 
+
+
 // Dashboard Component
 const Dashboard = () => {
   const theme = useTheme();
@@ -286,27 +288,27 @@ const Dashboard = () => {
     }
   };
 
-  const handleAssign = async (id) => {
-    if (!assignmentData.assignedTo?.trim()) {
-      showSnackbar('Please enter who the item is assigned to', 'error');
-      return;
-    }
+ const handleAssign = async (id) => {
+  if (!assignmentData.assignedTo?.trim()) {
+    showSnackbar('Please enter who the item is assigned to', 'error');
+    return;
+  }
 
-    try {
-      await checkOutItem(id, {
-        assigned_to_name: assignmentData.assignedTo,
-        department: assignmentData.department,
-        email: assignmentData.email,
-        phone: assignmentData.phone,
-        assignment_date: new Date().toISOString(),
-      });
-      setOpenAssignDialog(null);
-      setAssignmentData({ assignedTo: '', department: '', email: '', phone: '' });
-      showSnackbar('Item assigned successfully!');
-    } catch (err) {
-      showSnackbar('Failed to assign item: ' + err.message, 'error');
-    }
-  };
+  try {
+    await checkOutItem(id, {
+      assigned_to_name: assignmentData.assignedTo,  // ✅ Correct field
+      department: assignmentData.department,
+      email: assignmentData.email,
+      phone: assignmentData.phone,
+      assignment_date: new Date().toISOString(),
+    });
+    setOpenAssignDialog(null);
+    setAssignmentData({ assignedTo: '', department: '', email: '', phone: '' });
+    showSnackbar('Item assigned successfully!');
+  } catch (err) {
+    showSnackbar('Failed to assign item: ' + err.message, 'error');
+  }
+};
 
   const handleReceive = async (id) => {
     try {

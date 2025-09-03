@@ -110,21 +110,22 @@ router.get('/items', async (req, res) => {
     const [items] = await pool.execute(query, params);
     
     // Map database fields to what frontend expects
-    const mappedItems = items.map(item => ({
-      id: item.id,
-      item_name: item.item_name,
-      brand: item.brand,
-      model: item.model,
-      serial_number: item.serialNumber, // Map serialNumber to serial_number for frontend
-      category: item.category,
-      status: item.status ? item.status.toLowerCase() : 'available', // Ensure lowercase status
-      condition_status: item.condition,
-      location: item.location,
-      quantity: item.quantity,
-      notes: item.notes,
-      created_at: item.createdAt,
-      updated_at: item.updatedAt
-    }));
+ const mappedItems = items.map(item => ({
+  id: item.id,
+  item_name: item.item_name,
+  brand: item.brand,
+  model: item.model,
+  serial_number: item.serialNumber,
+  category: item.category,
+  status: item.status ? item.status.toLowerCase() : 'available',
+  condition_status: item.condition,
+  location: item.location,
+  quantity: item.quantity,
+  notes: item.notes,
+  created_at: item.createdAt,
+  updated_at: item.updatedAt,
+  assigned_to: item.assigned_to  // ✅ Add this
+}));
     
     // Get total count for pagination
     let countQuery = `SELECT COUNT(*) as total FROM inventory_items i WHERE 1=1`;
