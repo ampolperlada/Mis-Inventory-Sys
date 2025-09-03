@@ -1,4 +1,4 @@
-// backend/server.js - Fixed version with proper routing
+// backend/server.js - Network accessible version
 const express = require('express');
 const cors = require('cors');
 const { connectDatabase, initializeDatabase } = require('./config/database');
@@ -7,10 +7,16 @@ const authRoutes = require('./routes/auth');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+const HOST = '0.0.0.0'; // Listen on all network interfaces
 
-// Middleware
+// Middleware - Updated CORS to allow your network IP
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
+  origin: [
+    'http://localhost:3000', 
+    'http://127.0.0.1:3000',
+    'http://192.168.0.138:3000', // Your network IP
+    'http://192.168.0.*:3000'    // Allow any device on your subnet
+  ],
   credentials: true
 }));
 
@@ -19,7 +25,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Request logging middleware
 app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.path} from ${req.ip}`);
   next();
 });
 
@@ -28,7 +34,8 @@ app.get('/health', (req, res) => {
   res.json({ 
     status: 'OK', 
     message: 'Server is running',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    host: req.get('host')
   });
 });
 
@@ -41,6 +48,7 @@ app.get('/', (req, res) => {
   res.json({ 
     message: 'Inventory Management System API',
     version: '1.0.0',
+    server_ip: '192.168.0.138',
     endpoints: {
       health: '/health',
       inventory: '/api/inventory/*',
@@ -51,7 +59,7 @@ app.get('/', (req, res) => {
 
 // 404 handler for undefined routes
 app.use('*', (req, res) => {
-  console.log(`❌ Route not found: ${req.method} ${req.originalUrl}`);
+  console.log(`❌ Route not found: ${req.method} ${req.originalUrl} from ${req.ip}`);
   res.status(404).json({ 
     error: 'Route not found',
     path: req.originalUrl,
@@ -88,12 +96,15 @@ const startServer = async () => {
     await initializeDatabase();
     console.log('✅ Database initialized successfully');
     
-    // Start the server
-    app.listen(PORT, () => {
-      console.log(`🚀 Server running on port ${PORT}`);
+    // Start the server on all network interfaces
+    app.listen(PORT, HOST, () => {
+      console.log(`🚀 Server running on http://${HOST}:${PORT}`);
+      console.log(`🌐 Network Access: http://192.168.0.138:${PORT}`);
       console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
-      console.log(`🔗 API URL: http://localhost:${PORT}/api`);
-      console.log(`🏥 Health Check: http://localhost:${PORT}/health`);
+      console.log(`🔗 Local API URL: http://localhost:${PORT}/api`);
+      console.log(`🔗 Network API URL: http://192.168.0.138:${PORT}/api`);
+      console.log(`🏥 Health Check: http://192.168.0.138:${PORT}/health`);
+      console.log(`📱 Officemates can access at: http://192.168.0.138:${PORT}`);
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error);
