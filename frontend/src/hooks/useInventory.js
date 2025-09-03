@@ -1,9 +1,9 @@
-// frontend/src/hooks/useInventory.js
+// frontend/src/hooks/useInventory.js - Network accessible version
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 
-// Set up axios base URL
-const API_BASE_URL = 'http://localhost:5000/api';
+// Set up axios base URL - Updated for network access
+const API_BASE_URL = 'http://192.168.0.138:5000/api';
 const api = axios.create({
   baseURL: API_BASE_URL,
 });
@@ -94,41 +94,39 @@ export const useInventoryItems = () => {
     }
   };
 
-  // Check out item
-// In your useInventory.js hook, update the checkOutItem function:
-
-const checkOutItem = async (id, assignmentData) => {
-  try {
-    setError(null);
-    const response = await api.post(`/inventory/items/${id}/checkout`, {
-      assigned_to_name: assignmentData.assigned_to_name, // Use the correct property
-      department: assignmentData.department,
-      email: assignmentData.email,
-      phone: assignmentData.phone,
-      assignment_date: new Date().toISOString(),
-    });
-    
-    // Update local state
-    setItems(prev => prev.map(item => 
-      item.id === id ? { 
-        ...item, 
-        status: 'assigned',
-        assigned_to: assignmentData.assigned_to_name, // Use correct property
+  // Check out item - Fixed to use correct property name
+  const checkOutItem = async (id, assignmentData) => {
+    try {
+      setError(null);
+      const response = await api.post(`/inventory/items/${id}/checkout`, {
+        assigned_to_name: assignmentData.assigned_to_name, // Fixed property name
         department: assignmentData.department,
-        assigned_email: assignmentData.email,
-        assigned_phone: assignmentData.phone,
-        assignment_date: new Date().toISOString()
-      } : item
-    ));
-    
-    return response.data;
-  } catch (err) {
-    console.error('Error assigning item:', err);
-    const errorMessage = err.response?.data?.error || 'Failed to assign item';
-    setError(errorMessage);
-    throw new Error(errorMessage);
-  }
-};
+        email: assignmentData.email,
+        phone: assignmentData.phone,
+        assignment_date: new Date().toISOString(),
+      });
+      
+      // Update local state
+      setItems(prev => prev.map(item => 
+        item.id === id ? { 
+          ...item, 
+          status: 'assigned',
+          assigned_to: assignmentData.assigned_to_name, // Fixed property name
+          department: assignmentData.department,
+          assigned_email: assignmentData.email,
+          assigned_phone: assignmentData.phone,
+          assignment_date: new Date().toISOString()
+        } : item
+      ));
+      
+      return response.data;
+    } catch (err) {
+      console.error('Error assigning item:', err);
+      const errorMessage = err.response?.data?.error || 'Failed to assign item';
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    }
+  };
 
   // Check in item
   const checkInItem = async (id, returnData) => {
