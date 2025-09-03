@@ -25,9 +25,10 @@ import {
   DialogContent,
   DialogActions,
   Tooltip,
-  Card,
-  CardContent,
-  Avatar
+  Paper,
+  Alert,
+  CircularProgress,
+  Avatar,
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import {
@@ -37,135 +38,167 @@ import {
   MoreVert as MoreVertIcon,
   Add as AddIcon,
   Assignment as AssignIcon,
+  Visibility as VisibilityIcon,
   Laptop,
   Monitor,
   Phone,
-  Chair,
-  Keyboard
+  Router,
+  Keyboard,
+  Storage,
+  FilterList,
+  Refresh,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import Dashboard from './Dashboard';
+import { useInventoryItems } from '../hooks/useInventory'; // Import your custom hook
 
-// Styled components
-const GlassCard = styled(Card)(({ theme }) => ({
-  background: 'rgba(255, 255, 255, 0.95)',
-  backdropFilter: 'blur(20px)',
-  borderRadius: '20px',
-  border: '1px solid rgba(255, 255, 255, 0.2)',
-  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+// Styled Components
+const ModernContainer = styled(Box)(({ theme }) => ({
+  background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+  minHeight: '100vh',
+  padding: theme.spacing(3),
 }));
 
-const StyledTableContainer = styled(TableContainer)(({ theme }) => ({
+const StyledPaper = styled(Paper)(({ theme }) => ({
+  background: '#ffffff',
   borderRadius: '16px',
-  background: 'rgba(26, 26, 46, 0.9)', // Darker background instead of white
-  backdropFilter: 'blur(20px)',
-  border: '1px solid rgba(139, 92, 246, 0.2)',
-  '& .MuiTableHead-root': {
-    background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(6, 182, 212, 0.1) 100%)',
-  },
-  '& .MuiTableCell-head': {
-    fontWeight: '600',
-    color: 'white', // White text for headers
-    borderBottom: '2px solid rgba(139, 92, 246, 0.3)',
-  },
-  '& .MuiTableCell-body': {
-    color: 'white', // White text for body cells
-    borderBottom: '1px solid rgba(139, 92, 246, 0.1)',
-  },
-  '& .MuiTableRow-root:hover': {
-    background: 'rgba(139, 92, 246, 0.1)',
+  boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
+  border: '1px solid #e2e8f0',
+  overflow: 'hidden',
+}));
+
+const FilterCard = styled(Paper)(({ theme }) => ({
+  background: '#ffffff',
+  borderRadius: '12px',
+  padding: theme.spacing(3),
+  marginBottom: theme.spacing(3),
+  boxShadow: '0 2px 12px rgba(0, 0, 0, 0.05)',
+  border: '1px solid #e2e8f0',
+}));
+
+const StyledTextField = styled(TextField)(({ theme }) => ({
+  '& .MuiOutlinedInput-root': {
+    background: '#f8fafc',
+    borderRadius: '8px',
+    '& fieldset': {
+      borderColor: '#cbd5e1',
+    },
+    '&:hover fieldset': {
+      borderColor: '#94a3b8',
+    },
+    '&.Mui-focused fieldset': {
+      borderColor: '#3b82f6',
+    },
   },
 }));
 
-const ModernButton = styled(Button)(({ theme }) => ({
-  borderRadius: '12px',
-  padding: '12px 24px',
+const StyledSelect = styled(Select)(({ theme }) => ({
+  background: '#f8fafc',
+  borderRadius: '8px',
+  '& fieldset': {
+    borderColor: '#cbd5e1',
+  },
+  '&:hover fieldset': {
+    borderColor: '#94a3b8',
+  },
+  '&.Mui-focused fieldset': {
+    borderColor: '#3b82f6',
+  },
+}));
+
+const ActionButton = styled(Button)(({ theme }) => ({
+  borderRadius: '8px',
+  padding: '10px 20px',
   textTransform: 'none',
   fontWeight: '600',
-  boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)',
-  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-  '&:hover': {
-    background: 'linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%)',
-    transform: 'translateY(-2px)',
-    boxShadow: '0 8px 20px rgba(102, 126, 234, 0.4)',
+  boxShadow: 'none',
+  '&.MuiButton-contained': {
+    background: '#3b82f6',
+    '&:hover': {
+      background: '#2563eb',
+      boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)',
+    },
+  },
+  '&.MuiButton-outlined': {
+    borderColor: '#cbd5e1',
+    color: '#64748b',
+    '&:hover': {
+      borderColor: '#3b82f6',
+      color: '#3b82f6',
+      background: 'rgba(59, 130, 246, 0.05)',
+    },
   },
 }));
 
 const StatusChip = styled(Chip)(({ status }) => {
-  const getStatusStyles = (status) => {
-    switch (status) {
+  const getStatusColor = (status) => {
+    switch (status?.toLowerCase()) {
       case 'available':
-        return {
-          background: 'linear-gradient(135deg, #10b981 0%, #34d399 100%)',
-          color: 'white',
-        };
+        return { bg: '#dcfce7', color: '#166534', border: '#bbf7d0' };
       case 'assigned':
-        return {
-          background: 'linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)',
-          color: 'white',
-        };
+        return { bg: '#fef3c7', color: '#92400e', border: '#fde68a' };
       case 'maintenance':
-        return {
-          background: 'linear-gradient(135deg, #ef4444 0%, #f87171 100%)',
-          color: 'white',
-        };
+        return { bg: '#fee2e2', color: '#991b1b', border: '#fecaca' };
+      case 'retired':
+        return { bg: '#f1f5f9', color: '#475569', border: '#e2e8f0' };
       default:
-        return {
-          background: 'linear-gradient(135deg, #6b7280 0%, #9ca3af 100%)',
-          color: 'white',
-        };
+        return { bg: '#f1f5f9', color: '#64748b', border: '#e2e8f0' };
     }
   };
 
+  const colors = getStatusColor(status);
   return {
-    ...getStatusStyles(status),
-    borderRadius: '8px',
+    background: colors.bg,
+    color: colors.color,
+    border: `1px solid ${colors.border}`,
     fontWeight: '600',
-    border: 'none',
-    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+    fontSize: '0.75rem',
   };
 });
-
-// Empty data - will be populated from backend API
-const mockItems = [];
-
-const categories = ['all', 'Desktop', 'Laptop', 'Monitor', 'Network Equipment', 'Mobile Device', 'Accessories'];
-const departments = ['all', 'IT', 'Design', 'Sales', 'Marketing', 'Finance', 'HR'];
 
 const categoryIcons = {
   'Desktop': Laptop,
   'Laptop': Laptop,
   'Monitor': Monitor,
-  'Network Equipment': Keyboard,
+  'Network Equipment': Router,
   'Mobile Device': Phone,
   'Accessories': Keyboard,
+  'Other': Storage,
 };
 
 const ViewItems = () => {
   const navigate = useNavigate();
-  const [items, setItems] = useState(mockItems);
-  const [filteredItems, setFilteredItems] = useState(mockItems);
+  
+  // Use your actual inventory hook
+  const { items, loading, error, deleteItem, updateItem } = useInventoryItems();
+  
+  const [filteredItems, setFilteredItems] = useState([]);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
+  const [departmentFilter, setDepartmentFilter] = useState('all');
+  
+  // Dialog states
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedItem, setSelectedItem] = useState(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [departmentFilter, setDepartmentFilter] = useState('all');
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
 
+  // Filter items whenever dependencies change
   useEffect(() => {
-    let filtered = items;
+    let filtered = items || [];
 
     if (searchTerm) {
+      const search = searchTerm.toLowerCase();
       filtered = filtered.filter(item =>
-        item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.serialNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (item.hostname && item.hostname.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        item.assetTag.toLowerCase().includes(searchTerm.toLowerCase())
+        item.item_name?.toLowerCase().includes(search) ||
+        item.brand?.toLowerCase().includes(search) ||
+        item.serial_number?.toLowerCase().includes(search) ||
+        item.model?.toLowerCase().includes(search) ||
+        item.hostname?.toLowerCase().includes(search) ||
+        item.location?.toLowerCase().includes(search)
       );
     }
 
@@ -174,7 +207,7 @@ const ViewItems = () => {
     }
 
     if (categoryFilter !== 'all') {
-      filtered = filtered.filter(item => item.type === categoryFilter);
+      filtered = filtered.filter(item => item.category === categoryFilter);
     }
 
     if (departmentFilter !== 'all') {
@@ -205,6 +238,7 @@ const ViewItems = () => {
   };
 
   const handleEdit = () => {
+    // Navigate to edit form or open edit dialog
     console.log('Edit item:', selectedItem);
     handleMenuClose();
   };
@@ -214,396 +248,429 @@ const ViewItems = () => {
     handleMenuClose();
   };
 
-  const confirmDelete = () => {
-    setItems(items.filter(item => item.id !== selectedItem.id));
-    setDeleteDialogOpen(false);
-    setSelectedItem(null);
+  const confirmDelete = async () => {
+    try {
+      await deleteItem(selectedItem.id);
+      setDeleteDialogOpen(false);
+      setSelectedItem(null);
+    } catch (error) {
+      console.error('Error deleting item:', error);
+    }
+  };
+
+  const handleViewDetails = () => {
+    setDetailsDialogOpen(true);
+    handleMenuClose();
   };
 
   const handleAssign = () => {
-    navigate('/check-out');
+    // Navigate to assignment page or open dialog
+    navigate('/assign');
     handleMenuClose();
   };
 
   const getCategoryIcon = (category) => {
-    const IconComponent = categoryIcons[category] || Laptop;
-    return <IconComponent />;
+    const IconComponent = categoryIcons[category] || Storage;
+    return <IconComponent sx={{ fontSize: 18 }} />;
   };
+
+  const categories = ['all', 'Desktop', 'Laptop', 'Monitor', 'Network Equipment', 'Mobile Device', 'Accessories', 'Other'];
+  const departments = ['all', 'IT', 'HR', 'Finance', 'Marketing', 'Sales', 'Operations'];
+
+  if (loading) {
+    return (
+      <Dashboard>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+          <CircularProgress />
+        </Box>
+      </Dashboard>
+    );
+  }
+
+  if (error) {
+    return (
+      <Dashboard>
+        <Box sx={{ p: 3 }}>
+          <Alert severity="error">{error}</Alert>
+        </Box>
+      </Dashboard>
+    );
+  }
 
   return (
     <Dashboard>
-      <Box sx={{ 
-        position: 'relative', 
-        zIndex: 1,
-        maxWidth: '1400px',
-        mx: 'auto',
-        width: '100%'
-      }}>
-        <Box sx={{ mb: 4, textAlign: 'center' }}>
-          <Typography variant="h4" sx={{ fontWeight: '700', color: 'white', mb: 1 }}>
-            Inventory Items
-          </Typography>
-          <Typography variant="body1" sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>
-            Manage and view all your inventory items
-          </Typography>
-        </Box>
+      <ModernContainer>
+        <Box sx={{ maxWidth: '1400px', mx: 'auto', width: '100%' }}>
+          {/* Header */}
+          <Box sx={{ mb: 4 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'between', alignItems: 'center', mb: 2 }}>
+              <Box>
+                <Typography variant="h4" sx={{ fontWeight: '700', color: '#1e293b', mb: 1 }}>
+                  Inventory Items
+                </Typography>
+                <Typography variant="body1" sx={{ color: '#64748b' }}>
+                  Manage and view all your inventory items
+                </Typography>
+              </Box>
+              <ActionButton
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={() => navigate('/add-item')}
+                sx={{ ml: 'auto' }}
+              >
+                Add New Item
+              </ActionButton>
+            </Box>
+          </Box>
 
-        {/* Header with Add Button */}
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', mb: 3 }}>
-          <ModernButton
-            startIcon={<AddIcon />}
-            onClick={() => navigate('/add-item')}
-          >
-            Add New Item
-          </ModernButton>
-        </Box>
-
-        {/* Filters and Search */}
-        <GlassCard sx={{ mb: 3, width: '100%', background: 'rgba(26, 26, 46, 0.9)' }}>
-          <CardContent sx={{ p: 3 }}>
+          {/* Filters */}
+          <FilterCard>
             <Grid container spacing={3} alignItems="center">
-              <Grid item xs={12} md={3}>
-                <TextField
+              <Grid item xs={12} md={4}>
+                <StyledTextField
                   fullWidth
-                  placeholder="Search assets..."
+                  placeholder="Search items..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: '12px',
-                      background: 'rgba(139, 92, 246, 0.1)',
-                      color: 'white',
-                      '& fieldset': { borderColor: 'rgba(139, 92, 246, 0.3)' },
-                    },
-                    '& .MuiInputLabel-root': { color: 'rgba(255, 255, 255, 0.7)' },
-                  }}
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
-                        <SearchIcon sx={{ color: '#8b5cf6' }} />
+                        <SearchIcon sx={{ color: '#64748b' }} />
                       </InputAdornment>
                     ),
                   }}
                 />
               </Grid>
+              
               <Grid item xs={12} md={2}>
                 <FormControl fullWidth>
-                  <InputLabel sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>Status</InputLabel>
-                  <Select
+                  <InputLabel>Status</InputLabel>
+                  <StyledSelect
                     value={statusFilter}
                     label="Status"
                     onChange={(e) => setStatusFilter(e.target.value)}
-                    sx={{
-                      borderRadius: '12px',
-                      background: 'rgba(139, 92, 246, 0.1)',
-                      color: 'white',
-                      '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(139, 92, 246, 0.3)' },
-                    }}
                   >
                     <MenuItem value="all">All Status</MenuItem>
                     <MenuItem value="available">Available</MenuItem>
                     <MenuItem value="assigned">Assigned</MenuItem>
                     <MenuItem value="maintenance">Maintenance</MenuItem>
                     <MenuItem value="retired">Retired</MenuItem>
-                  </Select>
+                  </StyledSelect>
                 </FormControl>
               </Grid>
+
               <Grid item xs={12} md={2}>
                 <FormControl fullWidth>
-                  <InputLabel sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>Type</InputLabel>
-                  <Select
+                  <InputLabel>Category</InputLabel>
+                  <StyledSelect
                     value={categoryFilter}
-                    label="Type"
+                    label="Category"
                     onChange={(e) => setCategoryFilter(e.target.value)}
-                    sx={{
-                      borderRadius: '12px',
-                      background: 'rgba(139, 92, 246, 0.1)',
-                      color: 'white',
-                      '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(139, 92, 246, 0.3)' },
-                    }}
                   >
                     {categories.map((category) => (
                       <MenuItem key={category} value={category}>
-                        {category === 'all' ? 'All Types' : category}
+                        {category === 'all' ? 'All Categories' : category}
                       </MenuItem>
                     ))}
-                  </Select>
+                  </StyledSelect>
                 </FormControl>
               </Grid>
+
               <Grid item xs={12} md={2}>
                 <FormControl fullWidth>
-                  <InputLabel sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>Department</InputLabel>
-                  <Select
+                  <InputLabel>Department</InputLabel>
+                  <StyledSelect
                     value={departmentFilter}
                     label="Department"
                     onChange={(e) => setDepartmentFilter(e.target.value)}
-                    sx={{
-                      borderRadius: '12px',
-                      background: 'rgba(139, 92, 246, 0.1)',
-                      color: 'white',
-                      '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(139, 92, 246, 0.3)' },
-                    }}
                   >
                     {departments.map((dept) => (
                       <MenuItem key={dept} value={dept}>
                         {dept === 'all' ? 'All Departments' : dept}
                       </MenuItem>
                     ))}
-                  </Select>
+                  </StyledSelect>
                 </FormControl>
               </Grid>
-              <Grid item xs={12} md={3}>
+
+              <Grid item xs={12} md={2}>
                 <Box sx={{ 
                   textAlign: 'center',
                   p: 2,
-                  borderRadius: '12px',
-                  background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(6, 182, 212, 0.15) 100%)',
-                  border: '1px solid rgba(139, 92, 246, 0.3)',
+                  borderRadius: '8px',
+                  background: '#f1f5f9',
+                  border: '1px solid #e2e8f0',
                 }}>
-                  <Typography variant="h6" sx={{ fontWeight: '700', color: 'white' }}>
+                  <Typography variant="h6" sx={{ fontWeight: '700', color: '#1e293b' }}>
                     {filteredItems.length}
                   </Typography>
-                  <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-                    Assets Found
+                  <Typography variant="body2" sx={{ color: '#64748b' }}>
+                    Items Found
                   </Typography>
                 </Box>
               </Grid>
             </Grid>
-          </CardContent>
-        </GlassCard>
+          </FilterCard>
 
-        {/* Items Table */}
-        <GlassCard sx={{ width: '100%' }}>
-          <StyledTableContainer>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Asset Name</TableCell>
-                  <TableCell>Hostname</TableCell>
-                  <TableCell>Asset Tag</TableCell>
-                  <TableCell>Type</TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell>Department</TableCell>
-                  <TableCell>Serial Number</TableCell>
-                  <TableCell>Brand/Model</TableCell>
-                  <TableCell>AnyDesk Status</TableCell>
-                  <TableCell>Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {filteredItems.length === 0 ? (
+          {/* Items Table */}
+          <StyledPaper>
+            <TableContainer>
+              <Table>
+                <TableHead sx={{ background: '#f8fafc' }}>
                   <TableRow>
-                    <TableCell colSpan={10} sx={{ textAlign: 'center', py: 6 }}>
-                      <Box>
-                        <Typography variant="h6" sx={{ color: 'rgba(255, 255, 255, 0.6)', mb: 1 }}>
-                          No assets found
-                        </Typography>
-                        <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.4)' }}>
-                          Add new assets or connect to your backend to populate inventory data
-                        </Typography>
-                      </Box>
-                    </TableCell>
+                    <TableCell sx={{ fontWeight: '600', color: '#374151' }}>Item</TableCell>
+                    <TableCell sx={{ fontWeight: '600', color: '#374151' }}>Category</TableCell>
+                    <TableCell sx={{ fontWeight: '600', color: '#374151' }}>Serial Number</TableCell>
+                    <TableCell sx={{ fontWeight: '600', color: '#374151' }}>Status</TableCell>
+                    <TableCell sx={{ fontWeight: '600', color: '#374151' }}>Assigned To</TableCell>
+                    <TableCell sx={{ fontWeight: '600', color: '#374151' }}>Location</TableCell>
+                    <TableCell sx={{ fontWeight: '600', color: '#374151' }}>Actions</TableCell>
                   </TableRow>
-                ) : (
-                  filteredItems
-                    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                    .map((item) => (
-                      <TableRow key={item.id} hover>
-                        <TableCell>
-                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                            <Avatar sx={{ 
-                              mr: 2, 
-                              background: 'linear-gradient(135deg, #8b5cf6 0%, #06b6d4 100%)',
-                              width: 40,
-                              height: 40
+                </TableHead>
+                <TableBody>
+                  {filteredItems.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} sx={{ textAlign: 'center', py: 6 }}>
+                        <Box>
+                          <Storage sx={{ fontSize: 48, color: '#cbd5e1', mb: 2 }} />
+                          <Typography variant="h6" sx={{ color: '#64748b', mb: 1 }}>
+                            No items found
+                          </Typography>
+                          <Typography variant="body2" sx={{ color: '#94a3b8' }}>
+                            Try adjusting your filters or add new items to get started
+                          </Typography>
+                        </Box>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredItems
+                      .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                      .map((item) => (
+                        <TableRow key={item.id} hover sx={{ '&:hover': { background: '#f8fafc' } }}>
+                          <TableCell>
+                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                              <Avatar sx={{ 
+                                mr: 2, 
+                                background: '#3b82f6',
+                                width: 36,
+                                height: 36
+                              }}>
+                                {getCategoryIcon(item.category)}
+                              </Avatar>
+                              <Box>
+                                <Typography variant="body1" sx={{ fontWeight: '600', color: '#1e293b' }}>
+                                  {item.item_name}
+                                </Typography>
+                                <Typography variant="body2" sx={{ color: '#64748b' }}>
+                                  {item.brand} {item.model}
+                                </Typography>
+                              </Box>
+                            </Box>
+                          </TableCell>
+                          <TableCell>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <Box sx={{ color: '#64748b' }}>
+                                {getCategoryIcon(item.category)}
+                              </Box>
+                              <Typography sx={{ color: '#374151' }}>{item.category || 'Other'}</Typography>
+                            </Box>
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2" sx={{ 
+                              fontFamily: 'monospace',
+                              background: '#f1f5f9',
+                              padding: '4px 8px',
+                              borderRadius: '4px',
+                              display: 'inline-block',
+                              color: '#374151'
                             }}>
-                              {getCategoryIcon(item.type)}
-                            </Avatar>
-                            <Box>
-                              <Typography variant="body1" fontWeight="600" sx={{ color: 'white' }}>
-                                {item.name}
-                              </Typography>
-                              <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.6)' }}>
-                                {item.prevOwner ? `Prev: ${item.prevOwner}` : 'New Asset'}
-                              </Typography>
-                            </Box>
-                          </Box>
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body2" sx={{ 
-                            fontFamily: 'monospace',
-                            color: 'rgba(255, 255, 255, 0.9)',
-                            background: 'rgba(6, 182, 212, 0.2)',
-                            padding: '4px 8px',
-                            borderRadius: '6px',
-                            display: 'inline-block'
-                          }}>
-                            {item.hostname || 'N/A'}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body2" sx={{ 
-                            fontFamily: 'monospace',
-                            background: 'rgba(139, 92, 246, 0.2)',
-                            color: '#8b5cf6',
-                            padding: '4px 8px',
-                            borderRadius: '6px',
-                            display: 'inline-block'
-                          }}>
-                            {item.assetTag}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                            <Box sx={{ mr: 1, color: '#8b5cf6' }}>
-                              {getCategoryIcon(item.type)}
-                            </Box>
-                            <Typography sx={{ color: 'white' }}>{item.type}</Typography>
-                          </Box>
-                        </TableCell>
-                        <TableCell>
-                          <StatusChip
-                            label={item.status.toUpperCase()}
-                            status={item.status}
-                            size="small"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Typography sx={{ color: 'white' }}>{item.department}</Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body2" sx={{ 
-                            fontFamily: 'monospace',
-                            color: 'rgba(255, 255, 255, 0.8)',
-                            fontSize: '0.75rem'
-                          }}>
-                            {item.serialNumber}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>
-                            {item.brand}
-                          </Typography>
-                          <Typography variant="body2" sx={{ fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.6)' }}>
-                            {item.model}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body2" sx={{ 
-                            color: item.anydeskStatus === 'Active' ? '#10b981' : 
-                                   item.anydeskStatus === 'Inactive' ? '#f59e0b' : 'rgba(255, 255, 255, 0.6)',
-                            fontWeight: '500'
-                          }}>
-                            {item.anydeskStatus}
-                          </Typography>
-                        </TableCell>
-                        <TableCell align="center">
-                          <Tooltip title="More actions">
-                            <IconButton
-                              onClick={(e) => handleMenuClick(e, item)}
+                              {item.serial_number}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <StatusChip
+                              label={item.status?.toUpperCase() || 'UNKNOWN'}
+                              status={item.status}
                               size="small"
-                              sx={{
-                                background: 'rgba(139, 92, 246, 0.1)',
-                                '&:hover': {
-                                  background: 'rgba(139, 92, 246, 0.2)',
-                                }
-                              }}
-                            >
-                              <MoreVertIcon sx={{ color: 'white' }} />
-                            </IconButton>
-                          </Tooltip>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                )}
-              </TableBody>
-            </Table>
-          </StyledTableContainer>
-          <TablePagination
-            rowsPerPageOptions={[5, 10, 25]}
-            component="div"
-            count={filteredItems.length}
-            rowsPerPage={rowsPerPage}
-            page={page}
-            onPageChange={handleChangePage}
-            onRowsPerPageChange={handleChangeRowsPerPage}
-            sx={{
-              background: 'rgba(255, 255, 255, 0.8)',
-              borderBottomLeftRadius: '16px',
-              borderBottomRightRadius: '16px',
-            }}
-          />
-        </GlassCard>
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Typography sx={{ color: '#374151' }}>
+                              {item.assigned_to || 'Not assigned'}
+                            </Typography>
+                            {item.department && (
+                              <Typography variant="body2" sx={{ color: '#64748b', fontSize: '0.75rem' }}>
+                                {item.department}
+                              </Typography>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <Typography sx={{ color: '#374151' }}>
+                              {item.location || 'Not specified'}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Tooltip title="More actions">
+                              <IconButton
+                                onClick={(e) => handleMenuClick(e, item)}
+                                size="small"
+                                sx={{
+                                  '&:hover': {
+                                    background: 'rgba(59, 130, 246, 0.1)',
+                                  }
+                                }}
+                              >
+                                <MoreVertIcon />
+                              </IconButton>
+                            </Tooltip>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+            <TablePagination
+              rowsPerPageOptions={[5, 10, 25, 50]}
+              component="div"
+              count={filteredItems.length}
+              rowsPerPage={rowsPerPage}
+              page={page}
+              onPageChange={handleChangePage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+              sx={{
+                borderTop: '1px solid #e2e8f0',
+                background: '#fafbfc',
+              }}
+            />
+          </StyledPaper>
 
-        {/* Action Menu */}
-        <Menu
-          anchorEl={anchorEl}
-          open={Boolean(anchorEl)}
-          onClose={handleMenuClose}
-          PaperProps={{
-            sx: {
-              borderRadius: '12px',
-              background: 'rgba(255, 255, 255, 0.95)',
-              backdropFilter: 'blur(20px)',
-              border: '1px solid rgba(255, 255, 255, 0.2)',
-            }
-          }}
-        >
-          <MenuItem onClick={handleEdit} sx={{ borderRadius: '8px', mx: 1 }}>
-            <EditIcon sx={{ mr: 2, color: '#667eea' }} fontSize="small" />
-            Edit Item
-          </MenuItem>
-          <MenuItem onClick={handleAssign} sx={{ borderRadius: '8px', mx: 1 }}>
-            <AssignIcon sx={{ mr: 2, color: '#10b981' }} fontSize="small" />
-            Assign Item
-          </MenuItem>
-          <MenuItem onClick={handleDelete} sx={{ borderRadius: '8px', mx: 1, color: 'error.main' }}>
-            <DeleteIcon sx={{ mr: 2 }} fontSize="small" />
-            Delete Item
-          </MenuItem>
-        </Menu>
-
-        {/* Delete Confirmation Dialog */}
-        <Dialog
-          open={deleteDialogOpen}
-          onClose={() => setDeleteDialogOpen(false)}
-          PaperProps={{
-            sx: {
-              borderRadius: '20px',
-              background: 'rgba(255, 255, 255, 0.95)',
-              backdropFilter: 'blur(20px)',
-            }
-          }}
-        >
-          <DialogTitle sx={{ fontWeight: '600' }}>Confirm Delete</DialogTitle>
-          <DialogContent>
-            <Typography>
-              Are you sure you want to delete "{selectedItem?.name}"? This action cannot be undone.
-            </Typography>
-          </DialogContent>
-          <DialogActions sx={{ p: 3 }}>
-            <Button 
-              onClick={() => setDeleteDialogOpen(false)}
-              sx={{ borderRadius: '8px' }}
-            >
-              Cancel
-            </Button>
-            <Button 
-              onClick={confirmDelete} 
-              variant="contained" 
-              sx={{ 
+          {/* Action Menu */}
+          <Menu
+            anchorEl={anchorEl}
+            open={Boolean(anchorEl)}
+            onClose={handleMenuClose}
+            PaperProps={{
+              sx: {
                 borderRadius: '8px',
-                background: 'linear-gradient(135deg, #ef4444 0%, #f87171 100%)',
-                '&:hover': {
-                  background: 'linear-gradient(135deg, #dc2626 0%, #ef4444 100%)',
+                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
+                border: '1px solid #e2e8f0',
+              }
+            }}
+          >
+            <MenuItem onClick={handleViewDetails} sx={{ gap: 2 }}>
+              <VisibilityIcon fontSize="small" sx={{ color: '#3b82f6' }} />
+              View Details
+            </MenuItem>
+            <MenuItem onClick={handleEdit} sx={{ gap: 2 }}>
+              <EditIcon fontSize="small" sx={{ color: '#10b981' }} />
+              Edit Item
+            </MenuItem>
+            <MenuItem onClick={handleAssign} sx={{ gap: 2 }}>
+              <AssignIcon fontSize="small" sx={{ color: '#f59e0b' }} />
+              Assign Item
+            </MenuItem>
+            <MenuItem onClick={handleDelete} sx={{ gap: 2, color: '#ef4444' }}>
+              <DeleteIcon fontSize="small" />
+              Delete Item
+            </MenuItem>
+          </Menu>
+
+          {/* Delete Confirmation Dialog */}
+          <Dialog
+            open={deleteDialogOpen}
+            onClose={() => setDeleteDialogOpen(false)}
+            PaperProps={{
+              sx: {
+                borderRadius: '12px',
+              }
+            }}
+          >
+            <DialogTitle sx={{ fontWeight: '600' }}>Confirm Delete</DialogTitle>
+            <DialogContent>
+              <Typography>
+                Are you sure you want to delete "{selectedItem?.item_name}"? This action cannot be undone.
+              </Typography>
+            </DialogContent>
+            <DialogActions sx={{ p: 3, gap: 1 }}>
+              <ActionButton
+                variant="outlined"
+                onClick={() => setDeleteDialogOpen(false)}
+              >
+                Cancel
+              </ActionButton>
+              <ActionButton 
+                variant="contained" 
+                onClick={confirmDelete}
+                sx={{
+                  background: '#ef4444',
+                  '&:hover': {
+                    background: '#dc2626',
+                  }
+                }}
+              >
+                Delete
+              </ActionButton>
+            </DialogActions>
+          </Dialog>
+
+          {/* Details Dialog */}
+          {detailsDialogOpen && selectedItem && (
+            <Dialog
+              open={detailsDialogOpen}
+              onClose={() => setDetailsDialogOpen(false)}
+              maxWidth="md"
+              fullWidth
+              PaperProps={{
+                sx: {
+                  borderRadius: '12px',
                 }
               }}
             >
-              Delete
-            </Button>
-          </DialogActions>
-        </Dialog>
-      </Box>
+              <DialogTitle sx={{ fontWeight: '600' }}>
+                Item Details - {selectedItem.item_name}
+              </DialogTitle>
+              <DialogContent>
+                <Grid container spacing={3} sx={{ mt: 1 }}>
+                  <Grid item xs={12} md={6}>
+                    <Typography variant="h6" sx={{ mb: 2, color: '#374151' }}>Basic Information</Typography>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                      <Typography><strong>Name:</strong> {selectedItem.item_name}</Typography>
+                      <Typography><strong>Category:</strong> {selectedItem.category || 'N/A'}</Typography>
+                      <Typography><strong>Brand:</strong> {selectedItem.brand || 'N/A'}</Typography>
+                      <Typography><strong>Model:</strong> {selectedItem.model || 'N/A'}</Typography>
+                      <Typography><strong>Serial Number:</strong> {selectedItem.serial_number}</Typography>
+                      <Typography><strong>Status:</strong> {selectedItem.status}</Typography>
+                    </Box>
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <Typography variant="h6" sx={{ mb: 2, color: '#374151' }}>Assignment Information</Typography>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                      <Typography><strong>Assigned To:</strong> {selectedItem.assigned_to || 'Not assigned'}</Typography>
+                      <Typography><strong>Department:</strong> {selectedItem.department || 'N/A'}</Typography>
+                      <Typography><strong>Location:</strong> {selectedItem.location || 'N/A'}</Typography>
+                      <Typography><strong>Assignment Date:</strong> {selectedItem.assignment_date ? new Date(selectedItem.assignment_date).toLocaleDateString() : 'N/A'}</Typography>
+                    </Box>
+                  </Grid>
+                  {selectedItem.notes && (
+                    <Grid item xs={12}>
+                      <Typography variant="h6" sx={{ mb: 2, color: '#374151' }}>Notes</Typography>
+                      <Paper sx={{ p: 2, background: '#f8fafc' }}>
+                        <Typography variant="body2">{selectedItem.notes}</Typography>
+                      </Paper>
+                    </Grid>
+                  )}
+                </Grid>
+              </DialogContent>
+              <DialogActions sx={{ p: 3 }}>
+                <ActionButton onClick={() => setDetailsDialogOpen(false)}>
+                  Close
+                </ActionButton>
+              </DialogActions>
+            </Dialog>
+          )}
+        </Box>
+      </ModernContainer>
     </Dashboard>
   );
 };
