@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 // MUI Core Components
 import {
   Box,
@@ -264,7 +264,6 @@ const EditableTableCell = ({ value, onSave, type = 'text', options = [] }) => {
 // Dashboard Component
 const Dashboard = () => {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [mobileOpen, setMobileOpen] = useState(false);
   const [currentView, setCurrentView] = useState('dashboard');
   const [openDetailsDialog, setOpenDetailsDialog] = useState(null);
@@ -272,7 +271,7 @@ const Dashboard = () => {
 
   // Hooks
   const { items, loading, error, addItem, deleteItem, updateItem, checkOutItem, checkInItem } = useInventoryItems();
-  const { stats, loading: statsLoading } = useDashboardStats();
+  const { stats } = useDashboardStats();
 
   // Dialog states
   const [openAddDialog, setOpenAddDialog] = useState(false);
@@ -346,7 +345,7 @@ const Dashboard = () => {
     { text: 'Assign', icon: <AssignIcon />, view: 'assign' },
     { text: 'Receive', icon: <ReceiveIcon />, view: 'receive' },
     { text: 'Reports', icon: <ReportsIcon />, view: 'reports' },
-    { text: 'Disposal', icon: <DeleteForeverIcon />, view: 'disposal' },
+    { text: 'Disposal', icon: <DeleteForeverIcon />, view: 'disposal' }, // Added new Disposal tab
   ];
 
   // Enhanced add item handler with more fields
@@ -959,7 +958,8 @@ const Dashboard = () => {
             <Typography variant="h4" sx={{ color: '#1f2937', mb: 3 }}>Receive Items</Typography>
             <UltraModernCard>
               <CardContent sx={{ p: 4 }}>
-        <Typography variant="h6" sx={{ mb: 2 }}>Assigned Items for Return</Typography>                {loading ? (
+                <Typography variant="h6" sx={{ mb: 2 }}>Assigned Items for Return</Typography>
+                {loading ? (
                   <CircularProgress />
                 ) : (
                   <TableContainer>
@@ -1115,6 +1115,8 @@ const Dashboard = () => {
                           <TableCell>Brand</TableCell>
                           <TableCell>Model</TableCell>
                           <TableCell>Serial Number</TableCell>
+                          <TableCell>Reason</TableCell>
+                          <TableCell>Date</TableCell>
                           <TableCell>Actions</TableCell>
                         </TableRow>
                       </TableHead>
@@ -1125,6 +1127,8 @@ const Dashboard = () => {
                             <TableCell>{item.brand}</TableCell>
                             <TableCell>{item.model}</TableCell>
                             <TableCell>{item.serial_number}</TableCell>
+                            <TableCell>{item.disposal_reason}</TableCell>
+                            <TableCell>{item.disposal_date ? new Date(item.disposal_date).toLocaleDateString() : 'N/A'}</TableCell>
                             <TableCell>
                               <Button 
                                 variant="outlined" 
@@ -1139,7 +1143,7 @@ const Dashboard = () => {
                         ))}
                         {items.filter(item => item.status === 'retired').length === 0 && (
                           <TableRow>
-                            <TableCell colSpan={5} align="center" sx={{ color: '#6b7280', py: 4 }}>
+                            <TableCell colSpan={7} align="center" sx={{ color: '#6b7280', py: 4 }}>
                               No items marked for disposal
                             </TableCell>
                           </TableRow>
@@ -1150,6 +1154,19 @@ const Dashboard = () => {
                 )}
               </CardContent>
             </UltraModernCard>
+            <Box sx={{ mt: 4 }}>
+              <Typography variant="h6" sx={{ mb: 2 }}>Mark Item for Disposal</Typography>
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <Button 
+                  variant="outlined" 
+                  color="error"
+                  startIcon={<DeleteForeverIcon />}
+                  onClick={() => setCurrentView('view')}
+                >
+                  Select Item
+                </Button>
+              </Box>
+            </Box>
           </Box>
         );
       default:
@@ -1467,43 +1484,18 @@ const Dashboard = () => {
           </MuiAlert>
         </Snackbar>
 
-      {/* Enhanced Add Dialog - FIXED */}
-        <Dialog open={openAddDialog} onClose={() => setOpenAddDialog(false)} maxWidth="lg" fullWidth>
-          <DialogTitle>
-            <Typography variant="h6" fontWeight="600">
-              Add New Item
-            </Typography>
-          </DialogTitle>
+        {/* Enhanced Add Dialog */}
+        <Dialog open={openAddDialog} onClose={() => setOpenAddDialog(false)} maxWidth="md" fullWidth>
+          <DialogTitle>Add New Item</DialogTitle>
           <DialogContent>
-            <Grid container spacing={3} sx={{ mt: 1 }}>
-              {/* Basic Information Section */}
-              <Grid item xs={12}>
-                <Typography variant="h6" sx={{ mb: 2, color: '#374151', fontWeight: '600' }}>
-                  Basic Information
-                </Typography>
-              </Grid>
-              
+            <Grid container spacing={2} sx={{ mt: 1 }}>
               <Grid item xs={12} md={6}>
-                <StyledTextField 
-                  fullWidth 
-                  label="Item Name *" 
-                  value={newItem.name} 
-                  onChange={(e) => setNewItem({ ...newItem, name: e.target.value })} 
-                />
+                <StyledTextField fullWidth label="Item Name *" value={newItem.name} onChange={(e) => setNewItem({ ...newItem, name: e.target.value })} />
               </Grid>
-              
               <Grid item xs={12} md={6}>
                 <FormControl fullWidth>
                   <InputLabel>Category</InputLabel>
-                  <Select 
-                    value={newItem.category} 
-                    label="Category" 
-                    onChange={(e) => setNewItem({ ...newItem, category: e.target.value })}
-                    sx={{
-                      background: '#ffffff',
-                      borderRadius: '8px',
-                    }}
-                  >
+                  <Select value={newItem.category} label="Category" onChange={(e) => setNewItem({ ...newItem, category: e.target.value })}>
                     <MenuItem value="Desktop">Desktop</MenuItem>
                     <MenuItem value="Laptop">Laptop</MenuItem>
                     <MenuItem value="Monitor">Monitor</MenuItem>
@@ -1514,170 +1506,35 @@ const Dashboard = () => {
                   </Select>
                 </FormControl>
               </Grid>
-
-              <Grid item xs={12} md={4}>
-                <StyledTextField 
-                  fullWidth 
-                  label="Brand" 
-                  value={newItem.brand} 
-                  onChange={(e) => setNewItem({ ...newItem, brand: e.target.value })} 
-                />
+              <Grid item xs={12} md={6}>
+                <StyledTextField fullWidth label="Brand" value={newItem.brand} onChange={(e) => setNewItem({ ...newItem, brand: e.target.value })} />
               </Grid>
-              
-              <Grid item xs={12} md={4}>
-                <StyledTextField 
-                  fullWidth 
-                  label="Model" 
-                  value={newItem.model} 
-                  onChange={(e) => setNewItem({ ...newItem, model: e.target.value })} 
-                />
+              <Grid item xs={12} md={6}>
+                <StyledTextField fullWidth label="Model" value={newItem.model} onChange={(e) => setNewItem({ ...newItem, model: e.target.value })} />
               </Grid>
-              
-              <Grid item xs={12} md={4}>
-                <StyledTextField 
-                  fullWidth 
-                  label="Serial Number *" 
-                  value={newItem.serialNumber} 
-                  onChange={(e) => setNewItem({ ...newItem, serialNumber: e.target.value })} 
-                />
-              </Grid>
-
-              {/* Technical Specifications Section */}
               <Grid item xs={12}>
-                <Typography variant="h6" sx={{ mb: 2, mt: 3, color: '#374151', fontWeight: '600' }}>
-                  Technical Specifications
-                </Typography>
+                <StyledTextField fullWidth label="Serial Number *" value={newItem.serialNumber} onChange={(e) => setNewItem({ ...newItem, serialNumber: e.target.value })} />
               </Grid>
-
               <Grid item xs={12} md={6}>
-                <StyledTextField 
-                  fullWidth 
-                  label="Hostname" 
-                  value={newItem.hostname} 
-                  onChange={(e) => setNewItem({ ...newItem, hostname: e.target.value })} 
-                />
+                <StyledTextField fullWidth label="Hostname" value={newItem.hostname} onChange={(e) => setNewItem({ ...newItem, hostname: e.target.value })} />
               </Grid>
-
               <Grid item xs={12} md={6}>
-                <StyledTextField 
-                  fullWidth 
-                  label="Operating System" 
-                  value={newItem.operatingSystem} 
-                  onChange={(e) => setNewItem({ ...newItem, operatingSystem: e.target.value })} 
-                />
-              </Grid>
-
-              <Grid item xs={12} md={4}>
-                <StyledTextField 
-                  fullWidth 
-                  label="Processor" 
-                  value={newItem.processor} 
-                  onChange={(e) => setNewItem({ ...newItem, processor: e.target.value })} 
-                />
-              </Grid>
-
-              <Grid item xs={12} md={4}>
-                <StyledTextField 
-                  fullWidth 
-                  label="RAM" 
-                  value={newItem.ram} 
-                  onChange={(e) => setNewItem({ ...newItem, ram: e.target.value })} 
-                />
-              </Grid>
-
-              <Grid item xs={12} md={4}>
-                <StyledTextField 
-                  fullWidth 
-                  label="Storage" 
-                  value={newItem.storage} 
-                  onChange={(e) => setNewItem({ ...newItem, storage: e.target.value })} 
-                />
-              </Grid>
-
-              {/* Dates & Location Section */}
-              <Grid item xs={12}>
-                <Typography variant="h6" sx={{ mb: 2, mt: 3, color: '#374151', fontWeight: '600' }}>
-                  Dates & Location
-                </Typography>
-              </Grid>
-
-              <Grid item xs={12} md={4}>
-                <StyledTextField 
-                  fullWidth 
-                  label="Purchase Date" 
-                  type="date"
-                  value={newItem.purchaseDate} 
-                  onChange={(e) => setNewItem({ ...newItem, purchaseDate: e.target.value })} 
-                  InputLabelProps={{ shrink: true }}
-                />
-              </Grid>
-
-              <Grid item xs={12} md={4}>
-                <StyledTextField 
-                  fullWidth 
-                  label="Deployment Date" 
-                  type="date"
-                  value={newItem.deploymentDate} 
-                  onChange={(e) => setNewItem({ ...newItem, deploymentDate: e.target.value })} 
-                  InputLabelProps={{ shrink: true }}
-                />
-              </Grid>
-
-              <Grid item xs={12} md={4}>
-                <StyledTextField 
-                  fullWidth 
-                  label="Warranty Period" 
-                  value={newItem.warrantyPeriod} 
-                  onChange={(e) => setNewItem({ ...newItem, warrantyPeriod: e.target.value })} 
-                  placeholder="e.g., 3 years"
-                />
-              </Grid>
-
-              <Grid item xs={12} md={6}>
-                <StyledTextField 
-                  fullWidth 
-                  label="Location" 
-                  value={newItem.location} 
-                  onChange={(e) => setNewItem({ ...newItem, location: e.target.value })} 
-                />
-              </Grid>
-
-              <Grid item xs={12} md={6}>
-                <StyledTextField 
-                  fullWidth 
-                  multiline
-                  rows={3}
-                  label="Notes" 
-                  value={newItem.notes} 
-                  onChange={(e) => setNewItem({ ...newItem, notes: e.target.value })} 
-                />
+                <StyledTextField fullWidth label="Location" value={newItem.location} onChange={(e) => setNewItem({ ...newItem, location: e.target.value })} />
               </Grid>
             </Grid>
           </DialogContent>
-          <DialogActions sx={{ p: 3 }}>
-            <Button onClick={() => setOpenAddDialog(false)} sx={{ mr: 2 }}>
-              Cancel
-            </Button>
-            <FloatingActionButton onClick={handleAddItem}>
-              Add Item
-            </FloatingActionButton>
+          <DialogActions>
+            <Button onClick={() => setOpenAddDialog(false)}>Cancel</Button>
+            <FloatingActionButton onClick={handleAddItem}>Add Item</FloatingActionButton>
           </DialogActions>
         </Dialog>
 
-        {/* Assign Dialog - FIXED */}
+        {/* Assign Dialog */}
         {openAssignDialog && (
           <Dialog open onClose={() => setOpenAssignDialog(null)} maxWidth="sm" fullWidth>
             <DialogTitle>Assign Item</DialogTitle>
             <DialogContent>
               <Grid container spacing={2} sx={{ mt: 1 }}>
-                <Grid item xs={12}>
-                  <StyledTextField 
-                    fullWidth 
-                    label="Assigned To *" 
-                    value={assignmentData.assignedTo} 
-                    onChange={(e) => setAssignmentData({ ...assignmentData, assignedTo: e.target.value })} 
-                  />
-                </Grid>
                 <Grid item xs={12}>
                   <StyledTextField 
                     fullWidth 
