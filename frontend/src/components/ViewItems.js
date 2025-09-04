@@ -50,7 +50,8 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import Dashboard from './Dashboard';
-import { useInventoryItems } from '../hooks/useInventory'; // Import your custom hook
+import { useInventoryItems } from '../hooks/useInventory';
+import ItemDetailsModal from './ItemDetailsModal';
 
 // Styled Components
 const ModernContainer = styled(Box)(({ theme }) => ({
@@ -169,7 +170,6 @@ const categoryIcons = {
 const ViewItems = () => {
   const navigate = useNavigate();
   
-  // Use your actual inventory hook
   const { items, loading, error, deleteItem, updateItem } = useInventoryItems();
   
   const [filteredItems, setFilteredItems] = useState([]);
@@ -180,13 +180,21 @@ const ViewItems = () => {
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [departmentFilter, setDepartmentFilter] = useState('all');
   
-  // Dialog states
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedItem, setSelectedItem] = useState(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
 
-  // Filter items whenever dependencies change
+  const handleSaveItem = async (itemId, updatedData) => {
+    try {
+      await updateItem(itemId, updatedData);
+      console.log('Item updated successfully');
+    } catch (error) {
+      console.error('Error updating item:', error);
+      throw error;
+    }
+  };
+
   useEffect(() => {
     let filtered = items || [];
 
@@ -238,25 +246,35 @@ const ViewItems = () => {
   };
 
   const handleEdit = () => {
-    // Navigate to edit form or open edit dialog
     console.log('Edit item:', selectedItem);
     handleMenuClose();
   };
 
-  const handleDelete = () => {
-    setDeleteDialogOpen(true);
-    handleMenuClose();
-  };
+  const handleDelete = (item) => {
+  setSelectedItem(item);
+  setDeleteDialogOpen(true);
+};
 
-  const confirmDelete = async () => {
-    try {
-      await deleteItem(selectedItem.id);
-      setDeleteDialogOpen(false);
-      setSelectedItem(null);
-    } catch (error) {
-      console.error('Error deleting item:', error);
-    }
-  };
+const confirmDelete = async () => {
+  try {
+    // Instead of deleteItem, update the item status to 'retired'
+    const disposalData = {
+      status: 'retired',
+      disposal_reason: 'Marked for disposal from inventory view',
+      disposal_date: new Date().toISOString(),
+      disposed_by: 'System', // or current user
+    };
+    
+    await updateItem(selectedItem.id, disposalData);
+    setDeleteDialogOpen(false);
+    setSelectedItem(null);
+    
+    // Optional: Show success message
+    console.log('Item moved to disposal successfully');
+  } catch (error) {
+    console.error('Error moving item to disposal:', error);
+  }
+};
 
   const handleViewDetails = () => {
     setDetailsDialogOpen(true);
@@ -264,7 +282,6 @@ const ViewItems = () => {
   };
 
   const handleAssign = () => {
-    // Navigate to assignment page or open dialog
     navigate('/assign');
     handleMenuClose();
   };
@@ -301,7 +318,6 @@ const ViewItems = () => {
     <Dashboard>
       <ModernContainer>
         <Box sx={{ maxWidth: '1400px', mx: 'auto', width: '100%' }}>
-      {/* Header */}
           <Box sx={{ mb: 4 }}>
             <Box sx={{ 
               display: 'flex', 
@@ -327,7 +343,6 @@ const ViewItems = () => {
                   Comprehensive view and management of all inventory items
                 </Typography>
                 
-                {/* Quick Stats */}
                 <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Box sx={{ 
@@ -392,7 +407,7 @@ const ViewItems = () => {
               </Box>
             </Box>
           </Box>
-          {/* Filters */}
+
           <FilterCard>
             <Grid container spacing={3} alignItems="center">
               <Grid item xs={12} md={4}>
@@ -481,7 +496,6 @@ const ViewItems = () => {
             </Grid>
           </FilterCard>
 
-          {/* Items Table */}
           <StyledPaper>
             <TableContainer>
               <Table>
@@ -491,7 +505,7 @@ const ViewItems = () => {
                     <TableCell sx={{ fontWeight: '600', color: '#374151' }}>Category</TableCell>
                     <TableCell sx={{ fontWeight: '600', color: '#374151' }}>Serial Number</TableCell>
                     <TableCell sx={{ fontWeight: '600', color: '#374151' }}>Status</TableCell>
-                    <TableCell sx={{ fontWeight: '600', color: '#374151' }}>Assigned To</TableCell>
+                  <TableCell sx={{ fontWeight: '600', color: '#374151' }}>Assigned To</TableCell>
                     <TableCell sx={{ fontWeight: '600', color: '#374151' }}>Location</TableCell>
                     <TableCell sx={{ fontWeight: '600', color: '#374151' }}>Actions</TableCell>
                   </TableRow>
@@ -614,7 +628,6 @@ const ViewItems = () => {
             />
           </StyledPaper>
 
-          {/* Action Menu */}
           <Menu
             anchorEl={anchorEl}
             open={Boolean(anchorEl)}
@@ -645,7 +658,6 @@ const ViewItems = () => {
             </MenuItem>
           </Menu>
 
-          {/* Delete Confirmation Dialog */}
           <Dialog
             open={deleteDialogOpen}
             onClose={() => setDeleteDialogOpen(false)}
@@ -683,61 +695,13 @@ const ViewItems = () => {
             </DialogActions>
           </Dialog>
 
-          {/* Details Dialog */}
-          {detailsDialogOpen && selectedItem && (
-            <Dialog
-              open={detailsDialogOpen}
-              onClose={() => setDetailsDialogOpen(false)}
-              maxWidth="md"
-              fullWidth
-              PaperProps={{
-                sx: {
-                  borderRadius: '12px',
-                }
-              }}
-            >
-              <DialogTitle sx={{ fontWeight: '600' }}>
-                Item Details - {selectedItem.item_name}
-              </DialogTitle>
-              <DialogContent>
-                <Grid container spacing={3} sx={{ mt: 1 }}>
-                  <Grid item xs={12} md={6}>
-                    <Typography variant="h6" sx={{ mb: 2, color: '#374151' }}>Basic Information</Typography>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                      <Typography><strong>Name:</strong> {selectedItem.item_name}</Typography>
-                      <Typography><strong>Category:</strong> {selectedItem.category || 'N/A'}</Typography>
-                      <Typography><strong>Brand:</strong> {selectedItem.brand || 'N/A'}</Typography>
-                      <Typography><strong>Model:</strong> {selectedItem.model || 'N/A'}</Typography>
-                      <Typography><strong>Serial Number:</strong> {selectedItem.serial_number}</Typography>
-                      <Typography><strong>Status:</strong> {selectedItem.status}</Typography>
-                    </Box>
-                  </Grid>
-                  <Grid item xs={12} md={6}>
-                    <Typography variant="h6" sx={{ mb: 2, color: '#374151' }}>Assignment Information</Typography>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                      <Typography><strong>Assigned To:</strong> {selectedItem.assigned_to || 'Not assigned'}</Typography>
-                      <Typography><strong>Department:</strong> {selectedItem.department || 'N/A'}</Typography>
-                      <Typography><strong>Location:</strong> {selectedItem.location || 'N/A'}</Typography>
-                      <Typography><strong>Assignment Date:</strong> {selectedItem.assignment_date ? new Date(selectedItem.assignment_date).toLocaleDateString() : 'N/A'}</Typography>
-                    </Box>
-                  </Grid>
-                  {selectedItem.notes && (
-                    <Grid item xs={12}>
-                      <Typography variant="h6" sx={{ mb: 2, color: '#374151' }}>Notes</Typography>
-                      <Paper sx={{ p: 2, background: '#f8fafc' }}>
-                        <Typography variant="body2">{selectedItem.notes}</Typography>
-                      </Paper>
-                    </Grid>
-                  )}
-                </Grid>
-              </DialogContent>
-              <DialogActions sx={{ p: 3 }}>
-                <ActionButton onClick={() => setDetailsDialogOpen(false)}>
-                  Close
-                </ActionButton>
-              </DialogActions>
-            </Dialog>
-          )}
+          <ItemDetailsModal
+            open={detailsDialogOpen}
+            onClose={() => setDetailsDialogOpen(false)}
+            item={selectedItem}
+            onSave={handleSaveItem}
+            mode="view"
+          />
         </Box>
       </ModernContainer>
     </Dashboard>
