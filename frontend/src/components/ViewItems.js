@@ -301,28 +301,97 @@ const ViewItems = () => {
     <Dashboard>
       <ModernContainer>
         <Box sx={{ maxWidth: '1400px', mx: 'auto', width: '100%' }}>
-          {/* Header */}
+      {/* Header */}
           <Box sx={{ mb: 4 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'between', alignItems: 'center', mb: 2 }}>
-              <Box>
-                <Typography variant="h4" sx={{ fontWeight: '700', color: '#1e293b', mb: 1 }}>
-                  Inventory Items
+            <Box sx={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'flex-start', 
+              mb: 3,
+              flexWrap: { xs: 'wrap', md: 'nowrap' },
+              gap: 2
+            }}>
+              <Box sx={{ flex: 1, minWidth: { xs: '100%', md: 'auto' } }}>
+                <Typography variant="h4" sx={{ 
+                  fontWeight: '800', 
+                  color: '#1e293b', 
+                  mb: 1,
+                  background: 'linear-gradient(135deg, #1e293b 0%, #3b82f6 100%)',
+                  backgroundClip: 'text',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                }}>
+                  Inventory Management
                 </Typography>
-                <Typography variant="body1" sx={{ color: '#64748b' }}>
-                  Manage and view all your inventory items
+                <Typography variant="body1" sx={{ color: '#64748b', mb: 2 }}>
+                  Comprehensive view and management of all inventory items
                 </Typography>
+                
+                {/* Quick Stats */}
+                <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Box sx={{ 
+                      width: 8, 
+                      height: 8, 
+                      borderRadius: '50%', 
+                      background: '#10b981' 
+                    }} />
+                    <Typography variant="body2" sx={{ color: '#64748b', fontWeight: '500' }}>
+                      {items?.filter(item => item.status === 'available').length || 0} Available
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Box sx={{ 
+                      width: 8, 
+                      height: 8, 
+                      borderRadius: '50%', 
+                      background: '#f59e0b' 
+                    }} />
+                    <Typography variant="body2" sx={{ color: '#64748b', fontWeight: '500' }}>
+                      {items?.filter(item => item.status === 'assigned').length || 0} Assigned
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Box sx={{ 
+                      width: 8, 
+                      height: 8, 
+                      borderRadius: '50%', 
+                      background: '#ef4444' 
+                    }} />
+                    <Typography variant="body2" sx={{ color: '#64748b', fontWeight: '500' }}>
+                      {items?.filter(item => item.status === 'maintenance').length || 0} Maintenance
+                    </Typography>
+                  </Box>
+                </Box>
               </Box>
-              <ActionButton
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={() => navigate('/add-item')}
-                sx={{ ml: 'auto' }}
-              >
-                Add New Item
-              </ActionButton>
+              
+              <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                <ActionButton
+                  variant="outlined"
+                  startIcon={<Refresh />}
+                  onClick={() => window.location.reload()}
+                  sx={{ minWidth: 'auto', px: 2 }}
+                >
+                  Refresh
+                </ActionButton>
+                <ActionButton
+                  variant="contained"
+                  startIcon={<AddIcon />}
+                  onClick={() => navigate('/add-item')}
+                  sx={{ 
+                    background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+                    boxShadow: '0 4px 14px 0 rgba(59, 130, 246, 0.3)',
+                    '&:hover': {
+                      background: 'linear-gradient(135deg, #2563eb 0%, #1e40af 100%)',
+                      boxShadow: '0 6px 20px 0 rgba(59, 130, 246, 0.4)',
+                    }
+                  }}
+                >
+                  Add New Item
+                </ActionButton>
+              </Box>
             </Box>
           </Box>
-
           {/* Filters */}
           <FilterCard>
             <Grid container spacing={3} alignItems="center">

@@ -26,9 +26,9 @@ import {
 import { styled } from '@mui/material/styles';
 import { useNavigate } from 'react-router-dom';
 import Dashboard from './Dashboard';
-import { useInventoryItems } from '../hooks/useInventory'; // Import your hook
+import { useInventoryItems } from '../hooks/useInventory';
 
-// Clean, modern styled components
+// Styled Components
 const ModernContainer = styled(Box)(({ theme }) => ({
   background: '#f8fafc',
   minHeight: '100vh',
@@ -37,42 +37,28 @@ const ModernContainer = styled(Box)(({ theme }) => ({
 
 const StyledPaper = styled(Paper)(({ theme }) => ({
   background: '#ffffff',
-  borderRadius: '16px',
+  borderRadius: '12px',
   boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
   border: '1px solid #e2e8f0',
   overflow: 'hidden',
+  padding: theme.spacing(4),
 }));
 
-const SectionHeader = styled(Box)(({ theme, color = '#3b82f6' }) => ({
+const SectionHeader = styled(Typography)(({ theme }) => ({
+  fontWeight: 600,
+  fontSize: '1rem',
+  color: '#1e293b',
+  marginBottom: theme.spacing(2),
   display: 'flex',
   alignItems: 'center',
-  marginBottom: theme.spacing(3),
-  marginTop: theme.spacing(4),
-  '&:first-of-type': {
-    marginTop: 0,
-  },
-  '& .section-icon': {
-    background: color,
-    color: 'white',
-    borderRadius: '8px',
-    padding: '10px',
-    marginRight: theme.spacing(2),
-    boxShadow: `0 2px 8px ${color}33`,
-  },
-  '& .section-title': {
-    fontWeight: '600',
-    fontSize: '1.125rem',
-    color: '#1e293b',
-  }
+  gap: theme.spacing(1),
 }));
 
 const StyledTextField = styled(TextField)(({ theme }) => ({
   '& .MuiOutlinedInput-root': {
     background: '#f8fafc',
     borderRadius: '8px',
-    '& fieldset': {
-      borderColor: '#cbd5e1',
-    },
+    borderColor: '#cbd5e1',
     '&:hover fieldset': {
       borderColor: '#94a3b8',
     },
@@ -80,7 +66,7 @@ const StyledTextField = styled(TextField)(({ theme }) => ({
       borderColor: '#3b82f6',
     },
     '& .MuiOutlinedInput-input': {
-      padding: '12px 14px',
+      padding: '10px 12px',
     },
   },
   '& .MuiInputLabel-root': {
@@ -89,13 +75,13 @@ const StyledTextField = styled(TextField)(({ theme }) => ({
   },
   '& .MuiFormHelperText-root': {
     marginLeft: 0,
-  }
+  },
 }));
 
 const ActionButton = styled(Button)(({ variant }) => ({
   borderRadius: '8px',
-  padding: '12px 24px',
-  fontWeight: '600',
+  padding: '10px 20px',
+  fontWeight: 600,
   textTransform: 'none',
   ...(variant === 'contained' ? {
     background: '#3b82f6',
@@ -119,10 +105,11 @@ const ActionButton = styled(Button)(({ variant }) => ({
   }),
 }));
 
+// Constants
 const categories = [
   'Desktop',
   'Laptop',
-  'Monitor', 
+  'Monitor',
   'Network Equipment',
   'Mobile Device',
   'Accessories',
@@ -141,10 +128,11 @@ const conditions = [
   { value: 'poor', label: 'Poor' },
 ];
 
+// Main Component
 const AddItem = () => {
   const navigate = useNavigate();
-  const { addItem } = useInventoryItems(); // Use your inventory hook
-  
+  const { addItem } = useInventoryItems();
+
   const [formData, setFormData] = useState({
     name: '',
     brand: '',
@@ -159,67 +147,39 @@ const AddItem = () => {
     status: 'available',
     condition: 'good',
     purchaseDate: '',
-    purchasePrice: '',
     warrantyPeriod: '',
     deploymentDate: '',
     location: '',
-    description: '',
     notes: '',
   });
-  
+
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
-  const [snackbar, setSnackbar] = useState({
-    open: false,
-    message: '',
-    severity: 'success',
-  });
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-    
+    setFormData(prev => ({ ...prev, [name]: value }));
     if (errors[name]) {
-      setErrors(prev => ({
-        ...prev,
-        [name]: ''
-      }));
+      setErrors(prev => ({ ...prev, [name]: '' }));
     }
   };
 
   const validateForm = () => {
     const newErrors = {};
-
-    if (!formData.name.trim()) {
-      newErrors.name = 'Item name is required';
-    }
-
-    if (!formData.serialNumber.trim()) {
-      newErrors.serialNumber = 'Serial number is required';
-    }
-
-    if (!formData.category) {
-      newErrors.category = 'Category is required';
-    }
-
+    if (!formData.name.trim()) newErrors.name = 'Item name is required';
+    if (!formData.serialNumber.trim()) newErrors.serialNumber = 'Serial number is required';
+    if (!formData.category) newErrors.category = 'Category is required';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (!validateForm()) {
-      return;
-    }
+    if (!validateForm()) return;
 
     setLoading(true);
-
     try {
-      // Prepare data for your backend API format
       const itemData = {
         item_name: formData.name.trim(),
         serial_number: formData.serialNumber.trim(),
@@ -241,16 +201,9 @@ const AddItem = () => {
         notes: formData.notes?.trim() || null,
       };
 
-      // Use your addItem function from the hook
       await addItem(itemData);
 
-      setSnackbar({
-        open: true,
-        message: 'Item added successfully!',
-        severity: 'success',
-      });
-
-      // Clear form
+      setSnackbar({ open: true, message: 'Item added successfully!', severity: 'success' });
       setFormData({
         name: '',
         brand: '',
@@ -265,75 +218,45 @@ const AddItem = () => {
         status: 'available',
         condition: 'good',
         purchaseDate: '',
-        purchasePrice: '',
         warrantyPeriod: '',
         deploymentDate: '',
         location: '',
-        description: '',
         notes: '',
       });
 
-      // Navigate back after success
-      setTimeout(() => {
-        navigate('/dashboard');
-      }, 1500);
-
+      setTimeout(() => navigate('/dashboard'), 1500);
     } catch (error) {
-      setSnackbar({
-        open: true,
-        message: 'Error adding item: ' + (error.message || 'Please try again'),
-        severity: 'error',
-      });
+      setSnackbar({ open: true, message: 'Error adding item: ' + (error.message || 'Please try again'), severity: 'error' });
     } finally {
       setLoading(false);
     }
   };
 
-  const handleCancel = () => {
-    navigate('/dashboard');
-  };
-
-  const handleCloseSnackbar = () => {
-    setSnackbar(prev => ({ ...prev, open: false }));
-  };
+  const handleCancel = () => navigate('/dashboard');
+  const handleCloseSnackbar = () => setSnackbar(prev => ({ ...prev, open: false }));
 
   return (
     <Dashboard>
       <ModernContainer>
-        <StyledPaper sx={{ maxWidth: '1000px', mx: 'auto', p: 6 }}>
-          {/* Header */}
-          <Box sx={{ textAlign: 'center', mb: 6 }}>
-            <Box sx={{ 
-              display: 'inline-flex', 
-              p: 2,
-              borderRadius: '12px',
-              background: '#3b82f6',
-              mb: 3,
-            }}>
+        <StyledPaper>
+          <Box sx={{ textAlign: 'center', mb: 4 }}>
+            <Box sx={{ display: 'inline-flex', p: 2, bg: '#3b82f6', borderRadius: '12px', mb: 2 }}>
               <AddIcon sx={{ fontSize: 32, color: 'white' }} />
             </Box>
-            <Typography variant="h4" sx={{ 
-              fontWeight: '700', 
-              color: '#1e293b', 
-              mb: 2,
-            }}>
+            <Typography variant="h4" fontWeight={700} color="#1e293b">
               Add New Item
             </Typography>
-            <Typography variant="body1" sx={{ color: '#64748b' }}>
+            <Typography variant="body1" color="#64748b">
               Enter the details for the new inventory item
             </Typography>
           </Box>
 
           <Box component="form" onSubmit={handleSubmit}>
-            {/* Basic Information */}
-            <SectionHeader color="#3b82f6">
-              <Box className="section-icon">
-                <Inventory2 sx={{ fontSize: 20 }} />
-              </Box>
-              <Typography className="section-title">Basic Information</Typography>
+             {/* Basic Information */}
+            <SectionHeader>
+              <Inventory2 /> Basic Information
             </SectionHeader>
-
-            <Grid container spacing={3} sx={{ mb: 4 }}>
+            <Grid container spacing={2} sx={{ mb: 3 }}>
               <Grid item xs={12} md={6}>
                 <StyledTextField
                   fullWidth
@@ -343,24 +266,35 @@ const AddItem = () => {
                   onChange={handleChange}
                   error={!!errors.name}
                   helperText={errors.name}
+                  placeholder="e.g., keyboard, mouse, monitor"
                   required
                 />
               </Grid>
               <Grid item xs={12} md={6}>
-                <FormControl fullWidth>
+                <FormControl fullWidth error={!!errors.category}>
                   <InputLabel>Category *</InputLabel>
                   <Select
                     name="category"
                     value={formData.category}
                     label="Category *"
                     onChange={handleChange}
-                    sx={{ background: '#f8fafc', borderRadius: '8px' }}
                     required
+                    sx={{
+                      background: '#f8fafc',
+                      borderRadius: '8px',
+                      '& .MuiOutlinedInput-notchedOutline': {
+                        borderColor: '#cbd5e1',
+                      },
+                      '&:hover .MuiOutlinedInput-notchedOutline': {
+                        borderColor: '#94a3b8',
+                      },
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                        borderColor: '#3b82f6',
+                      },
+                    }}
                   >
-                    {categories.map((category) => (
-                      <MenuItem key={category} value={category}>
-                        {category}
-                      </MenuItem>
+                    {categories.map(cat => (
+                      <MenuItem key={cat} value={cat}>{cat}</MenuItem>
                     ))}
                   </Select>
                 </FormControl>
@@ -372,6 +306,7 @@ const AddItem = () => {
                   name="brand"
                   value={formData.brand}
                   onChange={handleChange}
+                  placeholder="e.g., A4TECH, Dell, HP"
                 />
               </Grid>
               <Grid item xs={12} md={4}>
@@ -381,6 +316,7 @@ const AddItem = () => {
                   name="model"
                   value={formData.model}
                   onChange={handleChange}
+                  placeholder="e.g., BK4500, XPS13"
                 />
               </Grid>
               <Grid item xs={12} md={4}>
@@ -392,22 +328,83 @@ const AddItem = () => {
                   onChange={handleChange}
                   error={!!errors.serialNumber}
                   helperText={errors.serialNumber}
+                  placeholder="e.g., PEJFV15AFF600"
                   required
+                  sx={{
+                    '& .MuiOutlinedInput-input': {
+                      fontFamily: 'monospace',
+                      fontSize: '0.9rem',
+                    },
+                  }}
                 />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <FormControl fullWidth>
+                  <InputLabel>Status</InputLabel>
+                  <Select
+                    name="status"
+                    value={formData.status}
+                    label="Status"
+                    onChange={handleChange}
+                    sx={{
+                      background: '#f8fafc',
+                      borderRadius: '8px',
+                      '& .MuiOutlinedInput-notchedOutline': {
+                        borderColor: '#cbd5e1',
+                      },
+                      '&:hover .MuiOutlinedInput-notchedOutline': {
+                        borderColor: '#94a3b8',
+                      },
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                        borderColor: '#3b82f6',
+                      },
+                    }}
+                  >
+                    {statuses.map(status => (
+                      <MenuItem key={status.value} value={status.value}>
+                        {status.label}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <FormControl fullWidth>
+                  <InputLabel>Condition</InputLabel>
+                  <Select
+                    name="condition"
+                    value={formData.condition}
+                    label="Condition"
+                    onChange={handleChange}
+                    sx={{
+                      background: '#f8fafc',
+                      borderRadius: '8px',
+                      '& .MuiOutlinedInput-notchedOutline': {
+                        borderColor: '#cbd5e1',
+                      },
+                      '&:hover .MuiOutlinedInput-notchedOutline': {
+                        borderColor: '#94a3b8',
+                      },
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                        borderColor: '#3b82f6',
+                      },
+                    }}
+                  >
+                    {conditions.map(condition => (
+                      <MenuItem key={condition.value} value={condition.value}>
+                        {condition.label}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
               </Grid>
             </Grid>
 
-            <Divider sx={{ my: 4 }} />
-
             {/* Technical Specifications */}
-            <SectionHeader color="#10b981">
-              <Box className="section-icon">
-                <Build sx={{ fontSize: 20 }} />
-              </Box>
-              <Typography className="section-title">Technical Specifications</Typography>
+            <SectionHeader>
+              <Build /> Technical Specifications
             </SectionHeader>
-
-            <Grid container spacing={3} sx={{ mb: 4 }}>
+            <Grid container spacing={2} sx={{ mb: 3 }}>
               <Grid item xs={12} md={6}>
                 <StyledTextField
                   fullWidth
@@ -455,18 +452,12 @@ const AddItem = () => {
               </Grid>
             </Grid>
 
-            <Divider sx={{ my: 4 }} />
-
-            {/* Dates & Status */}
-            <SectionHeader color="#f59e0b">
-              <Box className="section-icon">
-                <AttachMoney sx={{ fontSize: 20 }} />
-              </Box>
-              <Typography className="section-title">Dates & Status</Typography>
+            {/* Dates & Location */}
+            <SectionHeader>
+              <AttachMoney /> Dates & Location
             </SectionHeader>
-
-            <Grid container spacing={3} sx={{ mb: 4 }}>
-              <Grid item xs={12} md={4}>
+            <Grid container spacing={2} sx={{ mb: 3 }}>
+              <Grid item xs={12} md={3}>
                 <StyledTextField
                   fullWidth
                   label="Purchase Date"
@@ -477,7 +468,7 @@ const AddItem = () => {
                   InputLabelProps={{ shrink: true }}
                 />
               </Grid>
-              <Grid item xs={12} md={4}>
+              <Grid item xs={12} md={3}>
                 <StyledTextField
                   fullWidth
                   label="Deployment Date"
@@ -488,7 +479,7 @@ const AddItem = () => {
                   InputLabelProps={{ shrink: true }}
                 />
               </Grid>
-              <Grid item xs={12} md={4}>
+              <Grid item xs={12} md={3}>
                 <StyledTextField
                   fullWidth
                   label="Warranty Period"
@@ -497,7 +488,7 @@ const AddItem = () => {
                   onChange={handleChange}
                 />
               </Grid>
-              <Grid item xs={12} md={6}>
+              <Grid item xs={12} md={3}>
                 <StyledTextField
                   fullWidth
                   label="Location"
@@ -506,37 +497,13 @@ const AddItem = () => {
                   onChange={handleChange}
                 />
               </Grid>
-              <Grid item xs={12} md={6}>
-                <FormControl fullWidth>
-                  <InputLabel>Condition</InputLabel>
-                  <Select
-                    name="condition"
-                    value={formData.condition}
-                    label="Condition"
-                    onChange={handleChange}
-                    sx={{ background: '#f8fafc', borderRadius: '8px' }}
-                  >
-                    {conditions.map((condition) => (
-                      <MenuItem key={condition.value} value={condition.value}>
-                        {condition.label}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
             </Grid>
 
-            <Divider sx={{ my: 4 }} />
-
             {/* Notes */}
-            <SectionHeader color="#8b5cf6">
-              <Box className="section-icon">
-                <Description sx={{ fontSize: 20 }} />
-              </Box>
-              <Typography className="section-title">Additional Information</Typography>
+            <SectionHeader>
+              <Description /> Additional Information
             </SectionHeader>
-
-            <Grid container spacing={3} sx={{ mb: 4 }}>
+            <Grid container spacing={2} sx={{ mb: 4 }}>
               <Grid item xs={12}>
                 <StyledTextField
                   fullWidth
@@ -545,35 +512,19 @@ const AddItem = () => {
                   value={formData.notes}
                   onChange={handleChange}
                   multiline
-                  rows={4}
+                  rows={3}
                   placeholder="Any additional notes or comments..."
                 />
               </Grid>
             </Grid>
 
-            {/* Action Buttons */}
-            <Box sx={{ 
-              display: 'flex', 
-              gap: 2, 
-              justifyContent: 'center', 
-              pt: 4,
-              borderTop: '1px solid #e2e8f0'
-            }}>
-              <ActionButton
-                variant="outlined"
-                onClick={handleCancel}
-                startIcon={<CancelIcon />}
-                disabled={loading}
-              >
+            {/* Buttons */}
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, pt: 2, borderTop: '1px solid #e2e8f0' }}>
+              <ActionButton variant="outlined" onClick={handleCancel} disabled={loading}>
                 Cancel
               </ActionButton>
-              <ActionButton
-                type="submit"
-                variant="contained"
-                startIcon={<SaveIcon />}
-                disabled={loading}
-              >
-                {loading ? 'Adding Item...' : 'Add Item'}
+              <ActionButton type="submit" variant="contained" disabled={loading} startIcon={loading ? null : <SaveIcon />}>
+                {loading ? 'Adding...' : 'Add Item'}
               </ActionButton>
             </Box>
           </Box>
@@ -585,10 +536,7 @@ const AddItem = () => {
           onClose={handleCloseSnackbar}
           anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
         >
-          <Alert
-            onClose={handleCloseSnackbar}
-            severity={snackbar.severity}
-          >
+          <Alert onClose={handleCloseSnackbar} severity={snackbar.severity}>
             {snackbar.message}
           </Alert>
         </Snackbar>
