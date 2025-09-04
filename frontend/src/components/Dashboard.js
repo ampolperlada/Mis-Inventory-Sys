@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 // MUI Core Components
 import {
   Box,
@@ -386,6 +386,7 @@ const Dashboard = () => {
         purchaseDate: '', warrantyPeriod: '', deploymentDate: '', location: '', notes: ''
       });
       setOpenAddDialog(false);
+      setCurrentView('dashboard');
       showSnackbar('Item added successfully!', 'success');
     } catch (err) {
       console.error('Add item error:', err);
