@@ -179,6 +179,61 @@ router.get('/items/:id', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch item' });
   }
 });
+// Add this to your inventory routes file
+router.put('/items/:id/dispose', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { disposal_reason, disposed_by } = req.body;
+    
+    const pool = require('../config/database').getPool();
+    
+    const [result] = await pool.execute(
+      `UPDATE inventory_items 
+       SET status = 'retired', 
+           disposal_reason = ?, 
+           disposal_date = NOW(), 
+           disposed_by = ?
+       WHERE id = ?`,
+      [disposal_reason, disposed_by || 'System', id]
+    );
+    
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Item not found' });
+    }
+    
+    res.json({ 
+      success: true, 
+      message: 'Item moved to disposal successfully' 
+    });
+  } catch (error) {
+    console.error('Error moving item to disposal:', error);
+    res.status(500).json({ 
+      error: 'Failed to move item to disposal',
+      message: error.message 
+    });
+  }
+});
+
+// Get disposal items
+router.get('/disposal', async (req, res) => {
+  try {
+    const pool = require('../config/database').getPool();
+    
+    const [rows] = await pool.execute(
+      `SELECT * FROM inventory_items 
+       WHERE status = 'retired' 
+       ORDER BY disposal_date DESC`
+    );
+    
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching disposal items:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch disposal items',
+      message: error.message 
+    });
+  }
+});
 
 // Also need to fix the checkout route to store department
 router.post('/items/:id/checkout', async (req, res) => {
