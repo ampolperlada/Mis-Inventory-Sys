@@ -71,6 +71,15 @@ router.post('/items', async (req, res) => {
     });
   } catch (error) {
     console.error('Error adding item:', error);
+    
+    // Handle duplicate serial number error
+    if (error.code === 'ER_DUP_ENTRY' && error.sqlMessage.includes('serialNumber')) {
+      return res.status(400).json({ 
+        error: 'Serial number already exists',
+        message: 'An item with this serial number already exists in the inventory'
+      });
+    }
+    
     res.status(500).json({ 
       error: 'Failed to add item',
       message: error.message 
