@@ -39,6 +39,7 @@ import {
   Add as AddIcon,
   Assignment as AssignIcon,
   Visibility as VisibilityIcon,
+  CheckCircle as ReceiveIcon,
   Laptop,
   Monitor,
   Phone,
@@ -170,7 +171,7 @@ const categoryIcons = {
 const ViewItems = () => {
   const navigate = useNavigate();
   
-  const { items, loading, error, deleteItem, updateItem } = useInventoryItems();
+  const { items, loading, error, deleteItem, updateItem, checkInItem } = useInventoryItems();
   
   const [filteredItems, setFilteredItems] = useState([]);
   const [page, setPage] = useState(0);
@@ -184,19 +185,30 @@ const ViewItems = () => {
   const [selectedItem, setSelectedItem] = useState(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  const [editMode, setEditMode] = useState(false);
 
   const handleSaveItem = async (itemId, updatedData) => {
     try {
       await updateItem(itemId, updatedData);
       console.log('Item updated successfully');
+      
+      // Refresh the selected item data
+      const updatedItem = items.find(item => item.id === itemId);
+      if (updatedItem) {
+        setSelectedItem({ ...updatedItem, ...updatedData });
+      }
     } catch (error) {
       console.error('Error updating item:', error);
       throw error;
     }
   };
 
+  // Filter out retired items from main view
   useEffect(() => {
     let filtered = items || [];
+
+    // FIXED: Exclude retired items from main inventory view
+    filtered = filtered.filter(item => item.status !== 'retired');
 
     if (searchTerm) {
       const search = searchTerm.toLowerCase();
@@ -245,45 +257,71 @@ const ViewItems = () => {
     setSelectedItem(null);
   };
 
+  // FIXED: Edit functionality - opens modal in edit mode
   const handleEdit = () => {
-    console.log('Edit item:', selectedItem);
+    setEditMode(true);
+    setDetailsDialogOpen(true);
     handleMenuClose();
   };
 
-  const handleDelete = (item) => {
-  setSelectedItem(item);
-  setDeleteDialogOpen(true);
-};
+  // FIXED: Disposal functionality with proper backend call
+  const handleDelete = () => {
+    setDeleteDialogOpen(true);
+    handleMenuClose();
+  };
 
-const confirmDelete = async () => {
+  const confirmDelete = async () => {
   try {
-    // Instead of deleteItem, update the item status to 'retired'
+    // Use updateItem to mark as retired (simpler approach)
     const disposalData = {
       status: 'retired',
       disposal_reason: 'Marked for disposal from inventory view',
       disposal_date: new Date().toISOString(),
-      disposed_by: 'System', // or current user
+      disposed_by: 'System User'
     };
     
     await updateItem(selectedItem.id, disposalData);
     setDeleteDialogOpen(false);
     setSelectedItem(null);
     
-    // Optional: Show success message
     console.log('Item moved to disposal successfully');
   } catch (error) {
     console.error('Error moving item to disposal:', error);
+    alert('Failed to move item to disposal: ' + error.message);
   }
 };
 
   const handleViewDetails = () => {
+    setEditMode(false);
     setDetailsDialogOpen(true);
     handleMenuClose();
   };
 
-  const handleAssign = () => {
-    navigate('/assign');
+  // FIXED: Smart assign/receive logic
+  const handleAssignOrReceive = () => {
+    if (selectedItem.status === 'assigned') {
+      // Item is assigned, so this is a receive action
+      handleReceive();
+    } else {
+      // Item is available, so this is an assign action
+      navigate('/assign');
+    }
     handleMenuClose();
+  };
+
+  // FIXED: Receive functionality
+  const handleReceive = async () => {
+    try {
+      await checkInItem(selectedItem.id, {
+        condition: 'good',
+        notes: 'Item returned through ViewItems'
+      });
+      
+      console.log('Item received successfully');
+      handleMenuClose();
+    } catch (error) {
+      console.error('Error receiving item:', error);
+    }
   };
 
   const getCategoryIcon = (category) => {
@@ -438,7 +476,6 @@ const confirmDelete = async () => {
                     <MenuItem value="available">Available</MenuItem>
                     <MenuItem value="assigned">Assigned</MenuItem>
                     <MenuItem value="maintenance">Maintenance</MenuItem>
-                    <MenuItem value="retired">Retired</MenuItem>
                   </StyledSelect>
                 </FormControl>
               </Grid>
@@ -505,7 +542,7 @@ const confirmDelete = async () => {
                     <TableCell sx={{ fontWeight: '600', color: '#374151' }}>Category</TableCell>
                     <TableCell sx={{ fontWeight: '600', color: '#374151' }}>Serial Number</TableCell>
                     <TableCell sx={{ fontWeight: '600', color: '#374151' }}>Status</TableCell>
-                  <TableCell sx={{ fontWeight: '600', color: '#374151' }}>Assigned To</TableCell>
+                    <TableCell sx={{ fontWeight: '600', color: '#374151' }}>Assigned To</TableCell>
                     <TableCell sx={{ fontWeight: '600', color: '#374151' }}>Location</TableCell>
                     <TableCell sx={{ fontWeight: '600', color: '#374151' }}>Actions</TableCell>
                   </TableRow>
@@ -628,6 +665,7 @@ const confirmDelete = async () => {
             />
           </StyledPaper>
 
+          {/* FIXED: Smart Menu with dynamic text */}
           <Menu
             anchorEl={anchorEl}
             open={Boolean(anchorEl)}
@@ -648,16 +686,26 @@ const confirmDelete = async () => {
               <EditIcon fontSize="small" sx={{ color: '#10b981' }} />
               Edit Item
             </MenuItem>
-            <MenuItem onClick={handleAssign} sx={{ gap: 2 }}>
-              <AssignIcon fontSize="small" sx={{ color: '#f59e0b' }} />
-              Assign Item
+            <MenuItem onClick={handleAssignOrReceive} sx={{ gap: 2 }}>
+              {selectedItem?.status === 'assigned' ? (
+                <>
+                  <ReceiveIcon fontSize="small" sx={{ color: '#059669' }} />
+                  Receive Item
+                </>
+              ) : (
+                <>
+                  <AssignIcon fontSize="small" sx={{ color: '#f59e0b' }} />
+                  Assign Item
+                </>
+              )}
             </MenuItem>
             <MenuItem onClick={handleDelete} sx={{ gap: 2, color: '#ef4444' }}>
               <DeleteIcon fontSize="small" />
-              Delete Item
+              Move to Disposal
             </MenuItem>
           </Menu>
 
+          {/* FIXED: Updated dialog text for disposal */}
           <Dialog
             open={deleteDialogOpen}
             onClose={() => setDeleteDialogOpen(false)}
@@ -667,10 +715,11 @@ const confirmDelete = async () => {
               }
             }}
           >
-            <DialogTitle sx={{ fontWeight: '600' }}>Confirm Delete</DialogTitle>
+            <DialogTitle sx={{ fontWeight: '600' }}>Move to Disposal</DialogTitle>
             <DialogContent>
               <Typography>
-                Are you sure you want to delete "{selectedItem?.item_name}"? This action cannot be undone.
+                Are you sure you want to move "{selectedItem?.item_name}" to disposal? 
+                This item will be marked as retired and moved to the disposal section.
               </Typography>
             </DialogContent>
             <DialogActions sx={{ p: 3, gap: 1 }}>
@@ -684,23 +733,27 @@ const confirmDelete = async () => {
                 variant="contained" 
                 onClick={confirmDelete}
                 sx={{
-                  background: '#ef4444',
+                  background: '#f59e0b',
                   '&:hover': {
-                    background: '#dc2626',
+                    background: '#d97706',
                   }
                 }}
               >
-                Delete
+                Move to Disposal
               </ActionButton>
             </DialogActions>
           </Dialog>
 
+          {/* FIXED: Pass edit mode to modal */}
           <ItemDetailsModal
             open={detailsDialogOpen}
-            onClose={() => setDetailsDialogOpen(false)}
+            onClose={() => {
+              setDetailsDialogOpen(false);
+              setEditMode(false);
+            }}
             item={selectedItem}
             onSave={handleSaveItem}
-            mode="view"
+            mode={editMode ? 'edit' : 'view'}
           />
         </Box>
       </ModernContainer>
