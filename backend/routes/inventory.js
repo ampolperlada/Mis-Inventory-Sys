@@ -33,10 +33,14 @@ router.post('/items', async (req, res) => {
       brand,
       model,
       category,
+      hostname,
       operating_system,
       processor,
       ram,
       storage,
+      purchase_date,
+      warranty_period,
+      deployment_date,
       location,
       status,
       condition_status,
@@ -47,9 +51,10 @@ router.post('/items', async (req, res) => {
     const [result] = await pool.execute(`
       INSERT INTO inventory_items (
         item_name, serialNumber, brand, model, category, 
-        specs, \`condition\`, status, location, 
-        quantity, notes
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        specs, \`condition\`, status, location, quantity, notes,
+        hostname, operating_system, processor, ram, storage,
+        purchase_date, warranty_period, deployment_date
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
       item_name,
       serial_number,
@@ -61,7 +66,15 @@ router.post('/items', async (req, res) => {
       status || 'AVAILABLE',
       location,
       quantity || 1,
-      notes
+      notes,
+      hostname,
+      operating_system,
+      processor,
+      ram,
+      storage,
+      purchase_date,
+      warranty_period,
+      deployment_date
     ]);
 
     res.status(201).json({ 
