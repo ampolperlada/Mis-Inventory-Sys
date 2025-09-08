@@ -1,43 +1,99 @@
-// backend/routes/inventory.js - Fixed GET items route
 const express = require('express');
 const router = express.Router();
 const { getPool } = require('../config/database');
 
-// GET /api/inventory/items - Get all items with filtering (FIXED)
+// POST /api/inventory/items - Add new item
+router.post('/items', async (req, res) => {
+  try {
+    const pool = getPool();
+    const {
+      item_name,
+      serial_number,
+      brand,
+      model,
+      category,
+      hostname,
+      operating_system,
+      processor,
+      ram,
+      storage,
+      purchase_date,
+      warranty_period,
+      deployment_date,
+      location,
+      status,
+      condition_status,
+      quantity,
+      notes
+    } = req.body;
+
+    const [result] = await pool.execute(`
+      INSERT INTO inventory_items (
+        item_name, serialNumber, brand, model, category, 
+        hostname, specs, \`condition\`, status, location, 
+        quantity, notes
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `, [
+      item_name,
+      serial_number,
+      brand,
+      model,
+      category?.toUpperCase() || 'OTHER',
+      hostname,
+      `OS: ${operating_system || 'N/A'}, CPU: ${processor || 'N/A'}, RAM: ${ram || 'N/A'}, Storage: ${storage || 'N/A'}`,
+      condition_status || 'Good',
+      status?.toUpperCase() || 'AVAILABLE',
+      location,
+      quantity || 1,
+      notes
+    ]);
+
+    res.status(201).json({ 
+      success: true, 
+      id: result.insertId,
+      message: 'Item added successfully' 
+    });
+  } catch (error) {
+    console.error('Error adding item:', error);
+    res.status(500).json({ 
+      error: 'Failed to add item',
+      message: error.message 
+    });
+  }
+});
+
+// GET /api/inventory/items - Get all items with filtering
 router.get('/items', async (req, res) => {
   try {
     const pool = getPool();
     const { status, category, search, page = 1, limit = 50 } = req.query;
     
-    // FIXED: Include assigned_to and other assignment fields in SELECT
-    // In routes/inventory.js, update the SELECT query to match database fields:
-let query = `
-  SELECT 
-    i.id,
-    i.item_name,
-    i.brand,
-    i.model,
-    i.serialNumber as serial_number,  -- Map to frontend expectation
-    i.category,
-    i.status,
-    i.condition as condition_status,  -- Map to frontend expectation  
-    i.location,
-    i.quantity,
-    i.notes,
-    i.assigned_to,
-    i.assigned_email,
-    i.assigned_phone,
-    i.assignment_date,
-    i.department,
-    i.createdAt as created_at,
-    i.updatedAt as updated_at
-  FROM inventory_items i
-  WHERE 1=1
-`;
+    let query = `
+      SELECT 
+        i.id,
+        i.item_name,
+        i.brand,
+        i.model,
+        i.serialNumber as serial_number,
+        i.category,
+        i.status,
+        i.condition as condition_status,
+        i.location,
+        i.quantity,
+        i.notes,
+        i.assigned_to,
+        i.assigned_email,
+        i.assigned_phone,
+        i.assignment_date,
+        i.department,
+        i.createdAt as created_at,
+        i.updatedAt as updated_at
+      FROM inventory_items i
+      WHERE 1=1
+    `;
     
     const params = [];
     
-    // Add filtering conditions
     if (status) {
       query += ' AND i.status = ?';
       params.push(status);
@@ -59,7 +115,6 @@ let query = `
     
     const [items] = await pool.execute(query, params);
     
-    // FIXED: Map database fields to what frontend expects
     const mappedItems = items.map(item => ({
       id: item.id,
       item_name: item.item_name,
@@ -72,16 +127,15 @@ let query = `
       location: item.location,
       quantity: item.quantity,
       notes: item.notes,
-      assigned_to: item.assigned_to || null,           // ✅ Now properly mapped
-      department: item.department || null,             // ✅ Add department
-      assigned_email: item.assigned_email || null,     // ✅ Add email
-      assigned_phone: item.assigned_phone || null,     // ✅ Add phone
-      assignment_date: item.assignment_date || null,   // ✅ Add assignment date
+      assigned_to: item.assigned_to || null,
+      department: item.department || null,
+      assigned_email: item.assigned_email || null,
+      assigned_phone: item.assigned_phone || null,
+      assignment_date: item.assignment_date || null,
       created_at: item.createdAt,
       updated_at: item.updatedAt
     }));
     
-    // Get total count for pagination
     let countQuery = `SELECT COUNT(*) as total FROM inventory_items i WHERE 1=1`;
     const countParams = [];
     
@@ -119,13 +173,12 @@ let query = `
   }
 });
 
-// GET /api/inventory/items/:id - Get single item (FIXED)
+// GET /api/inventory/items/:id - Get single item
 router.get('/items/:id', async (req, res) => {
   try {
     const pool = getPool();
     const { id } = req.params;
     
-    // FIXED: Include assigned_to and other assignment fields
     const [items] = await pool.execute(`
       SELECT 
         i.id,
@@ -153,7 +206,6 @@ router.get('/items/:id', async (req, res) => {
       return res.status(404).json({ error: 'Item not found' });
     }
     
-    // FIXED: Map database fields to what frontend expects
     const item = items[0];
     const mappedItem = {
       id: item.id,
@@ -167,10 +219,10 @@ router.get('/items/:id', async (req, res) => {
       location: item.location,
       quantity: item.quantity,
       notes: item.notes,
-      assigned_to: item.assigned_to || null,           // ✅ Now properly mapped
-      assigned_email: item.assigned_email || null,     // ✅ Add email
-      assigned_phone: item.assigned_phone || null,     // ✅ Add phone
-      assignment_date: item.assignment_date || null,   // ✅ Add assignment date
+      assigned_to: item.assigned_to || null,
+      assigned_email: item.assigned_email || null,
+      assigned_phone: item.assigned_phone || null,
+      assignment_date: item.assignment_date || null,
       created_at: item.createdAt,
       updated_at: item.updatedAt
     };
@@ -181,48 +233,82 @@ router.get('/items/:id', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch item' });
   }
 });
-// Add this to your inventory routes file
-router.put('/items/:id/dispose', async (req, res) => {
+
+// POST /api/inventory/items/:id/checkin - Receive item back
+router.post('/items/:id/checkin', async (req, res) => {
   try {
+    const pool = getPool();
     const { id } = req.params;
-    const { disposal_reason, disposed_by } = req.body;
-    
-    const pool = require('../config/database').getPool();
-    
-    const [result] = await pool.execute(
-      `UPDATE inventory_items 
-       SET status = 'retired', 
-           disposal_reason = ?, 
-           disposal_date = NOW(), 
-           disposed_by = ?
-       WHERE id = ?`,
-      [disposal_reason, disposed_by || 'System', id]
-    );
-    
+    const { condition, notes } = req.body;
+
+    const [result] = await pool.execute(`
+      UPDATE inventory_items 
+      SET status = 'AVAILABLE',
+          \`condition\` = ?,
+          assigned_to = NULL,
+          assigned_email = NULL,
+          assigned_phone = NULL,
+          department = NULL,
+          assignment_date = NULL,
+          notes = CONCAT(COALESCE(notes, ''), '\nReturned: ', COALESCE(?, '')),
+          updatedAt = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `, [condition || 'Good', notes || '', id]);
+
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: 'Item not found' });
     }
-    
+
     res.json({ 
       success: true, 
-      message: 'Item moved to disposal successfully' 
+      message: 'Item checked in successfully' 
     });
   } catch (error) {
-    console.error('Error moving item to disposal:', error);
+    console.error('Error checking in item:', error);
     res.status(500).json({ 
-      error: 'Failed to move item to disposal',
+      error: 'Failed to check in item',
       message: error.message 
     });
   }
 });
 
+// POST /api/inventory/items/:id/checkout - Assign item
+router.post('/items/:id/checkout', async (req, res) => {
+  try {
+    const pool = getPool();
+    const { id } = req.params;
+    const { assigned_to_name, department, email, phone } = req.body;
+    
+    const [result] = await pool.execute(`
+      UPDATE inventory_items 
+      SET status = 'ASSIGNED',
+          assigned_to = ?,
+          department = ?,
+          assigned_email = ?,
+          assigned_phone = ?,
+          assignment_date = CURRENT_TIMESTAMP,
+          updatedAt = CURRENT_TIMESTAMP
+      WHERE id = ? AND status = 'AVAILABLE'
+    `, [assigned_to_name, department, email, phone, id]);
+    
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Item not found or not available' });
+    }
+    
+    res.json({ success: true, message: 'Item assigned successfully' });
+  } catch (error) {
+    console.error('Error assigning item:', error);
+    res.status(500).json({ error: 'Failed to assign item' });
+  }
+});
+
+// PUT /api/inventory/items/:id - Update item
 router.put('/items/:id', async (req, res) => {
   try {
     const pool = getPool();
     const { id } = req.params;
     const updateData = req.body;
     
-    // Map frontend field names to database field names
     const fieldMap = {
       'serial_number': 'serialNumber',
       'condition_status': 'condition',
@@ -270,10 +356,45 @@ router.put('/items/:id', async (req, res) => {
   }
 });
 
-// Get disposal items
+// PUT /api/inventory/items/:id/dispose - Dispose item
+router.put('/items/:id/dispose', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { disposal_reason, disposed_by } = req.body;
+    
+    const pool = getPool();
+    
+    const [result] = await pool.execute(
+      `UPDATE inventory_items 
+       SET status = 'retired', 
+           disposal_reason = ?, 
+           disposal_date = NOW(), 
+           disposed_by = ?
+       WHERE id = ?`,
+      [disposal_reason, disposed_by || 'System', id]
+    );
+    
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Item not found' });
+    }
+    
+    res.json({ 
+      success: true, 
+      message: 'Item moved to disposal successfully' 
+    });
+  } catch (error) {
+    console.error('Error moving item to disposal:', error);
+    res.status(500).json({ 
+      error: 'Failed to move item to disposal',
+      message: error.message 
+    });
+  }
+});
+
+// GET /api/inventory/disposal - Get disposal items
 router.get('/disposal', async (req, res) => {
   try {
-    const pool = require('../config/database').getPool();
+    const pool = getPool();
     
     const [rows] = await pool.execute(
       `SELECT * FROM inventory_items 
@@ -288,83 +409,6 @@ router.get('/disposal', async (req, res) => {
       error: 'Failed to fetch disposal items',
       message: error.message 
     });
-  }
-});
-
-// Also need to fix the checkout route to store department
-router.post('/items/:id/checkout', async (req, res) => {
-  try {
-    const pool = getPool();
-    const { id } = req.params;
-    
-    console.log('📥 Assignment request body:', req.body);
-    
-    const {
-      assigned_to_name, 
-      assignedTo,  
-      department, 
-      email, 
-      phone,
-      assignment_date = new Date().toISOString()
-    } = req.body;
-    
-    const assignedToName = assigned_to_name || assignedTo;
-    
-    if (!assignedToName) {
-      console.log('❌ Missing assigned to name');
-      return res.status(400).json({ error: 'Assigned to name is required' });
-    }
-    
-    // First, add the missing columns if they don't exist
-    try {
-      await pool.execute(`
-        ALTER TABLE inventory_items 
-        ADD COLUMN IF NOT EXISTS assigned_to VARCHAR(255),
-        ADD COLUMN IF NOT EXISTS department VARCHAR(255),
-        ADD COLUMN IF NOT EXISTS assigned_email VARCHAR(255),
-        ADD COLUMN IF NOT EXISTS assigned_phone VARCHAR(50),
-        ADD COLUMN IF NOT EXISTS assignment_date DATETIME
-      `);
-    } catch (alterError) {
-      console.log('Columns may already exist:', alterError.message);
-    }
-    
-    // FIXED: Update item with assignment details including department
-    const [updateResult] = await pool.execute(`
-      UPDATE inventory_items 
-      SET status = ?, 
-          assigned_to = ?, 
-          department = ?,
-          assigned_email = ?, 
-          assigned_phone = ?,
-          assignment_date = ?,
-          updatedAt = CURRENT_TIMESTAMP
-      WHERE id = ? AND status = ?
-    `, [
-      'ASSIGNED', 
-      assignedToName, 
-      department || null,
-      email || null, 
-      phone || null,
-      assignment_date,
-      id, 
-      'AVAILABLE'
-    ]);
-    
-    if (updateResult.affectedRows === 0) {
-      return res.status(404).json({ error: 'Item not found or not available for assignment' });
-    }
-    
-    // Fetch updated item with all fields
-    const [item] = await pool.execute(`
-      SELECT * FROM inventory_items WHERE id = ?
-    `, [id]);
-    
-    console.log(`✅ Assigned item ID: ${id} to ${assignedToName} (${department || 'No dept'})`);
-    res.json(item[0]);
-  } catch (error) {
-    console.error('❌ Error assigning item:', error);
-    res.status(500).json({ error: 'Failed to assign item: ' + error.message });
   }
 });
 
