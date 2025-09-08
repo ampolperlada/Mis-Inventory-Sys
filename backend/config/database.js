@@ -1,4 +1,4 @@
-// backend/config/database.js - Environment-based configuration
+// backend/config/database.js - Clean Schema-based configuration
 const mysql = require('mysql2/promise');
 require('dotenv').config();
 
@@ -14,6 +14,134 @@ const dbConfig = {
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
+};
+
+// Complete table schemas
+const schemas = {
+  categories: `
+    CREATE TABLE IF NOT EXISTS categories (
+      id INT PRIMARY KEY AUTO_INCREMENT,
+      name VARCHAR(100) NOT NULL UNIQUE,
+      description TEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `,
+  
+  users: `
+    CREATE TABLE IF NOT EXISTS users (
+      id INT PRIMARY KEY AUTO_INCREMENT,
+      firstName VARCHAR(100) NOT NULL,
+      lastName VARCHAR(100) NOT NULL,
+      email VARCHAR(255) UNIQUE NOT NULL,
+      password VARCHAR(255) NOT NULL,
+      role ENUM('admin', 'user') DEFAULT 'user',
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )
+  `,
+  
+  inventory_items: `
+    CREATE TABLE IF NOT EXISTS inventory_items (
+      id INT PRIMARY KEY AUTO_INCREMENT,
+      
+      -- Basic Information
+      item_name VARCHAR(255) NOT NULL,
+      serialNumber VARCHAR(191) UNIQUE NOT NULL,
+      brand VARCHAR(191) NULL,
+      model VARCHAR(191) NULL,
+      category VARCHAR(255) NULL DEFAULT 'Other',
+      status ENUM('available','assigned','maintenance','retired') NOT NULL DEFAULT 'available',
+      \`condition\` VARCHAR(191) NOT NULL DEFAULT 'good',
+      location VARCHAR(191) NULL,
+      quantity INT(11) NOT NULL DEFAULT 1,
+      notes TEXT NULL,
+      
+      -- Technical Specifications
+      hostname VARCHAR(255) NULL,
+      operating_system VARCHAR(255) NULL,
+      processor VARCHAR(255) NULL,
+      ram VARCHAR(100) NULL,
+      storage VARCHAR(100) NULL,
+      specs TEXT NULL,
+      
+      -- Purchase & Warranty
+      purchase_date DATE NULL,
+      warranty_period VARCHAR(100) NULL,
+      deployment_date DATE NULL,
+      
+      -- Assignment Information
+      assigned_to VARCHAR(255) NULL,
+      assigned_email VARCHAR(255) NULL,
+      assigned_phone VARCHAR(50) NULL,
+      assignment_date DATETIME NULL,
+      department VARCHAR(255) NULL,
+      
+      -- Disposal Information
+      disposal_reason TEXT NULL,
+      disposal_date DATETIME NULL,
+      disposed_by VARCHAR(255) NULL,
+      
+      -- Timestamps
+      createdAt DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+      updatedAt DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+      
+      -- Legacy fields (can be removed later)
+      category_id INT NULL,
+      created_at DATETIME NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      created_by INT(11) NULL,
+      updated_by INT(11) NULL,
+      
+      -- Indexes
+      KEY category_id (category_id),
+      KEY created_by (created_by),
+      KEY updated_by (updated_by),
+      KEY status_idx (status),
+      KEY category_idx (category),
+      KEY assigned_to_idx (assigned_to)
+    )
+  `,
+  
+  item_assignments: `
+    CREATE TABLE IF NOT EXISTS item_assignments (
+      id INT PRIMARY KEY AUTO_INCREMENT,
+      item_id INT NOT NULL,
+      assigned_to VARCHAR(255) NOT NULL,
+      assigned_by VARCHAR(255) NULL,
+      department VARCHAR(255) NULL,
+      email VARCHAR(255) NULL,
+      phone VARCHAR(50) NULL,
+      assignment_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+      return_date DATETIME NULL,
+      notes TEXT NULL,
+      status ENUM('active', 'returned') DEFAULT 'active',
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      
+      FOREIGN KEY (item_id) REFERENCES inventory_items(id) ON DELETE CASCADE,
+      KEY item_id_idx (item_id),
+      KEY status_idx (status)
+    )
+  `,
+  
+  activity_logs: `
+    CREATE TABLE IF NOT EXISTS activity_logs (
+      id INT PRIMARY KEY AUTO_INCREMENT,
+      item_id INT NULL,
+      action VARCHAR(100) NOT NULL,
+      description TEXT NULL,
+      user_id INT NULL,
+      user_name VARCHAR(255) NULL,
+      old_values JSON NULL,
+      new_values JSON NULL,
+      ip_address VARCHAR(45) NULL,
+      user_agent TEXT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      
+      KEY item_id_idx (item_id),
+      KEY action_idx (action),
+      KEY created_at_idx (created_at)
+    )
+  `
 };
 
 // Connect to database and create pool
@@ -69,89 +197,32 @@ const getPool = () => {
   return pool;
 };
 
-// Initialize database tables and default data
+// Initialize database tables with complete schemas
 const initializeDatabase = async () => {
   try {
     const pool = getPool();
     
-    console.log('🔨 Initializing database tables...');
+    console.log('🔨 Creating database tables with complete schemas...');
     
-    // Create categories table
-    await pool.execute(`
-      CREATE TABLE IF NOT EXISTS categories (
-        id INT PRIMARY KEY AUTO_INCREMENT,
-        name VARCHAR(100) NOT NULL UNIQUE,
-        description TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-
-    // Create users table
-    await pool.execute(`
-      CREATE TABLE IF NOT EXISTS users (
-        id INT PRIMARY KEY AUTO_INCREMENT,
-        firstName VARCHAR(100) NOT NULL,
-        lastName VARCHAR(100) NOT NULL,
-        email VARCHAR(255) UNIQUE NOT NULL,
-        password VARCHAR(255) NOT NULL,
-        role ENUM('admin', 'user') DEFAULT 'user',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-      )
-    `);
-
-    // Create inventory_items table
-    await pool.execute(`
-      CREATE TABLE IF NOT EXISTS inventory_items (
-        id INT PRIMARY KEY AUTO_INCREMENT,
-        item_name VARCHAR(255) NOT NULL,
-        serialNumber VARCHAR(191) UNIQUE NOT NULL,
-        brand VARCHAR(191) NULL,
-        model VARCHAR(191) NULL,
-        category ENUM('DESKTOP','LAPTOP','MONITOR','KEYBOARD','MOUSE','PRINTER','OTHER') NOT NULL DEFAULT 'OTHER',
-        specs VARCHAR(191) NULL,
-        \`condition\` VARCHAR(191) NOT NULL DEFAULT 'Good',
-        status ENUM('AVAILABLE','ASSIGNED','MAINTENANCE') NOT NULL DEFAULT 'AVAILABLE',
-        location VARCHAR(191) NULL,
-        quantity INT(11) NOT NULL DEFAULT 1,
-        notes VARCHAR(191) NULL,
-        createdAt DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
-        updatedAt DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
-        category_id INT NULL,
-        created_at DATETIME NULL DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        created_by INT(11) NULL,
-        updated_by INT(11) NULL,
-        KEY category_id (category_id),
-        KEY created_by (created_by),
-        KEY updated_by (updated_by)
-      )
-    `);
+    // Create tables in order (respecting foreign key dependencies)
+    const tableOrder = ['categories', 'users', 'inventory_items', 'item_assignments', 'activity_logs'];
+    
+    for (const tableName of tableOrder) {
+      console.log(`📋 Creating table: ${tableName}`);
+      await pool.execute(schemas[tableName]);
+    }
 
     console.log('📋 Database tables created successfully');
 
-    // In initializeDatabase function, after creating inventory_items table, add:
-await pool.execute(`
-  ALTER TABLE inventory_items 
-  ADD COLUMN IF NOT EXISTS assigned_to VARCHAR(255),
-  ADD COLUMN IF NOT EXISTS assigned_email VARCHAR(255),
-  ADD COLUMN IF NOT EXISTS assigned_phone VARCHAR(50),
-  ADD COLUMN IF NOT EXISTS assignment_date DATETIME,
-  ADD COLUMN IF NOT EXISTS department VARCHAR(255),
-  ADD COLUMN IF NOT EXISTS disposal_reason TEXT,
-  ADD COLUMN IF NOT EXISTS disposal_date DATETIME,
-  ADD COLUMN IF NOT EXISTS disposed_by VARCHAR(255)
-`);
-
     // Insert default categories
     const categories = [
-      ['DESKTOP', 'Desktop computers'],
-      ['LAPTOP', 'Laptop computers'],
-      ['MONITOR', 'Computer monitors'],
-      ['KEYBOARD', 'Keyboards'],
-      ['MOUSE', 'Computer mice'],
-      ['PRINTER', 'Printers and scanners'],
-      ['OTHER', 'Other equipment']
+      ['Desktop', 'Desktop computers'],
+      ['Laptop', 'Laptop computers'],
+      ['Monitor', 'Computer monitors'],
+      ['Network Equipment', 'Routers, switches, and network devices'],
+      ['Mobile Device', 'Phones, tablets, and mobile devices'],
+      ['Accessories', 'Keyboards, mice, and accessories'],
+      ['Other', 'Other equipment']
     ];
 
     for (const [name, description] of categories) {
@@ -160,11 +231,36 @@ await pool.execute(`
       `, [name, description]);
     }
 
-    // Create default admin user
-  console.log('✅ Database tables initialized successfully');
+    console.log('✅ Database tables initialized successfully');
     
   } catch (error) {
     console.error('❌ Error initializing database:', error);
+    throw error;
+  }
+};
+
+// Drop and recreate all tables (USE WITH CAUTION - DEVELOPMENT ONLY)
+const resetDatabase = async () => {
+  try {
+    const pool = getPool();
+    
+    console.log('⚠️  RESETTING DATABASE - ALL DATA WILL BE LOST');
+    
+    // Drop tables in reverse order (respecting foreign key dependencies)
+    const dropOrder = ['activity_logs', 'item_assignments', 'inventory_items', 'users', 'categories'];
+    
+    for (const tableName of dropOrder) {
+      await pool.execute(`DROP TABLE IF EXISTS ${tableName}`);
+      console.log(`🗑️  Dropped table: ${tableName}`);
+    }
+    
+    // Recreate tables
+    await initializeDatabase();
+    
+    console.log('✅ Database reset completed');
+    
+  } catch (error) {
+    console.error('❌ Error resetting database:', error);
     throw error;
   }
 };
@@ -178,9 +274,24 @@ const closeDatabase = async () => {
   }
 };
 
+// Get table schema information
+const getTableSchema = async (tableName) => {
+  try {
+    const pool = getPool();
+    const [columns] = await pool.execute(`DESCRIBE ${tableName}`);
+    return columns;
+  } catch (error) {
+    console.error(`Error getting schema for table ${tableName}:`, error);
+    throw error;
+  }
+};
+
 module.exports = {
   connectDatabase,
   getPool,
   initializeDatabase,
-  closeDatabase
+  resetDatabase,
+  closeDatabase,
+  getTableSchema,
+  schemas
 };

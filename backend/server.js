@@ -1,7 +1,7 @@
-// backend/server.js - Network accessible version
+// backend/server.js - Network accessible version with schema support
 const express = require('express');
 const cors = require('cors');
-const { connectDatabase, initializeDatabase } = require('./config/database');
+const { connectDatabase, initializeDatabase, resetDatabase } = require('./config/database');
 const inventoryRoutes = require('./routes/inventory');
 const authRoutes = require('./routes/auth');
 
@@ -57,41 +57,52 @@ app.get('/', (req, res) => {
   });
 });
 
-// ADD THIS: Stats endpoint for dashboard
+// Stats endpoint for dashboard - Updated for new schema
 app.get('/api/inventory/stats', async (req, res) => {
   try {
     const pool = require('./config/database').getPool();
     
-    // Get total count
-    const [totalResult] = await pool.execute('SELECT COUNT(*) as total FROM inventory_items');
+    // Get total count (exclude retired items from main stats)
+    const [totalResult] = await pool.execute(
+      'SELECT COUNT(*) as total FROM inventory_items WHERE status != ?', 
+      ['retired']
+    );
     const totalItems = totalResult[0].total;
     
     // Get available count
     const [availableResult] = await pool.execute(
-      'SELECT COUNT(*) as count FROM inventory_items WHERE status = ? OR status IS NULL', 
-      ['AVAILABLE']
+      'SELECT COUNT(*) as count FROM inventory_items WHERE status = ?', 
+      ['available']
     );
     const available = availableResult[0].count;
     
     // Get assigned count
     const [assignedResult] = await pool.execute(
       'SELECT COUNT(*) as count FROM inventory_items WHERE status = ?', 
-      ['ASSIGNED']
+      ['assigned']
     );
     const assigned = assignedResult[0].count;
     
     // Get maintenance count
     const [maintenanceResult] = await pool.execute(
       'SELECT COUNT(*) as count FROM inventory_items WHERE status = ?', 
-      ['MAINTENANCE']
+      ['maintenance']
     );
     const maintenance = maintenanceResult[0].count;
+    
+    // Get retired count for disposal section
+    const [retiredResult] = await pool.execute(
+      'SELECT COUNT(*) as count FROM inventory_items WHERE status = ?', 
+      ['retired']
+    );
+    const retired = retiredResult[0].count;
     
     res.json({
       totalItems,
       available,
       assigned,
-      maintenance
+      maintenance,
+      retired
     });
   } catch (error) {
     console.error('Error fetching stats:', error);
@@ -101,6 +112,42 @@ app.get('/api/inventory/stats', async (req, res) => {
     });
   }
 });
+
+// Database management endpoints (development only)
+if (process.env.NODE_ENV === 'development') {
+  // Reset database endpoint (DANGEROUS - development only)
+  app.post('/api/admin/reset-database', async (req, res) => {
+    try {
+      console.log('⚠️  Database reset requested via API');
+      await resetDatabase();
+      res.json({ 
+        success: true, 
+        message: 'Database reset completed successfully' 
+      });
+    } catch (error) {
+      console.error('Error resetting database:', error);
+      res.status(500).json({ 
+        error: 'Failed to reset database',
+        message: error.message 
+      });
+    }
+  });
+
+  // Get database schema endpoint
+  app.get('/api/admin/schema/:table', async (req, res) => {
+    try {
+      const { getTableSchema } = require('./config/database');
+      const schema = await getTableSchema(req.params.table);
+      res.json({ table: req.params.table, schema });
+    } catch (error) {
+      console.error('Error getting schema:', error);
+      res.status(500).json({ 
+        error: 'Failed to get table schema',
+        message: error.message 
+      });
+    }
+  });
+}
 
 // 404 handler for undefined routes
 app.use('*', (req, res) => {
@@ -115,7 +162,9 @@ app.use('*', (req, res) => {
       'GET /api/inventory/stats',
       'POST /api/inventory/items',
       'PUT /api/inventory/items/:id',
-      'DELETE /api/inventory/items/:id'
+      'DELETE /api/inventory/items/:id',
+      'POST /api/inventory/items/:id/checkout',
+      'POST /api/inventory/items/:id/checkin'
     ]
   });
 });
@@ -130,7 +179,6 @@ app.use((err, req, res, next) => {
   });
 });
 
-
 // Start server
 const startServer = async () => {
   try {
@@ -138,9 +186,18 @@ const startServer = async () => {
     await connectDatabase();
     console.log('✅ Database connected successfully');
     
-    // Initialize database (create tables, default data)
-    await initializeDatabase();
-    console.log('✅ Database initialized successfully');
+    // Choose database initialization strategy
+    const shouldReset = process.env.RESET_DB === 'true' || process.argv.includes('--reset-db');
+    
+    if (shouldReset) {
+      console.log('⚠️  RESETTING DATABASE (--reset-db flag detected)');
+      await resetDatabase();
+      console.log('✅ Database reset and initialized with new schema');
+    } else {
+      // Normal initialization (create tables if they don't exist)
+      await initializeDatabase();
+      console.log('✅ Database initialized successfully');
+    }
     
     // Start the server on all network interfaces
     app.listen(PORT, HOST, () => {
@@ -151,6 +208,22 @@ const startServer = async () => {
       console.log(`🔗 Network API URL: http://192.168.0.138:${PORT}/api`);
       console.log(`🏥 Health Check: http://192.168.0.138:${PORT}/health`);
       console.log(`📱 Officemates can access at: http://192.168.0.138:${PORT}`);
+      
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🛠️  Development mode: Database admin endpoints available');
+        console.log(`   Reset DB: POST http://192.168.0.138:${PORT}/api/admin/reset-database`);
+        console.log(`   View Schema: GET http://192.168.0.138:${PORT}/api/admin/schema/inventory_items`);
+      }
+      
+      if (shouldReset) {
+        console.log('');
+        console.log('💡 Database was reset. All existing data has been cleared.');
+        console.log('💡 You can now add items with the complete schema including:');
+        console.log('   - Technical specifications (hostname, OS, processor, RAM, storage)');
+        console.log('   - Purchase & warranty information (dates, warranty period)');
+        console.log('   - Assignment tracking');
+        console.log('   - Activity logging');
+      }
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error);
