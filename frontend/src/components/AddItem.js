@@ -180,26 +180,26 @@ const AddItem = () => {
 
     setLoading(true);
     try {
-      const itemData = {
-        item_name: formData.name.trim(),
-        serial_number: formData.serialNumber.trim(),
-        brand: formData.brand?.trim() || null,
-        model: formData.model?.trim() || null,
-        category: formData.category,
-        hostname: formData.hostname?.trim() || null,
-        operating_system: formData.operatingSystem?.trim() || null,
-        processor: formData.processor?.trim() || null,
-        ram: formData.ram?.trim() || null,
-        storage: formData.storage?.trim() || null,
-        purchase_date: formData.purchaseDate || null,
-        warranty_period: formData.warrantyPeriod?.trim() || null,
-        deployment_date: formData.deploymentDate || null,
-        location: formData.location?.trim() || null,
-        status: formData.status,
-        condition_status: formData.condition,
-        quantity: 1,
-        notes: formData.notes?.trim() || null,
-      };
+  const itemData = {
+  item_name: formData.name.trim(),
+  serial_number: formData.serialNumber.trim(), // This is correct
+  brand: formData.brand?.trim() || null,
+  model: formData.model?.trim() || null,
+  category: formData.category,
+  hostname: formData.hostname?.trim() || null,
+  operating_system: formData.operatingSystem?.trim() || null,
+  processor: formData.processor?.trim() || null,
+  ram: formData.ram?.trim() || null,
+  storage: formData.storage?.trim() || null,
+  purchase_date: formData.purchaseDate || null,
+  warranty_period: formData.warrantyPeriod?.trim() || null,
+  deployment_date: formData.deploymentDate || null,
+  location: formData.location?.trim() || null,
+  status: formData.status,
+  condition_status: formData.condition,
+  quantity: 1,
+  notes: formData.notes?.trim() || null,
+};
 
       await addItem(itemData);
 
