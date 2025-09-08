@@ -10,28 +10,30 @@ router.get('/items', async (req, res) => {
     const { status, category, search, page = 1, limit = 50 } = req.query;
     
     // FIXED: Include assigned_to and other assignment fields in SELECT
-    let query = `
-      SELECT 
-        i.id,
-        i.item_name,
-        i.brand,
-        i.model,
-        i.serialNumber,
-        i.category,
-        i.status,
-        i.condition,
-        i.location,
-        i.quantity,
-        i.notes,
-        i.assigned_to,
-        i.assigned_email,
-        i.assigned_phone,
-        i.assignment_date,
-        i.createdAt,
-        i.updatedAt
-      FROM inventory_items i
-      WHERE 1=1
-    `;
+    // In routes/inventory.js, update the SELECT query to match database fields:
+let query = `
+  SELECT 
+    i.id,
+    i.item_name,
+    i.brand,
+    i.model,
+    i.serialNumber as serial_number,  -- Map to frontend expectation
+    i.category,
+    i.status,
+    i.condition as condition_status,  -- Map to frontend expectation  
+    i.location,
+    i.quantity,
+    i.notes,
+    i.assigned_to,
+    i.assigned_email,
+    i.assigned_phone,
+    i.assignment_date,
+    i.department,
+    i.createdAt as created_at,
+    i.updatedAt as updated_at
+  FROM inventory_items i
+  WHERE 1=1
+`;
     
     const params = [];
     
