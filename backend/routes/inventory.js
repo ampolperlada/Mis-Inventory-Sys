@@ -10,9 +10,10 @@ router.get('/stats', async (req, res) => {
     const [stats] = await pool.execute(`
       SELECT 
         COUNT(*) as totalItems,
-        SUM(CASE WHEN status = 'AVAILABLE' THEN 1 ELSE 0 END) as available,
-        SUM(CASE WHEN status = 'ASSIGNED' THEN 1 ELSE 0 END) as assigned,
-        SUM(CASE WHEN status = 'MAINTENANCE' THEN 1 ELSE 0 END) as maintenance
+        SUM(CASE WHEN status = 'available' THEN 1 ELSE 0 END) as available,
+        SUM(CASE WHEN status = 'assigned' THEN 1 ELSE 0 END) as assigned,
+        SUM(CASE WHEN status = 'maintenance' THEN 1 ELSE 0 END) as maintenance,
+        SUM(CASE WHEN status = 'retired' THEN 1 ELSE 0 END) as retired
       FROM inventory_items
     `);
     
@@ -60,10 +61,10 @@ router.post('/items', async (req, res) => {
       serial_number,
       brand,
       model,
-      category || 'OTHER',
+      category || 'Other',
       `OS: ${operating_system || 'N/A'}, CPU: ${processor || 'N/A'}, RAM: ${ram || 'N/A'}, Storage: ${storage || 'N/A'}`,
-      condition_status || 'Good',
-      status || 'AVAILABLE',
+      condition_status || 'good',
+      status || 'available',
       location,
       quantity || 1,
       notes,
@@ -72,9 +73,9 @@ router.post('/items', async (req, res) => {
       processor,
       ram,
       storage,
-      purchase_date || null,
+      purchase_date && purchase_date.trim() ? purchase_date : null,
       warranty_period,
-      deployment_date || null
+      deployment_date && deployment_date.trim() ? deployment_date : null
     ]);
 
     res.status(201).json({ 
@@ -119,6 +120,14 @@ router.get('/items', async (req, res) => {
         i.location,
         i.quantity,
         i.notes,
+        i.hostname,
+        i.operating_system,
+        i.processor,
+        i.ram,
+        i.storage,
+        i.purchase_date,
+        i.warranty_period,
+        i.deployment_date,
         i.assigned_to,
         i.assigned_email,
         i.assigned_phone,
@@ -134,12 +143,12 @@ router.get('/items', async (req, res) => {
     
     if (status) {
       query += ' AND i.status = ?';
-      params.push(status.toUpperCase());
+      params.push(status);
     }
     
     if (category) {
       query += ' AND i.category = ?';
-      params.push(category.toUpperCase());
+      params.push(category);
     }
     
     if (search) {
@@ -165,6 +174,14 @@ router.get('/items', async (req, res) => {
       location: item.location,
       quantity: item.quantity,
       notes: item.notes,
+      hostname: item.hostname || null,
+      operating_system: item.operating_system || null,
+      processor: item.processor || null,
+      ram: item.ram || null,
+      storage: item.storage || null,
+      purchase_date: item.purchase_date || null,
+      warranty_period: item.warranty_period || null,
+      deployment_date: item.deployment_date || null,
       assigned_to: item.assigned_to || null,
       department: item.department || null,
       assigned_email: item.assigned_email || null,
@@ -179,12 +196,12 @@ router.get('/items', async (req, res) => {
     
     if (status) {
       countQuery += ' AND i.status = ?';
-      countParams.push(status.toUpperCase());
+      countParams.push(status);
     }
     
     if (category) {
       countQuery += ' AND i.category = ?';
-      countParams.push(category.toUpperCase());
+      countParams.push(category);
     }
     
     if (search) {
@@ -211,7 +228,7 @@ router.get('/items', async (req, res) => {
   }
 });
 
-// GET /api/inventory/items/:id - Get single item
+// GET /api/inventory/items/:id - Get single item (FIXED - includes all fields)
 router.get('/items/:id', async (req, res) => {
   try {
     const pool = getPool();
@@ -230,6 +247,14 @@ router.get('/items/:id', async (req, res) => {
         i.location,
         i.quantity,
         i.notes,
+        i.hostname,
+        i.operating_system,
+        i.processor,
+        i.ram,
+        i.storage,
+        i.purchase_date,
+        i.warranty_period,
+        i.deployment_date,
         i.assigned_to,
         i.assigned_email,
         i.assigned_phone,
@@ -258,11 +283,6 @@ router.get('/items/:id', async (req, res) => {
       location: item.location,
       quantity: item.quantity,
       notes: item.notes,
-      assigned_to: item.assigned_to || null,
-      assigned_email: item.assigned_email || null,
-      assigned_phone: item.assigned_phone || null,
-      assignment_date: item.assignment_date || null,
-      department: item.department || null,
       hostname: item.hostname || null,
       operating_system: item.operating_system || null,
       processor: item.processor || null,
@@ -271,6 +291,11 @@ router.get('/items/:id', async (req, res) => {
       purchase_date: item.purchase_date || null,
       warranty_period: item.warranty_period || null,
       deployment_date: item.deployment_date || null,
+      assigned_to: item.assigned_to || null,
+      assigned_email: item.assigned_email || null,
+      assigned_phone: item.assigned_phone || null,
+      assignment_date: item.assignment_date || null,
+      department: item.department || null,
       created_at: item.createdAt,
       updated_at: item.updatedAt
     };
@@ -291,7 +316,7 @@ router.post('/items/:id/checkin', async (req, res) => {
 
     const [result] = await pool.execute(`
       UPDATE inventory_items 
-      SET status = 'AVAILABLE',
+      SET status = 'available',
           \`condition\` = ?,
           assigned_to = NULL,
           assigned_email = NULL,
@@ -301,7 +326,7 @@ router.post('/items/:id/checkin', async (req, res) => {
           notes = CONCAT(COALESCE(notes, ''), '\nReturned: ', COALESCE(?, '')),
           updatedAt = CURRENT_TIMESTAMP
       WHERE id = ?
-    `, [return_condition || 'Good', return_notes || '', id]);
+    `, [return_condition || 'good', return_notes || '', id]);
 
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: 'Item not found' });
@@ -329,14 +354,14 @@ router.post('/items/:id/checkout', async (req, res) => {
     
     const [result] = await pool.execute(`
       UPDATE inventory_items 
-      SET status = 'ASSIGNED',
+      SET status = 'assigned',
           assigned_to = ?,
           department = ?,
           assigned_email = ?,
           assigned_phone = ?,
           assignment_date = CURRENT_TIMESTAMP,
           updatedAt = CURRENT_TIMESTAMP
-      WHERE id = ? AND status = 'AVAILABLE'
+      WHERE id = ? AND status = 'available'
     `, [assigned_to_name, department, email, phone, id]);
     
     if (result.affectedRows === 0) {
@@ -367,6 +392,14 @@ router.put('/items/:id', async (req, res) => {
       'status': 'status',
       'location': 'location',
       'notes': 'notes',
+      'hostname': 'hostname',
+      'operating_system': 'operating_system',
+      'processor': 'processor',
+      'ram': 'ram',
+      'storage': 'storage',
+      'purchase_date': 'purchase_date',
+      'warranty_period': 'warranty_period',
+      'deployment_date': 'deployment_date',
       'assigned_to': 'assigned_to',
       'department': 'department',
       'assigned_email': 'assigned_email',

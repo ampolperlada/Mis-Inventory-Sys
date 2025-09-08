@@ -259,19 +259,21 @@ const ItemDetailsModal = ({ open, onClose, item, onSave, mode = 'view' }) => {
             </Box>
           </Grid>
 
-          {/* Assignment Info */}
-          <Grid item xs={12} md={6}>
-            <SectionHeader icon={Description}>
-              Assignment Information
-            </SectionHeader>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-              <Typography><strong>Assigned To:</strong> {item.assigned_to || 'Not assigned'}</Typography>
-              <Typography><strong>Department:</strong> {item.department || 'N/A'}</Typography>
-              <Typography><strong>Email:</strong> {item.assigned_email || 'N/A'}</Typography>
-              <Typography><strong>Phone:</strong> {item.assigned_phone || 'N/A'}</Typography>
-              <Typography><strong>Assignment Date:</strong> {item.assignment_date ? new Date(item.assignment_date).toLocaleDateString() : 'N/A'}</Typography>
-            </Box>
-          </Grid>
+          {/* Assignment Info - Only show if item is actually assigned */}
+          {item.assigned_to !== null && item.assigned_to !== undefined && item.assigned_to !== '' && (
+            <Grid item xs={12} md={6}>
+              <SectionHeader icon={Description}>
+                Assignment Information
+              </SectionHeader>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                <Typography><strong>Assigned To:</strong> {item.assigned_to}</Typography>
+                <Typography><strong>Department:</strong> {item.department || 'Not specified'}</Typography>
+                <Typography><strong>Email:</strong> {item.assigned_email || 'Not provided'}</Typography>
+                <Typography><strong>Phone:</strong> {item.assigned_phone || 'Not provided'}</Typography>
+                <Typography><strong>Assignment Date:</strong> {item.assignment_date ? new Date(item.assignment_date).toLocaleDateString() : 'Not specified'}</Typography>
+              </Box>
+            </Grid>
+          )}
 
           {/* Purchase & Warranty */}
           <Grid item xs={12} md={6}>
