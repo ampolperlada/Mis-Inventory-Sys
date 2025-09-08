@@ -56,7 +56,7 @@ router.post('/items', async (req, res) => {
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
       item_name,
-      serial_number,  // Frontend sends serial_number, database expects serialNumber
+      serial_number,
       brand,
       model,
       category?.toUpperCase() || 'OTHER',

@@ -371,53 +371,56 @@ const Dashboard = () => {
   ];
 
   // Enhanced add item handler with more fields
-  const handleAddItem = async () => {
-    if (!newItem.name?.trim()) {
-      showSnackbar('Item name is required', 'error');
-      return;
-    }
-    if (!newItem.serialNumber?.trim()) {
-      showSnackbar('Serial number is required', 'error');
-      return;
-    }
-    const itemData = {
-      item_name: newItem.name.trim(),
-      serialNumber: newItem.serialNumber.trim(),
-      brand: newItem.brand?.trim() || null,
-      model: newItem.model?.trim() || null,
-      category: newItem.category,
-      hostname: newItem.hostname?.trim() || null,
-      operating_system: newItem.operatingSystem?.trim() || null,
-      processor: newItem.processor?.trim() || null,
-      ram: newItem.ram?.trim() || null,
-      storage: newItem.storage?.trim() || null,
-      purchase_date: newItem.purchaseDate || null,
-      warranty_period: newItem.warrantyPeriod?.trim() || null,
-      deployment_date: newItem.deploymentDate || null,
-      location: newItem.location?.trim() || null,
-      status: 'available',
-      condition_status: 'good',
-      quantity: 1,
-      notes: newItem.notes?.trim() || null,
-    };
-    setLoading(true);
-    try {
-      await addItem(itemData);
-      setNewItem({
-        name: '', brand: '', model: '', serialNumber: '', category: 'Desktop',
-        hostname: '', operatingSystem: '', processor: '', ram: '', storage: '',
-        purchaseDate: '', warrantyPeriod: '', deploymentDate: '', location: '', notes: ''
-      });
-      setOpenAddDialog(false);
-      setCurrentView('dashboard');
-      showSnackbar('Item added successfully!', 'success');
-    } catch (err) {
-      console.error('Add item error:', err);
-      showSnackbar('Failed to add item: ' + (err.response?.data?.error || err.message), 'error');
-    } finally {
-      setLoading(false);
-    }
+ // Enhanced add item handler with more fields
+const handleAddItem = async () => {
+  if (!newItem.name?.trim()) {
+    showSnackbar('Item name is required', 'error');
+    return;
+  }
+  if (!newItem.serialNumber?.trim()) {
+    showSnackbar('Serial number is required', 'error');
+    return;
+  }
+  
+  const itemData = {
+    item_name: newItem.name?.trim() || '',
+    serial_number: newItem.serialNumber?.trim() || '', // Note: changed to serial_number to match backend expectation
+    brand: newItem.brand?.trim() || null,
+    model: newItem.model?.trim() || null,
+    category: newItem.category || 'Desktop',
+    hostname: newItem.hostname?.trim() || null,
+    operating_system: newItem.operatingSystem?.trim() || null,
+    processor: newItem.processor?.trim() || null,
+    ram: newItem.ram?.trim() || null,
+    storage: newItem.storage?.trim() || null,
+    purchase_date: newItem.purchaseDate || null,
+    warranty_period: newItem.warrantyPeriod?.trim() || null,
+    deployment_date: newItem.deploymentDate || null,
+    location: newItem.location?.trim() || null,
+    status: 'available',
+    condition_status: 'good',
+    quantity: 1,
+    notes: newItem.notes?.trim() || null,
   };
+  
+  setLoading(true);
+  try {
+    await addItem(itemData);
+    setNewItem({
+      name: '', brand: '', model: '', serialNumber: '', category: 'Desktop',
+      hostname: '', operatingSystem: '', processor: '', ram: '', storage: '',
+      purchaseDate: '', warrantyPeriod: '', deploymentDate: '', location: '', notes: ''
+    });
+    setOpenAddDialog(false);
+    setCurrentView('dashboard');
+    showSnackbar('Item added successfully!', 'success');
+  } catch (err) {
+    console.error('Add item error:', err);
+    showSnackbar('Failed to add item: ' + (err.response?.data?.error || err.message), 'error');
+  } finally {
+    setLoading(false);
+  }
+};
 
   // Enhanced field update handler
   const handleFieldUpdate = async (itemId, field, value) => {

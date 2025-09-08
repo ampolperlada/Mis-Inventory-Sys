@@ -80,7 +80,7 @@ export const useInventoryItems = () => {
       
       // Ensure required fields are present
     // FIXED:
-if (!itemData.item_name || !itemData.serialNumber) {
+if (!itemData.item_name || !itemData.serial_number) {
   throw new Error('Item name and serial number are required');
 }
 
