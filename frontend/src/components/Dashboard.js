@@ -286,7 +286,9 @@ const Dashboard = () => {
   const [currentView, setCurrentView] = useState('dashboard');
   const [openDetailsDialog, setOpenDetailsDialog] = useState(null);
   const [details, setDetails] = useState(null);
-  const [loading, setLoading] = useState(false); // Added loading state
+  const [loading, setLoading] = useState(false);
+  const [isEditingDetails, setIsEditingDetails] = useState(false);
+  const [editedDetails, setEditedDetails] = useState({});
 
   // Hooks
   const { items, loading: itemsLoading, error, addItem, deleteItem, updateItem, checkOutItem, checkInItem } = useInventoryItems();
@@ -347,12 +349,42 @@ const Dashboard = () => {
   };
 
   const handleOpenDetails = async (id) => {
+    const item = items.find(item => item.id === id);
+    if (!item) return;
+
+    setDetails(item);
+    setEditedDetails({ ...item }); // Copy for editing
+    setOpenDetailsDialog(id);
+    setIsEditingDetails(false); // Start in view mode
+  };
+
+  const handleSaveDetails = async () => {
     try {
-      const item = items.find(item => item.id === id);
-      setDetails(item);
-      setOpenDetailsDialog(id);
+      // Map frontend field names to backend snake_case
+      const updatePayload = {
+        item_name: editedDetails.item_name,
+        category: editedDetails.category,
+        brand: editedDetails.brand,
+        model: editedDetails.model,
+        hostname: editedDetails.hostname,
+        operating_system: editedDetails.operating_system,
+        processor: editedDetails.processor,
+        ram: editedDetails.ram,
+        storage: editedDetails.storage,
+        purchase_date: editedDetails.purchase_date,
+        warranty_period: editedDetails.warranty_period,
+        deployment_date: editedDetails.deployment_date,
+        location: editedDetails.location,
+        notes: editedDetails.notes,
+        status: editedDetails.status,
+      };
+
+      await updateItem(details.id, updatePayload);
+      setDetails({ ...editedDetails }); // Update view
+      setIsEditingDetails(false);
+      showSnackbar('Item updated successfully!', 'success');
     } catch (err) {
-      showSnackbar('Failed to load item details', 'error');
+      showSnackbar('Failed to update item: ' + (err.message || 'Unknown error'), 'error');
     }
   };
 
@@ -364,7 +396,7 @@ const Dashboard = () => {
     { text: 'Assign', icon: <AssignIcon />, view: 'assign' },
     { text: 'Receive', icon: <ReceiveIcon />, view: 'receive' },
     { text: 'Reports', icon: <ReportsIcon />, view: 'reports' },
-    { text: 'Disposal', icon: <DeleteForeverIcon />, view: 'disposal' }, // Added new Disposal tab
+    { text: 'Disposal', icon: <DeleteForeverIcon />, view: 'disposal' },
   ];
 
   // Enhanced add item handler with more fields
@@ -380,7 +412,7 @@ const handleAddItem = async () => {
   
   const itemData = {
     item_name: newItem.name?.trim() || '',
-    serial_number: newItem.serialNumber?.trim() || '', // Note: changed to serial_number to match backend expectation
+    serial_number: newItem.serialNumber?.trim() || '',
     brand: newItem.brand?.trim() || null,
     model: newItem.model?.trim() || null,
     category: newItem.category || 'Desktop',
@@ -786,16 +818,6 @@ const handleAddItem = async () => {
                                   <VisibilityIcon fontSize="small" />
                                 </IconButton>
                               </Tooltip>
-                              <Tooltip title="Assign">
-                                <IconButton size="small" onClick={() => setOpenAssignDialog(item.id)}>
-                                  <AssignIcon fontSize="small" />
-                                </IconButton>
-                              </Tooltip>
-                              <Tooltip title="Receive">
-                                <IconButton size="small" onClick={() => setOpenReceiveDialog(item.id)}>
-                                  <ReceiveIcon fontSize="small" />
-                                </IconButton>
-                              </Tooltip>
                               <Tooltip title="Mark for Disposal">
                                 <IconButton size="small" onClick={() => setDisposalConfirm(item.id)}>
                                   <DeleteForeverIcon fontSize="small" color="error" />
@@ -848,24 +870,141 @@ const handleAddItem = async () => {
                       </Box>
                     </Grid>
                     <Grid item xs={12} md={6}>
-                      <Typography variant="subtitle1" sx={{ mb: 2, color: '#374151', fontWeight: 600 }}>Purchase & Warranty</Typography>
-                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                       <Typography><strong>Purchase Date:</strong> {details?.purchase_date ? new Date(details.purchase_date).toLocaleDateString() : 'N/A'}</Typography>
-<Typography><strong>Warranty Period:</strong> {details?.warranty_period || 'N/A'}</Typography>
-<Typography><strong>Deployment Date:</strong> {details?.deployment_date ? new Date(details.deployment_date).toLocaleDateString() : 'N/A'}</Typography>
-                        <Typography><strong>Condition:</strong> {details?.condition_status || 'N/A'}</Typography>
-                        <Typography><strong>Created:</strong> {details?.created_at ? new Date(details.created_at).toLocaleDateString() : 'N/A'}</Typography>
-                      </Box>
+                      <Typography variant="subtitle1" sx={{ mb: 2, color: '#374151', fontWeight: 600 }}>
+                        Purchase & Warranty
+                      </Typography>
+                      {isEditingDetails ? (
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                          <StyledTextField
+                            label="Purchase Date"
+                            type="date"
+                            value={editedDetails.purchase_date || ''}
+                            onChange={(e) => setEditedDetails({ ...editedDetails, purchase_date: e.target.value })}
+                            InputLabelProps={{ shrink: true }}
+                            fullWidth
+                          />
+                          <StyledTextField
+                            label="Warranty Period"
+                            value={editedDetails.warranty_period || ''}
+                            onChange={(e) => setEditedDetails({ ...editedDetails, warranty_period: e.target.value })}
+                            fullWidth
+                          />
+                          <StyledTextField
+                            label="Deployment Date"
+                            type="date"
+                            value={editedDetails.deployment_date || ''}
+                            onChange={(e) => setEditedDetails({ ...editedDetails, deployment_date: e.target.value })}
+                            InputLabelProps={{ shrink: true }}
+                            fullWidth
+                          />
+                          <FormControl fullWidth>
+                            <InputLabel>Status</InputLabel>
+                            <Select
+                              value={editedDetails.status || ''}
+                              label="Status"
+                              onChange={(e) => setEditedDetails({ ...editedDetails, status: e.target.value })}
+                            >
+                              <MenuItem value="available">Available</MenuItem>
+                              <MenuItem value="assigned">Assigned</MenuItem>
+                              <MenuItem value="maintenance">Maintenance</MenuItem>
+                              <MenuItem value="retired">Retired</MenuItem>
+                            </Select>
+                          </FormControl>
+                        </Box>
+                      ) : (
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                          <Typography>
+                            <strong>Purchase Date:</strong>{' '}
+                            {details?.purchase_date
+                              ? new Date(details.purchase_date).toLocaleDateString()
+                              : 'N/A'}
+                          </Typography>
+                          <Typography>
+                            <strong>Warranty Period:</strong> {details?.warranty_period || 'N/A'}
+                          </Typography>
+                          <Typography>
+                            <strong>Deployment Date:</strong>{' '}
+                            {details?.deployment_date
+                              ? new Date(details.deployment_date).toLocaleDateString()
+                              : 'N/A'}
+                          </Typography>
+                          <Typography>
+                            <strong>Status:</strong>{' '}
+                            <Chip
+                              label={details?.status}
+                              size="small"
+                              sx={{
+                                background:
+                                  details?.status === 'available' ? '#dcfce7' :
+                                  details?.status === 'assigned' ? '#fef3c7' :
+                                  details?.status === 'retired' ? '#fee2e2' : '#e0e7ff',
+                                color:
+                                  details?.status === 'available' ? '#166534' :
+                                  details?.status === 'assigned' ? '#92400e' :
+                                  details?.status === 'retired' ? '#991b1b' : '#4338ca',
+                                fontWeight: '600'
+                              }}
+                            />
+                          </Typography>
+                        </Box>
+                      )}
                     </Grid>
                     <Grid item xs={12} md={6}>
-                      <Typography variant="subtitle1" sx={{ mb: 2, color: '#374151', fontWeight: 600 }}>Technical Specifications</Typography>
-                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                        <Typography><strong>Hostname:</strong> {details?.hostname || 'N/A'}</Typography>
-                        <Typography><strong>Operating System:</strong> {details?.operating_system || 'N/A'}</Typography>
-                        <Typography><strong>Processor:</strong> {details?.processor || 'N/A'}</Typography>
-                        <Typography><strong>RAM:</strong> {details?.ram || 'N/A'}</Typography>
-                        <Typography><strong>Storage:</strong> {details?.storage || 'N/A'}</Typography>
-                      </Box>
+                      <Typography variant="subtitle1" sx={{ mb: 2, color: '#374151', fontWeight: 600 }}>
+                        Technical Specifications
+                      </Typography>
+                      {isEditingDetails ? (
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                          <StyledTextField
+                            label="Hostname"
+                            value={editedDetails.hostname || ''}
+                            onChange={(e) => setEditedDetails({ ...editedDetails, hostname: e.target.value })}
+                            fullWidth
+                          />
+                          <StyledTextField
+                            label="Operating System"
+                            value={editedDetails.operating_system || ''}
+                            onChange={(e) => setEditedDetails({ ...editedDetails, operating_system: e.target.value })}
+                            fullWidth
+                          />
+                          <StyledTextField
+                            label="Processor"
+                            value={editedDetails.processor || ''}
+                            onChange={(e) => setEditedDetails({ ...editedDetails, processor: e.target.value })}
+                            fullWidth
+                          />
+                          <StyledTextField
+                            label="RAM"
+                            value={editedDetails.ram || ''}
+                            onChange={(e) => setEditedDetails({ ...editedDetails, ram: e.target.value })}
+                            fullWidth
+                          />
+                          <StyledTextField
+                            label="Storage"
+                            value={editedDetails.storage || ''}
+                            onChange={(e) => setEditedDetails({ ...editedDetails, storage: e.target.value })}
+                            fullWidth
+                          />
+                        </Box>
+                      ) : (
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                          <Typography>
+                            <strong>Hostname:</strong> {details?.hostname || 'N/A'}
+                          </Typography>
+                          <Typography>
+                            <strong>Operating System:</strong> {details?.operating_system || 'N/A'}
+                          </Typography>
+                          <Typography>
+                            <strong>Processor:</strong> {details?.processor || 'N/A'}
+                          </Typography>
+                          <Typography>
+                            <strong>RAM:</strong> {details?.ram || 'N/A'}
+                          </Typography>
+                          <Typography>
+                            <strong>Storage:</strong> {details?.storage || 'N/A'}
+                          </Typography>
+                        </Box>
+                      )}
                     </Grid>
                     <Grid item xs={12}>
                       <Typography variant="subtitle1" sx={{ mb: 2, color: '#374151', fontWeight: 600 }}>Notes</Typography>
@@ -879,16 +1018,24 @@ const handleAddItem = async () => {
                 </DialogContent>
                 <DialogActions>
                   <Button onClick={() => setOpenDetailsDialog(null)}>Close</Button>
-                  <Button 
-                    variant="contained" 
-                    startIcon={<EditIcon />}
-                    onClick={() => {
-                      setOpenDetailsDialog(null);
-                      setCurrentView('view');
-                    }}
-                  >
-                    Edit Item
-                  </Button>
+                  {isEditingDetails ? (
+                    <>
+                      <Button onClick={() => setIsEditingDetails(false)} color="error">
+                        Cancel
+                      </Button>
+                      <Button variant="contained" startIcon={<SaveIcon />} onClick={handleSaveDetails}>
+                        Save Changes
+                      </Button>
+                    </>
+                  ) : (
+                    <Button
+                      variant="contained"
+                      startIcon={<EditIcon />}
+                      onClick={() => setIsEditingDetails(true)}
+                    >
+                      Edit Item
+                    </Button>
+                  )}
                 </DialogActions>
               </Dialog>
             )}
@@ -1418,10 +1565,10 @@ const handleAddItem = async () => {
                   <FloatingActionButton startIcon={<AddIcon />} onClick={() => setCurrentView('add')}>
                     Add Item
                   </FloatingActionButton>
-                  <FloatingActionButton startIcon=<AssignIcon /> onClick={() => setCurrentView('assign')}>
+                  <FloatingActionButton startIcon={<AssignIcon />} onClick={() => setCurrentView('assign')}>
                     Assign Item
                   </FloatingActionButton>
-                  <FloatingActionButton startIcon=<ReceiveIcon /> onClick={() => setCurrentView('receive')}>
+                  <FloatingActionButton startIcon={<ReceiveIcon />} onClick={() => setCurrentView('receive')}>
                     Receive Item
                   </FloatingActionButton>
                   <FloatingActionButton startIcon=<ReportsIcon /> onClick={() => setCurrentView('reports')}>
