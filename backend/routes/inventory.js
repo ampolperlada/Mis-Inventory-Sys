@@ -2,6 +2,27 @@ const express = require('express');
 const router = express.Router();
 const { getPool } = require('../config/database');
 
+// GET /api/inventory/stats - Dashboard statistics
+router.get('/stats', async (req, res) => {
+  try {
+    const pool = getPool();
+    
+    const [stats] = await pool.execute(`
+      SELECT 
+        COUNT(*) as totalItems,
+        SUM(CASE WHEN status = 'AVAILABLE' THEN 1 ELSE 0 END) as available,
+        SUM(CASE WHEN status = 'ASSIGNED' THEN 1 ELSE 0 END) as assigned,
+        SUM(CASE WHEN status = 'MAINTENANCE' THEN 1 ELSE 0 END) as maintenance
+      FROM inventory_items
+    `);
+    
+    res.json(stats[0]);
+  } catch (error) {
+    console.error('Error fetching stats:', error);
+    res.status(500).json({ error: 'Failed to fetch statistics' });
+  }
+});
+
 // POST /api/inventory/items - Add new item
 router.post('/items', async (req, res) => {
   try {
@@ -35,7 +56,7 @@ router.post('/items', async (req, res) => {
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
       item_name,
-      serial_number,
+      serial_number,  // Frontend sends serial_number, database expects serialNumber
       brand,
       model,
       category?.toUpperCase() || 'OTHER',
@@ -77,7 +98,7 @@ router.get('/items', async (req, res) => {
         i.serialNumber as serial_number,
         i.category,
         i.status,
-        i.condition as condition_status,
+        i.\`condition\` as condition_status,
         i.location,
         i.quantity,
         i.notes,
@@ -96,12 +117,12 @@ router.get('/items', async (req, res) => {
     
     if (status) {
       query += ' AND i.status = ?';
-      params.push(status);
+      params.push(status.toUpperCase());
     }
     
     if (category) {
       query += ' AND i.category = ?';
-      params.push(category);
+      params.push(category.toUpperCase());
     }
     
     if (search) {
@@ -120,10 +141,10 @@ router.get('/items', async (req, res) => {
       item_name: item.item_name,
       brand: item.brand,
       model: item.model,
-      serial_number: item.serialNumber,
+      serial_number: item.serial_number,
       category: item.category,
       status: item.status ? item.status.toLowerCase() : 'available',
-      condition_status: item.condition,
+      condition_status: item.condition_status,
       location: item.location,
       quantity: item.quantity,
       notes: item.notes,
@@ -132,8 +153,8 @@ router.get('/items', async (req, res) => {
       assigned_email: item.assigned_email || null,
       assigned_phone: item.assigned_phone || null,
       assignment_date: item.assignment_date || null,
-      created_at: item.createdAt,
-      updated_at: item.updatedAt
+      created_at: item.created_at,
+      updated_at: item.updated_at
     }));
     
     let countQuery = `SELECT COUNT(*) as total FROM inventory_items i WHERE 1=1`;
@@ -141,12 +162,12 @@ router.get('/items', async (req, res) => {
     
     if (status) {
       countQuery += ' AND i.status = ?';
-      countParams.push(status);
+      countParams.push(status.toUpperCase());
     }
     
     if (category) {
       countQuery += ' AND i.category = ?';
-      countParams.push(category);
+      countParams.push(category.toUpperCase());
     }
     
     if (search) {
@@ -188,7 +209,7 @@ router.get('/items/:id', async (req, res) => {
         i.serialNumber,
         i.category,
         i.status,
-        i.condition,
+        i.\`condition\`,
         i.location,
         i.quantity,
         i.notes,
@@ -196,6 +217,7 @@ router.get('/items/:id', async (req, res) => {
         i.assigned_email,
         i.assigned_phone,
         i.assignment_date,
+        i.department,
         i.createdAt,
         i.updatedAt
       FROM inventory_items i
@@ -223,6 +245,7 @@ router.get('/items/:id', async (req, res) => {
       assigned_email: item.assigned_email || null,
       assigned_phone: item.assigned_phone || null,
       assignment_date: item.assignment_date || null,
+      department: item.department || null,
       created_at: item.createdAt,
       updated_at: item.updatedAt
     };
@@ -239,7 +262,7 @@ router.post('/items/:id/checkin', async (req, res) => {
   try {
     const pool = getPool();
     const { id } = req.params;
-    const { condition, notes } = req.body;
+    const { return_condition, return_notes } = req.body;
 
     const [result] = await pool.execute(`
       UPDATE inventory_items 
@@ -253,7 +276,7 @@ router.post('/items/:id/checkin', async (req, res) => {
           notes = CONCAT(COALESCE(notes, ''), '\nReturned: ', COALESCE(?, '')),
           updatedAt = CURRENT_TIMESTAMP
       WHERE id = ?
-    `, [condition || 'Good', notes || '', id]);
+    `, [return_condition || 'Good', return_notes || '', id]);
 
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: 'Item not found' });
@@ -311,7 +334,7 @@ router.put('/items/:id', async (req, res) => {
     
     const fieldMap = {
       'serial_number': 'serialNumber',
-      'condition_status': 'condition',
+      'condition_status': '`condition`',
       'item_name': 'item_name',
       'brand': 'brand',
       'model': 'model',
@@ -353,6 +376,28 @@ router.put('/items/:id', async (req, res) => {
   } catch (error) {
     console.error('Error updating item:', error);
     res.status(500).json({ error: 'Failed to update item' });
+  }
+});
+
+// DELETE /api/inventory/items/:id - Delete item
+router.delete('/items/:id', async (req, res) => {
+  try {
+    const pool = getPool();
+    const { id } = req.params;
+    
+    const [result] = await pool.execute(
+      'DELETE FROM inventory_items WHERE id = ?',
+      [id]
+    );
+    
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Item not found' });
+    }
+    
+    res.json({ success: true, message: 'Item deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting item:', error);
+    res.status(500).json({ error: 'Failed to delete item' });
   }
 });
 

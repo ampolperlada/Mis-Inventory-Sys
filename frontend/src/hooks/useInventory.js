@@ -79,9 +79,10 @@ export const useInventoryItems = () => {
       console.log('Adding item with data:', itemData);
       
       // Ensure required fields are present
-      if (!itemData.item_name || !itemData.serial_number) {
-        throw new Error('Item name and serial number are required');
-      }
+    // FIXED:
+if (!itemData.item_name || !itemData.serialNumber) {
+  throw new Error('Item name and serial number are required');
+}
 
       // Clean and format data for backend
       const cleanedData = {

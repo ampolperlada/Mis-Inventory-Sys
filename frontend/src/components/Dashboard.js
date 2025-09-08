@@ -382,7 +382,7 @@ const Dashboard = () => {
     }
     const itemData = {
       item_name: newItem.name.trim(),
-      serial_number: newItem.serialNumber.trim(),
+      serialNumber: newItem.serialNumber.trim(),
       brand: newItem.brand?.trim() || null,
       model: newItem.model?.trim() || null,
       category: newItem.category,
