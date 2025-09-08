@@ -33,14 +33,10 @@ router.post('/items', async (req, res) => {
       brand,
       model,
       category,
-      hostname,
       operating_system,
       processor,
       ram,
       storage,
-      purchase_date,
-      warranty_period,
-      deployment_date,
       location,
       status,
       condition_status,
@@ -51,19 +47,18 @@ router.post('/items', async (req, res) => {
     const [result] = await pool.execute(`
       INSERT INTO inventory_items (
         item_name, serialNumber, brand, model, category, 
-        hostname, specs, \`condition\`, status, location, 
+        specs, \`condition\`, status, location, 
         quantity, notes
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
       item_name,
       serial_number,
       brand,
       model,
-      category?.toUpperCase() || 'OTHER',
-      hostname,
+      category || 'OTHER',
       `OS: ${operating_system || 'N/A'}, CPU: ${processor || 'N/A'}, RAM: ${ram || 'N/A'}, Storage: ${storage || 'N/A'}`,
       condition_status || 'Good',
-      status?.toUpperCase() || 'AVAILABLE',
+      status || 'AVAILABLE',
       location,
       quantity || 1,
       notes
