@@ -263,6 +263,14 @@ router.get('/items/:id', async (req, res) => {
       assigned_phone: item.assigned_phone || null,
       assignment_date: item.assignment_date || null,
       department: item.department || null,
+      hostname: item.hostname || null,
+      operating_system: item.operating_system || null,
+      processor: item.processor || null,
+      ram: item.ram || null,
+      storage: item.storage || null,
+      purchase_date: item.purchase_date || null,
+      warranty_period: item.warranty_period || null,
+      deployment_date: item.deployment_date || null,
       created_at: item.createdAt,
       updated_at: item.updatedAt
     };
