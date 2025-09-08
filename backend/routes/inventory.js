@@ -216,6 +216,60 @@ router.put('/items/:id/dispose', async (req, res) => {
   }
 });
 
+router.put('/items/:id', async (req, res) => {
+  try {
+    const pool = getPool();
+    const { id } = req.params;
+    const updateData = req.body;
+    
+    // Map frontend field names to database field names
+    const fieldMap = {
+      'serial_number': 'serialNumber',
+      'condition_status': 'condition',
+      'item_name': 'item_name',
+      'brand': 'brand',
+      'model': 'model',
+      'category': 'category',
+      'status': 'status',
+      'location': 'location',
+      'notes': 'notes',
+      'assigned_to': 'assigned_to',
+      'department': 'department',
+      'assigned_email': 'assigned_email',
+      'assigned_phone': 'assigned_phone'
+    };
+    
+    const updateFields = [];
+    const values = [];
+    
+    Object.keys(updateData).forEach(key => {
+      const dbField = fieldMap[key] || key;
+      updateFields.push(`${dbField} = ?`);
+      values.push(updateData[key]);
+    });
+    
+    if (updateFields.length === 0) {
+      return res.status(400).json({ error: 'No valid fields to update' });
+    }
+    
+    values.push(id);
+    
+    const [result] = await pool.execute(
+      `UPDATE inventory_items SET ${updateFields.join(', ')}, updatedAt = CURRENT_TIMESTAMP WHERE id = ?`,
+      values
+    );
+    
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Item not found' });
+    }
+    
+    res.json({ success: true, message: 'Item updated successfully' });
+  } catch (error) {
+    console.error('Error updating item:', error);
+    res.status(500).json({ error: 'Failed to update item' });
+  }
+});
+
 // Get disposal items
 router.get('/disposal', async (req, res) => {
   try {
