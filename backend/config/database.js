@@ -130,6 +130,19 @@ const initializeDatabase = async () => {
 
     console.log('📋 Database tables created successfully');
 
+    // In initializeDatabase function, after creating inventory_items table, add:
+await pool.execute(`
+  ALTER TABLE inventory_items 
+  ADD COLUMN IF NOT EXISTS assigned_to VARCHAR(255),
+  ADD COLUMN IF NOT EXISTS assigned_email VARCHAR(255),
+  ADD COLUMN IF NOT EXISTS assigned_phone VARCHAR(50),
+  ADD COLUMN IF NOT EXISTS assignment_date DATETIME,
+  ADD COLUMN IF NOT EXISTS department VARCHAR(255),
+  ADD COLUMN IF NOT EXISTS disposal_reason TEXT,
+  ADD COLUMN IF NOT EXISTS disposal_date DATETIME,
+  ADD COLUMN IF NOT EXISTS disposed_by VARCHAR(255)
+`);
+
     // Insert default categories
     const categories = [
       ['DESKTOP', 'Desktop computers'],
