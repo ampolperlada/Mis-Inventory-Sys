@@ -72,9 +72,9 @@ router.post('/items', async (req, res) => {
       processor,
       ram,
       storage,
-      purchase_date,
+      purchase_date || null,
       warranty_period,
-      deployment_date
+      deployment_date || null
     ]);
 
     res.status(201).json({ 

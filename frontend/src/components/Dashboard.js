@@ -16,8 +16,6 @@ import {
   CardContent,
   Grid,
   Button,
-  useTheme,
-  useMediaQuery,
   Chip,
   Paper,
   TextField,
@@ -102,7 +100,7 @@ const whiteTheme = createTheme({
 
 const SectionHeader = ({ children, sx }) => (
   <Typography
-    variant="h6"
+    variant="subtitle1"
     sx={{
       display: 'flex',
       alignItems: 'center',
@@ -134,7 +132,7 @@ const ModernAppBar = styled(AppBar)(({ theme }) => ({
   border: '1px solid #e5e7eb',
   borderTop: 'none',
 }));
-const NavItem = styled(ListItemButton)(({ theme, active }) => ({
+const NavItem = styled(ListItemButton)(({ active }) => ({
   margin: '4px 16px',
   borderRadius: '8px',
   background: active ? '#eff6ff' : 'transparent',
@@ -284,7 +282,6 @@ const EditableTableCell = ({ value, onSave, type = 'text', options = [] }) => {
 
 // Dashboard Component
 const Dashboard = () => {
-  const theme = useTheme();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [currentView, setCurrentView] = useState('dashboard');
   const [openDetailsDialog, setOpenDetailsDialog] = useState(null);
@@ -371,7 +368,6 @@ const Dashboard = () => {
   ];
 
   // Enhanced add item handler with more fields
- // Enhanced add item handler with more fields
 const handleAddItem = async () => {
   if (!newItem.name?.trim()) {
     showSnackbar('Item name is required', 'error');
@@ -830,7 +826,7 @@ const handleAddItem = async () => {
                 <DialogContent>
                   <Grid container spacing={4} sx={{ mt: 1 }}>
                     <Grid item xs={12} md={6}>
-                      <Typography variant="h6" sx={{ mb: 2, color: '#374151' }}>Basic Information</Typography>
+                      <Typography variant="subtitle1" sx={{ mb: 2, color: '#374151', fontWeight: 600 }}>Basic Information</Typography>
                       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                         <Typography><strong>Name:</strong> {details?.item_name}</Typography>
                         <Typography><strong>Category:</strong> {details?.category || 'N/A'}</Typography>
@@ -842,7 +838,7 @@ const handleAddItem = async () => {
                       </Box>
                     </Grid>
                     <Grid item xs={12} md={6}>
-                      <Typography variant="h6" sx={{ mb: 2, color: '#374151' }}>Assignment Information</Typography>
+                      <Typography variant="subtitle1" sx={{ mb: 2, color: '#374151', fontWeight: 600 }}>Assignment Information</Typography>
                       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                         <Typography><strong>Assigned To:</strong> {details?.assigned_to || 'Not assigned'}</Typography>
                         <Typography><strong>Department:</strong> {details?.department || 'N/A'}</Typography>
@@ -852,17 +848,27 @@ const handleAddItem = async () => {
                       </Box>
                     </Grid>
                     <Grid item xs={12} md={6}>
-                      <Typography variant="h6" sx={{ mb: 2, color: '#374151' }}>Purchase & Warranty</Typography>
+                      <Typography variant="subtitle1" sx={{ mb: 2, color: '#374151', fontWeight: 600 }}>Purchase & Warranty</Typography>
                       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                        <Typography><strong>Purchase Date:</strong> {details?.purchase_date ? new Date(details.purchase_date).toLocaleDateString() : 'N/A'}</Typography>
-                        <Typography><strong>Warranty Period:</strong> {details?.warranty_period || 'N/A'}</Typography>
-                        <Typography><strong>Deployment Date:</strong> {details?.deployment_date ? new Date(details.deployment_date).toLocaleDateString() : 'N/A'}</Typography>
+                       <Typography><strong>Purchase Date:</strong> {details?.purchase_date ? new Date(details.purchase_date).toLocaleDateString() : 'N/A'}</Typography>
+<Typography><strong>Warranty Period:</strong> {details?.warranty_period || 'N/A'}</Typography>
+<Typography><strong>Deployment Date:</strong> {details?.deployment_date ? new Date(details.deployment_date).toLocaleDateString() : 'N/A'}</Typography>
                         <Typography><strong>Condition:</strong> {details?.condition_status || 'N/A'}</Typography>
                         <Typography><strong>Created:</strong> {details?.created_at ? new Date(details.created_at).toLocaleDateString() : 'N/A'}</Typography>
                       </Box>
                     </Grid>
+                    <Grid item xs={12} md={6}>
+                      <Typography variant="subtitle1" sx={{ mb: 2, color: '#374151', fontWeight: 600 }}>Technical Specifications</Typography>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                        <Typography><strong>Hostname:</strong> {details?.hostname || 'N/A'}</Typography>
+                        <Typography><strong>Operating System:</strong> {details?.operating_system || 'N/A'}</Typography>
+                        <Typography><strong>Processor:</strong> {details?.processor || 'N/A'}</Typography>
+                        <Typography><strong>RAM:</strong> {details?.ram || 'N/A'}</Typography>
+                        <Typography><strong>Storage:</strong> {details?.storage || 'N/A'}</Typography>
+                      </Box>
+                    </Grid>
                     <Grid item xs={12}>
-                      <Typography variant="h6" sx={{ mb: 2, color: '#374151' }}>Notes</Typography>
+                      <Typography variant="subtitle1" sx={{ mb: 2, color: '#374151', fontWeight: 600 }}>Notes</Typography>
                       <Paper sx={{ p: 2, background: '#f9fafb' }}>
                         <Typography variant="body2">
                           {details?.notes || 'No notes available'}
@@ -1412,13 +1418,13 @@ const handleAddItem = async () => {
                   <FloatingActionButton startIcon={<AddIcon />} onClick={() => setCurrentView('add')}>
                     Add Item
                   </FloatingActionButton>
-                  <FloatingActionButton startIcon={<AssignIcon />} onClick={() => setCurrentView('assign')}>
+                  <FloatingActionButton startIcon=<AssignIcon /> onClick={() => setCurrentView('assign')}>
                     Assign Item
                   </FloatingActionButton>
-                  <FloatingActionButton startIcon={<ReceiveIcon />} onClick={() => setCurrentView('receive')}>
+                  <FloatingActionButton startIcon=<ReceiveIcon /> onClick={() => setCurrentView('receive')}>
                     Receive Item
                   </FloatingActionButton>
-                  <FloatingActionButton startIcon={<ReportsIcon />} onClick={() => setCurrentView('reports')}>
+                  <FloatingActionButton startIcon=<ReportsIcon /> onClick={() => setCurrentView('reports')}>
                     Reports
                   </FloatingActionButton>
                 </Box>
