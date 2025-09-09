@@ -29,6 +29,27 @@ import {
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
 
+// Helper function to check if an item is truly assigned
+const isItemAssigned = (item) => {
+  // Return false if no item or assigned_to is null/undefined
+  if (!item || item.assigned_to === null || item.assigned_to === undefined) {
+    return false;
+  }
+  
+  // Return false if assigned_to is empty string
+  if (item.assigned_to === '') {
+    return false;
+  }
+  
+  // Convert to string and trim to handle any data type
+  const assignedValue = String(item.assigned_to).trim().toLowerCase();
+  
+  // List of values that mean "not assigned"
+  const notAssignedValues = ['not assigned', 'n/a', 'none', '-'];
+  
+  return !notAssignedValues.includes(assignedValue);
+};
+
 const StyledTextField = styled(TextField)(({ theme }) => ({
   '& .MuiOutlinedInput-root': {
     background: '#ffffff',
@@ -260,7 +281,7 @@ const ItemDetailsModal = ({ open, onClose, item, onSave, mode = 'view' }) => {
           </Grid>
 
           {/* Assignment Info - Only show if item is actually assigned */}
-          {item.assigned_to !== null && item.assigned_to !== undefined && item.assigned_to !== '' && (
+          {isItemAssigned(item) && (
             <Grid item xs={12} md={6}>
               <SectionHeader icon={Description}>
                 Assignment Information
