@@ -465,7 +465,17 @@ router.put('/items/:id/dispose', async (req, res) => {
     const { id } = req.params;
     const { disposal_reason, disposed_by } = req.body;
     
+    console.log('Disposing item:', id, 'Reason:', disposal_reason, 'By:', disposed_by);
+    
     const pool = getPool();
+    
+    // Add validation
+    if (!disposal_reason) {
+      return res.status(400).json({ 
+        error: 'Disposal reason is required',
+        message: 'Please provide a reason for disposal'
+      });
+    }
     
     const [result] = await pool.execute(
       `UPDATE inventory_items 
@@ -476,6 +486,8 @@ router.put('/items/:id/dispose', async (req, res) => {
        WHERE id = ?`,
       [disposal_reason, disposed_by || 'System', id]
     );
+    
+    console.log('Dispose result:', result);
     
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: 'Item not found' });
