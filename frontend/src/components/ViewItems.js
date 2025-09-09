@@ -187,6 +187,20 @@ const ViewItems = () => {
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
 
+  // Add this near the top of your component, after your existing useState hooks
+  useEffect(() => {
+    const handleInventoryUpdate = () => {
+      // This will trigger a refresh when inventory is updated
+      // The existing useEffect will re-run and filter items
+    };
+
+    window.addEventListener('inventoryUpdated', handleInventoryUpdate);
+    
+    return () => {
+      window.removeEventListener('inventoryUpdated', handleInventoryUpdate);
+    };
+  }, []);
+
   const handleSaveItem = async (itemId, updatedData) => {
     try {
       await updateItem(itemId, updatedData);
@@ -265,31 +279,43 @@ const ViewItems = () => {
   };
 
   // FIXED: Disposal functionality with proper backend call
+  const confirmDelete = async () => {
+    try {
+      // Call the proper dispose endpoint
+      const response = await fetch(`/api/inventory/items/${selectedItem.id}/dispose`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          disposal_reason: 'Marked for disposal from inventory view',
+          disposed_by: 'System User'
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to move item to disposal');
+      }
+
+      // Close dialogs and refresh
+      setDeleteDialogOpen(false);
+      setSelectedItem(null);
+      
+      // Trigger refresh of both inventory and disposal tabs
+      window.dispatchEvent(new CustomEvent('inventoryUpdated'));
+      
+      console.log('Item moved to disposal successfully');
+    } catch (error) {
+      console.error('Error moving item to disposal:', error);
+      alert('Failed to move item to disposal: ' + error.message);
+    }
+  };
+
   const handleDelete = () => {
     setDeleteDialogOpen(true);
     handleMenuClose();
   };
-
-  const confirmDelete = async () => {
-  try {
-    // Use updateItem to mark as retired (simpler approach)
-    const disposalData = {
-      status: 'retired',
-      disposal_reason: 'Marked for disposal from inventory view',
-      disposal_date: new Date().toISOString(),
-      disposed_by: 'System User'
-    };
-    
-    await updateItem(selectedItem.id, disposalData);
-    setDeleteDialogOpen(false);
-    setSelectedItem(null);
-    
-    console.log('Item moved to disposal successfully');
-  } catch (error) {
-    console.error('Error moving item to disposal:', error);
-    alert('Failed to move item to disposal: ' + error.message);
-  }
-};
 
   const handleViewDetails = () => {
     setEditMode(false);

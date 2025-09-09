@@ -31,23 +31,33 @@ import { styled } from '@mui/material/styles';
 
 // Helper function to check if an item is truly assigned
 const isItemAssigned = (item) => {
-  // Return false if no item or assigned_to is null/undefined
-  if (!item || item.assigned_to === null || item.assigned_to === undefined) {
+  // Return false if no item
+  if (!item) return false;
+  
+  // Return false if assigned_to is null, undefined, or empty
+  if (item.assigned_to === null || 
+      item.assigned_to === undefined || 
+      item.assigned_to === '' ||
+      item.assigned_to === 'Not assigned') {  // Check for exact string
     return false;
   }
   
-  // Return false if assigned_to is empty string
-  if (item.assigned_to === '') {
-    return false;
-  }
-  
-  // Convert to string and trim to handle any data type
-  const assignedValue = String(item.assigned_to).trim().toLowerCase();
+  // Also check for case variations
+  const assignedValue = String(item.assigned_to).trim();
+  const assignedValueLower = assignedValue.toLowerCase();
   
   // List of values that mean "not assigned"
-  const notAssignedValues = ['not assigned', 'n/a', 'none', '-'];
+  if (assignedValueLower === 'not assigned' || 
+      assignedValueLower === 'n/a' || 
+      assignedValueLower === 'none' || 
+      assignedValueLower === 'null' ||
+      assignedValueLower === 'undefined' ||
+      assignedValueLower === '-' ||
+      assignedValueLower === '') {
+    return false;
+  }
   
-  return !notAssignedValues.includes(assignedValue);
+  return true;
 };
 
 const StyledTextField = styled(TextField)(({ theme }) => ({
@@ -102,6 +112,15 @@ const ItemDetailsModal = ({ open, onClose, item, onSave, mode = 'view' }) => {
   // Initialize form data with correct field names
   useEffect(() => {
     if (item) {
+      // ADD THIS DEBUG CODE HERE
+      console.log('=== DEBUG ASSIGNMENT ===');
+      console.log('item.assigned_to:', item.assigned_to);
+      console.log('typeof:', typeof item.assigned_to);
+      console.log('is null?', item.assigned_to === null);
+      console.log('is "Not assigned"?', item.assigned_to === 'Not assigned');
+      console.log('isItemAssigned result:', isItemAssigned(item));
+      console.log('=======================');
+      
       setFormData({
         item_name: item.item_name || '',
         category: item.category || 'Desktop',
@@ -287,7 +306,7 @@ const ItemDetailsModal = ({ open, onClose, item, onSave, mode = 'view' }) => {
                 Assignment Information
               </SectionHeader>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                <Typography><strong>Assigned To:</strong> {item.assigned_to}</Typography>
+                <Typography><strong>Assigned To:</strong> {item.assigned_to || 'Not assigned'}</Typography>
                 <Typography><strong>Department:</strong> {item.department || 'Not specified'}</Typography>
                 <Typography><strong>Email:</strong> {item.assigned_email || 'Not provided'}</Typography>
                 <Typography><strong>Phone:</strong> {item.assigned_phone || 'Not provided'}</Typography>
@@ -429,7 +448,7 @@ const ItemDetailsModal = ({ open, onClose, item, onSave, mode = 'view' }) => {
           <Box sx={{ display: 'flex', gap: 1 }}>
             <Button 
               onClick={handleCancel}
-              startIcon={<Cancel />}
+              startIcon=<Cancel />
               sx={{ textTransform: 'uppercase' }}
             >
               Cancel
@@ -438,7 +457,7 @@ const ItemDetailsModal = ({ open, onClose, item, onSave, mode = 'view' }) => {
               variant="contained" 
               onClick={handleSave}
               disabled={loading}
-              startIcon={<Save />}
+              startIcon=<Save />
               sx={{ background: '#10b981', textTransform: 'uppercase' }}
             >
               {loading ? 'Saving...' : 'Save'}
@@ -447,7 +466,7 @@ const ItemDetailsModal = ({ open, onClose, item, onSave, mode = 'view' }) => {
         ) : (
           <Button 
             variant="contained" 
-            startIcon={<Edit />}
+            startIcon=<Edit />
             onClick={handleEdit}
             sx={{ background: '#3b82f6', textTransform: 'uppercase' }}
           >
