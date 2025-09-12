@@ -26,34 +26,22 @@ import {
   Edit,
   Save,
   Cancel,
+  Assignment,
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
 
-// Helper function to check if an item is truly assigned
+// Fixed helper function - properly checks for "Not assigned" string
 const isItemAssigned = (item) => {
-  // Return false if no item
-  if (!item) return false;
+  if (!item || !item.assigned_to) return false;
   
-  // Return false if assigned_to is null, undefined, or empty
-  if (item.assigned_to === null || 
-      item.assigned_to === undefined || 
-      item.assigned_to === '' ||
-      item.assigned_to === 'Not assigned') {  // Check for exact string
-    return false;
-  }
+  // Check if it's exactly "Not assigned" (what we see in your screenshot)
+  if (item.assigned_to === 'Not assigned') return false;
   
-  // Also check for case variations
-  const assignedValue = String(item.assigned_to).trim();
-  const assignedValueLower = assignedValue.toLowerCase();
-  
-  // List of values that mean "not assigned"
-  if (assignedValueLower === 'not assigned' || 
-      assignedValueLower === 'n/a' || 
-      assignedValueLower === 'none' || 
-      assignedValueLower === 'null' ||
-      assignedValueLower === 'undefined' ||
-      assignedValueLower === '-' ||
-      assignedValueLower === '') {
+  // Check lowercase version too
+  const assignedLower = item.assigned_to.toString().toLowerCase().trim();
+  if (assignedLower === 'not assigned' || 
+      assignedLower === 'n/a' || 
+      assignedLower === '') {
     return false;
   }
   
@@ -112,15 +100,6 @@ const ItemDetailsModal = ({ open, onClose, item, onSave, mode = 'view' }) => {
   // Initialize form data with correct field names
   useEffect(() => {
     if (item) {
-      // ADD THIS DEBUG CODE HERE
-      console.log('=== DEBUG ASSIGNMENT ===');
-      console.log('item.assigned_to:', item.assigned_to);
-      console.log('typeof:', typeof item.assigned_to);
-      console.log('is null?', item.assigned_to === null);
-      console.log('is "Not assigned"?', item.assigned_to === 'Not assigned');
-      console.log('isItemAssigned result:', isItemAssigned(item));
-      console.log('=======================');
-      
       setFormData({
         item_name: item.item_name || '',
         category: item.category || 'Desktop',
@@ -139,6 +118,7 @@ const ItemDetailsModal = ({ open, onClose, item, onSave, mode = 'view' }) => {
         location: item.location || '',
         condition_status: item.condition_status || 'good',
         notes: item.notes || '',
+        // Assignment fields
         assigned_to: item.assigned_to || '',
         department: item.department || '',
         assigned_email: item.assigned_email || '',
@@ -277,6 +257,20 @@ const ItemDetailsModal = ({ open, onClose, item, onSave, mode = 'view' }) => {
                     onChange={handleChange('serial_number')}
                     margin="dense"
                   />
+                  <FormControl fullWidth margin="dense">
+                    <InputLabel>Status</InputLabel>
+                    <Select
+                      value={formData.status}
+                      label="Status"
+                      onChange={handleChange('status')}
+                      sx={{ background: '#ffffff', borderRadius: '8px' }}
+                    >
+                      <MenuItem value="available">Available</MenuItem>
+                      <MenuItem value="assigned">Assigned</MenuItem>
+                      <MenuItem value="maintenance">Maintenance</MenuItem>
+                      <MenuItem value="retired">Retired</MenuItem>
+                    </Select>
+                  </FormControl>
                   <StyledTextField
                     fullWidth
                     label="Location"
@@ -299,18 +293,67 @@ const ItemDetailsModal = ({ open, onClose, item, onSave, mode = 'view' }) => {
             </Box>
           </Grid>
 
-          {/* Assignment Info - Only show if item is actually assigned */}
-          {isItemAssigned(item) && (
+          {/* Assignment Info - Only show if item is actually assigned AND not in edit mode */}
+          {isItemAssigned(item) && !isEditing && (
             <Grid item xs={12} md={6}>
-              <SectionHeader icon={Description}>
+              <SectionHeader icon={Assignment}>
                 Assignment Information
               </SectionHeader>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                <Typography><strong>Assigned To:</strong> {item.assigned_to || 'Not assigned'}</Typography>
+                <Typography><strong>Assigned To:</strong> {item.assigned_to}</Typography>
                 <Typography><strong>Department:</strong> {item.department || 'Not specified'}</Typography>
                 <Typography><strong>Email:</strong> {item.assigned_email || 'Not provided'}</Typography>
                 <Typography><strong>Phone:</strong> {item.assigned_phone || 'Not provided'}</Typography>
                 <Typography><strong>Assignment Date:</strong> {item.assignment_date ? new Date(item.assignment_date).toLocaleDateString() : 'Not specified'}</Typography>
+              </Box>
+            </Grid>
+          )}
+
+          {/* If editing and item is assigned, show assignment fields as editable */}
+          {isEditing && isItemAssigned(item) && (
+            <Grid item xs={12} md={6}>
+              <SectionHeader icon={Assignment}>
+                Assignment Information
+              </SectionHeader>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                <StyledTextField
+                  fullWidth
+                  label="Assigned To"
+                  value={formData.assigned_to}
+                  onChange={handleChange('assigned_to')}
+                  margin="dense"
+                  helperText="Clear this field to unassign the item"
+                />
+                <StyledTextField
+                  fullWidth
+                  label="Department"
+                  value={formData.department}
+                  onChange={handleChange('department')}
+                  margin="dense"
+                />
+                <StyledTextField
+                  fullWidth
+                  label="Email"
+                  value={formData.assigned_email}
+                  onChange={handleChange('assigned_email')}
+                  margin="dense"
+                />
+                <StyledTextField
+                  fullWidth
+                  label="Phone"
+                  value={formData.assigned_phone}
+                  onChange={handleChange('assigned_phone')}
+                  margin="dense"
+                />
+                <StyledTextField
+                  fullWidth
+                  label="Assignment Date"
+                  type="date"
+                  value={formData.assignment_date}
+                  onChange={handleChange('assignment_date')}
+                  margin="dense"
+                  InputLabelProps={{ shrink: true }}
+                />
               </Box>
             </Grid>
           )}
@@ -348,6 +391,19 @@ const ItemDetailsModal = ({ open, onClose, item, onSave, mode = 'view' }) => {
                     margin="dense"
                     InputLabelProps={{ shrink: true }}
                   />
+                  <FormControl fullWidth margin="dense">
+                    <InputLabel>Condition</InputLabel>
+                    <Select
+                      value={formData.condition_status}
+                      label="Condition"
+                      onChange={handleChange('condition_status')}
+                      sx={{ background: '#ffffff', borderRadius: '8px' }}
+                    >
+                      <MenuItem value="good">Good</MenuItem>
+                      <MenuItem value="fair">Fair</MenuItem>
+                      <MenuItem value="poor">Poor</MenuItem>
+                    </Select>
+                  </FormControl>
                 </>
               ) : (
                 <>
@@ -448,7 +504,7 @@ const ItemDetailsModal = ({ open, onClose, item, onSave, mode = 'view' }) => {
           <Box sx={{ display: 'flex', gap: 1 }}>
             <Button 
               onClick={handleCancel}
-              startIcon=<Cancel />
+              startIcon={<Cancel />}
               sx={{ textTransform: 'uppercase' }}
             >
               Cancel
@@ -457,7 +513,7 @@ const ItemDetailsModal = ({ open, onClose, item, onSave, mode = 'view' }) => {
               variant="contained" 
               onClick={handleSave}
               disabled={loading}
-              startIcon=<Save />
+              startIcon={<Save />}
               sx={{ background: '#10b981', textTransform: 'uppercase' }}
             >
               {loading ? 'Saving...' : 'Save'}
@@ -466,7 +522,7 @@ const ItemDetailsModal = ({ open, onClose, item, onSave, mode = 'view' }) => {
         ) : (
           <Button 
             variant="contained" 
-            startIcon=<Edit />
+            startIcon={<Edit />}
             onClick={handleEdit}
             sx={{ background: '#3b82f6', textTransform: 'uppercase' }}
           >

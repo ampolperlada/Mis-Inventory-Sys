@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 // MUI Core Components
 import {
   Box,
@@ -522,6 +522,19 @@ const handleAddItem = async () => {
     }
   };
 
+  // Add this near the top of your component
+  useEffect(() => {
+    // This will trigger a refresh when the current view changes
+    if (currentView === 'disposal') {
+      // Force a refresh of the items
+      const interval = setInterval(() => {
+        // This will re-fetch items when needed
+      }, 5000);
+      
+      return () => clearInterval(interval);
+    }
+  }, [currentView]);
+
   const renderCurrentView = () => {
     switch (currentView) {
       case 'add':
@@ -1038,7 +1051,8 @@ const handleAddItem = async () => {
                   )}
                 </DialogActions>
               </Dialog>
-            )}
+            )
+            }
           </Box>
         );
       case 'assign':
@@ -1236,10 +1250,10 @@ const handleAddItem = async () => {
                       <Button variant="outlined" startIcon={<AddIcon />} onClick={() => setCurrentView('add')}>
                         Add New Item
                       </Button>
-                      <Button variant="outlined" startIcon={<ViewListIcon />} onClick={() => setCurrentView('view')}>
+                      <Button variant="outlined" startIcon=<ViewListIcon /> onClick={() => setCurrentView('view')}>
                         View All Items
                       </Button>
-                      <Button variant="outlined" startIcon={<AssignIcon />} onClick={() => setCurrentView('assign')}>
+                      <Button variant="outlined" startIcon=<AssignIcon /> onClick={() => setCurrentView('assign')}>
                         Assign Item
                       </Button>
                     </Box>
@@ -1325,7 +1339,15 @@ const handleAddItem = async () => {
                                 variant="outlined" 
                                 color="error"
                                 size="small"
-                                onClick={() => setDeleteConfirm(item.id)}
+                                onClick={() => {
+                                  const confirm = window.confirm('Are you sure you want to remove this item from disposal list?');
+                                  if (confirm) {
+                                    // Remove from disposal list
+                                    handleFieldUpdate(item.id, 'status', 'available');
+                                    handleFieldUpdate(item.id, 'disposal_reason', null);
+                                    handleFieldUpdate(item.id, 'disposal_date', null);
+                                  }
+                                }}
                               >
                                 Remove
                               </Button>
@@ -1571,7 +1593,7 @@ const handleAddItem = async () => {
                   <FloatingActionButton startIcon={<ReceiveIcon />} onClick={() => setCurrentView('receive')}>
                     Receive Item
                   </FloatingActionButton>
-                  <FloatingActionButton startIcon=<ReportsIcon /> onClick={() => setCurrentView('reports')}>
+                  <FloatingActionButton startIcon={<ReportsIcon />} onClick={() => setCurrentView('reports')}>
                     Reports
                   </FloatingActionButton>
                 </Box>
@@ -1596,16 +1618,17 @@ const handleAddItem = async () => {
   const drawer = (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <Box sx={{ p: 4, textAlign: 'center' }}>
-        <Box sx={{ 
-          display: 'inline-flex', 
-          alignItems: 'center', 
-          justifyContent: 'center',
-          width: 48,
-          height: 48,
-          borderRadius: '8px',
-          background: '#2563eb',
-          mb: 2,
-        }}>
+        <Box sx={ 
+          { 
+            display: 'inline-flex', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            width: 48,
+            height: 48,
+            borderRadius: '8px',
+            background: '#2563eb',
+            mb: 2,
+          }}>
           <AutoAwesome sx={{ fontSize: 24, color: 'white' }} />
         </Box>
         <Typography variant="h6" sx={{ fontWeight: '700', color: '#1f2937', mb: 1 }}>
@@ -1660,11 +1683,12 @@ const handleAddItem = async () => {
 
   return (
     <ThemeProvider theme={whiteTheme}>
-      <Box sx={{ 
-        display: 'flex',
-        minHeight: '100vh',
-        background: '#f8f9fa',
-      }}>
+      <Box sx={ 
+        { 
+          display: 'flex',
+          minHeight: '100vh',
+          background: '#f8f9fa',
+        }}>
         <Snackbar
           open={snackbar.open}
           autoHideDuration={6000}
@@ -1674,7 +1698,6 @@ const handleAddItem = async () => {
             {snackbar.message}
           </MuiAlert>
         </Snackbar>
-
         {/* Enhanced Add Dialog */}
         <Dialog open={openAddDialog} onClose={() => setOpenAddDialog(false)} maxWidth="md" fullWidth>
           <DialogTitle>Add New Item</DialogTitle>
@@ -1721,7 +1744,6 @@ const handleAddItem = async () => {
             </FloatingActionButton>
           </DialogActions>
         </Dialog>
-
         {/* Assign Dialog */}
         {openAssignDialog && (
           <Dialog open onClose={() => setOpenAssignDialog(null)} maxWidth="sm" fullWidth>
@@ -1769,7 +1791,6 @@ const handleAddItem = async () => {
             </DialogActions>
           </Dialog>
         )}
-
         {/* Receive Dialog */}
         {openReceiveDialog && (
           <Dialog open onClose={() => setOpenReceiveDialog(null)} maxWidth="sm" fullWidth>
@@ -1808,7 +1829,6 @@ const handleAddItem = async () => {
             </DialogActions>
           </Dialog>
         )}
-
         {/* Delete Confirmation */}
         {deleteConfirm && (
           <Dialog open onClose={() => setDeleteConfirm(null)}>
@@ -1822,7 +1842,6 @@ const handleAddItem = async () => {
             </DialogActions>
           </Dialog>
         )}
-
         {/* Disposal Confirmation */}
         {disposalConfirm && (
           <Dialog open onClose={() => setDisposalConfirm(null)}>
@@ -1865,7 +1884,6 @@ const handleAddItem = async () => {
             </DialogActions>
           </Dialog>
         )}
-
         <ModernAppBar
           position="fixed"
           sx={{
@@ -1892,49 +1910,44 @@ const handleAddItem = async () => {
             </Typography>
           </Toolbar>
         </ModernAppBar>
-
         <Box component="nav" sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}>
-          <ModernDrawer
-            variant="temporary"
-            open={mobileOpen}
-            onClose={handleDrawerToggle}
-            ModalProps={{ keepMounted: true }}
-            sx={{ display: { xs: 'block', md: 'none' } }}
-          >
-            {drawer}
-          </ModernDrawer>
-          <ModernDrawer
-            variant="permanent"
-            sx={{ display: { xs: 'none', md: 'block' } }}
-            open
-          >
-            {drawer}
-          </ModernDrawer>
-        </Box>
-
+                <ModernDrawer
+          variant="temporary"
+          open={mobileOpen}
+          onClose={handleDrawerToggle}
+          ModalProps={{
+            keepMounted: true, // Better performance on mobile
+          }}
+          sx={{
+            display: { xs: 'block', md: 'none' },
+            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
+          }}
+        >
+          {drawer}
+        </ModernDrawer>
+        <ModernDrawer
+          variant="permanent"
+          sx={{
+            display: { xs: 'none', md: 'block' },
+            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
+          }}
+          open
+        >
+          {drawer}
+        </ModernDrawer>
         <Box
           component="main"
           sx={{
             flexGrow: 1,
+            p: { xs: 2, md: 3 },
             width: { md: `calc(100% - ${drawerWidth}px)` },
-            display: 'flex',
-            flexDirection: 'column',
-            minHeight: '100vh',
+            ml: { md: `${drawerWidth}px` },
           }}
         >
           <Toolbar />
-          <Box sx={{ 
-            flex: 1,
-            p: 4,
-            maxWidth: '1400px',
-            mx: 'auto',
-            width: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-          }}>
-            {renderCurrentView()}
-          </Box>
+          {renderCurrentView()}
         </Box>
+      </Box>
       </Box>
     </ThemeProvider>
   );

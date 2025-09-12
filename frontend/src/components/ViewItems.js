@@ -282,13 +282,14 @@ const ViewItems = () => {
   const confirmDelete = async () => {
     try {
       // Call the proper dispose endpoint
+      const disposalReason = prompt('Enter disposal reason:', 'Outdated equipment') || 'No reason provided';
       const response = await fetch(`/api/inventory/items/${selectedItem.id}/dispose`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          disposal_reason: 'Marked for disposal from inventory view',
+          disposal_reason: disposalReason,
           disposed_by: 'System User'
         }),
       });
@@ -298,12 +299,12 @@ const ViewItems = () => {
         throw new Error(errorData.message || 'Failed to move item to disposal');
       }
 
-      // Close dialogs and refresh
+      // Close dialogs
       setDeleteDialogOpen(false);
       setSelectedItem(null);
       
-      // Trigger refresh of both inventory and disposal tabs
-      window.dispatchEvent(new CustomEvent('inventoryUpdated'));
+      // Force a page reload to update all tabs
+      window.location.reload();
       
       console.log('Item moved to disposal successfully');
     } catch (error) {
